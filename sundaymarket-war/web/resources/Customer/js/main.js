@@ -207,10 +207,46 @@ document.addEventListener("DOMContentLoaded", function () {
             this.classList.add("active");
         });
     });
-    
    
-
 });
+
+document.addEventListener("DOMContentLoaded", function () {
+
+    // Giả lập mã đơn (sau này backend đổ vô)
+    const orderCode = "DH" + Math.floor(100000 + Math.random() * 900000);
+
+    // Gán nội dung chuyển khoản
+    document.getElementById("transferContent").innerText =
+        "THANH TOAN DON " + orderCode;
+});
+
+// chọn phương thức
+function selectPayment(type) {
+    const qrBox = document.getElementById("qrBox");
+
+    if (type === "BANK") {
+        qrBox.style.display = "block";
+    } else {
+        qrBox.style.display = "none";
+    }
+}
+
+// validate trước khi submit
+function submitOrder() {
+    const bankSelected = document.querySelector(
+        'input[name="paymentMethod"]:not(:checked)'
+    ) === null;
+
+    const qrVisible = document.getElementById("qrBox").style.display === "block";
+    const confirmed = document.getElementById("confirmTransferred").checked;
+
+    if (qrVisible && !confirmed) {
+        alert("⚠ Vui lòng xác nhận đã chuyển khoản trước khi đặt hàng!");
+        return;
+    }
+
+    alert("✅ Đặt hàng thành công!\nCảm ơn bạn đã mua sắm.");
+}
 
 })(jQuery);
 

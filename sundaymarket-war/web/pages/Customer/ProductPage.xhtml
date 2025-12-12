@@ -1,7 +1,8 @@
 <ui:composition template="/templates/layoutCustomer.xhtml"
                 xmlns="http://www.w3.org/1999/xhtml"
                 xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
-                xmlns:h="jakarta.faces.html">
+                xmlns:h="jakarta.faces.html"
+                xmlns:f="jakarta.faces.core">
 
     <ui:define name="content">
 
@@ -16,20 +17,18 @@
                             <div class="mb-3">
                                 <h4 class="mb-4">Danh mục sản phẩm</h4>
                                 <ul class="list-unstyled fruite-categorie category-menu">
-                                    <!-- MỤC CHA 1 -->
                                     <li>
-                                        <div class="category-toggle" data-target="#cat1">
-                                            <span><i class="fas fa-apple-alt me-2"></i> Trái cây</span>
-                                            <i class="fas fa-chevron-right"></i>
-                                        </div>
-
-                                        <ul id="cat1" class="category-sub collapse">
-                                            <li><a class="sub-link" href="#">Táo</a></li>
-                                            <li><a class="sub-link" href="#">Cam</a></li>
-                                            <li><a class="sub-link" href="#">Chuối</a></li>
-                                            <li><a class="sub-link" href="#">Xoài</a></li>
-                                        </ul>
+                                        <h:commandLink action="#{customerProductMBean.clearFilter()}" styleClass="category-link" style="display: block; padding: 10px; text-decoration: none; color: inherit;">
+                                            <span><i class="fas fa-th me-2"></i> Tất cả</span>
+                                        </h:commandLink>
                                     </li>
+                                    <ui:repeat value="#{customerProductMBean.allCategories}" var="category">
+                                        <li>
+                                            <h:commandLink action="#{customerProductMBean.filterByCategory(category.categoryID)}" styleClass="category-link" style="display: block; padding: 10px; text-decoration: none; color: inherit;">
+                                                <span><i class="fas fa-tag me-2"></i> #{category.categoryName}</span>
+                                            </h:commandLink>
+                                        </li>
+                                    </ui:repeat>
                                 </ul>
                             </div>
                         </div>
@@ -40,287 +39,82 @@
                         <!-- TOP CATEGORY LIKE BÁCH HÓA XANH -->
                         <div class="bhx-top-category container-fluid bg-white p-3 border rounded">
                             <div class="d-flex align-items-center overflow-auto gap-3">
-
-                                <!-- CATEGORY ITEM -->
-                                <div class="bhx-cat-item active">
-                                    <img src="img/import-meat.jpg" alt="Thịt heo"/>
-                                    <span>Thịt heo</span>
-                                </div>
-
-                                <div class="bhx-cat-item">
-                                    <img src="img/beef.jpg" alt="Thịt bò"/>
-                                    <span>Thịt bò</span>
-                                </div>
-
-                                <div class="bhx-cat-item">
-                                    <img src="img/chicken.jpg" alt="Thịt gà, vịt"/>
-                                    <span>Thịt gà, vịt</span>
-                                </div>
-
-                                <div class="bhx-cat-item">
-                                    <img src="img/fish.jpg" alt="Cá, hải sản"/>
-                                    <span>Cá, hải sản</span>
-                                </div>
-
-                                <div class="bhx-cat-item">
-                                    <img src="img/egg.jpg" alt="Trứng"/>
-                                    <span>Trứng</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- SUB CATEGORY BELOW -->
-                        <div class="bhx-sub-category container-fluid bg-white mt-2 p-3 border rounded">
-                            <div class="d-flex align-items-center overflow-auto gap-4">
-
-                                <div class="bhx-sub-item active">
-                                    <img src="img/pork-belly.jpg" alt="Ba rọi"/>
-                                    <span>Ba rọi</span>
-                                </div>
-
-                                <div class="bhx-sub-item">
-                                    <img src="img/rib.jpg" alt="Sườn"/>
-                                    <span>Sườn</span>
-                                </div>
-
-                                <div class="bhx-sub-item">
-                                    <img src="img/pork-leg.jpg" alt="Bắp chân giò"/>
-                                    <span>Bắp, chân giò</span>
-                                </div>
-
-                                <div class="bhx-sub-item">
-                                    <img src="img/bone.jpg" alt="Xương"/>
-                                    <span>Xương</span>
-                                </div>
-
-                                <div class="bhx-sub-item">
-                                    <img src="img/minced.jpg" alt="Thịt xay"/>
-                                    <span>Thịt xay</span>
-                                </div>
-
-                                <div class="bhx-sub-item">
-                                    <img src="img/chop.jpg" alt="Cốt lết"/>
-                                    <span>Cốt lết</span>
-                                </div>
-
-                                <div class="bhx-sub-item">
-                                    <img src="img/thigh.jpg" alt="Thịt đùi"/>
-                                    <span>Thịt đùi</span>
-                                </div>
-
-                                <div class="bhx-sub-item">
-                                    <img src="img/mixed.jpg" alt="Khác"/>
-                                    <span>Khác</span>
-                                </div>
-
+                                <h:commandLink action="#{customerProductMBean.clearFilter()}" styleClass="bhx-cat-item #{empty customerProductMBean.selectedCategoryId ? 'active' : ''}" style="text-decoration: none; color: inherit;">
+                                    <span>Tất cả</span>
+                                </h:commandLink>
+                                <ui:repeat value="#{customerProductMBean.allCategories}" var="category">
+                                    <h:commandLink action="#{customerProductMBean.filterByCategory(category.categoryID)}" styleClass="bhx-cat-item #{customerProductMBean.selectedCategoryId eq category.categoryID ? 'active' : ''}" style="text-decoration: none; color: inherit;">
+                                        <span>#{category.categoryName}</span>
+                                    </h:commandLink>
+                                </ui:repeat>
                             </div>
                         </div>
 
 
                         <!-- Products Grid - SCROLLABLE CONTENT -->
                         <div class="row g-4 justify-content-center mt-3">
-                            <!-- Product Card 1 -->
-                            <div class="col-md-6 col-lg-4">
-                                <div class="border rounded position-relative">
-                                    <div class="position-absolute top-0 start-0 m-2">
-                                        <span class="badge bg-warning">-53%</span>
-                                        <span class="badge bg-info">CP</span>
-                                    </div>
-                                    <img src="img/chicken-thigh.jpg" class="img-fluid w-100" alt="Đùi tỏi gà" style="height: 200px; object-fit: cover;"/>
-                                    <div class="p-3">
-                                        <h6 class="mb-2">Đùi tỏi gà</h6>
-                                        <div class="d-flex align-items-baseline mb-2">
-                                            <h5 class="text-danger fw-bold mb-0 me-2">48.800đ</h5>
-                                            <small class="text-muted">/400g</small>
+                            <ui:repeat value="#{customerProductMBean.products}" var="product">
+                                <div class="col-md-6 col-lg-4">
+                                    <div class="border rounded position-relative">
+                                        <div class="position-absolute top-0 start-0 m-2">
+                                            <h:panelGroup rendered="#{product.brandID ne null}">
+                                                <span class="badge bg-info">#{product.brandID.brandName}</span>
+                                            </h:panelGroup>
+                                            <h:panelGroup rendered="#{customerProductMBean.getStock(product) gt 0 and customerProductMBean.getStock(product) lt 10}">
+                                                <span class="badge bg-danger">HOT</span>
+                                            </h:panelGroup>
                                         </div>
-                                        <p class="text-muted text-decoration-line-through small mb-2">(122.000đ/kg)</p>
-                                        <button class="btn btn-success w-100">MUA</button>
+                                        <h:panelGroup rendered="#{customerProductMBean.getImageUrl(product) ne null}">
+                                            <img src="#{customerProductMBean.getImageUrl(product)}" 
+                                                 class="img-fluid w-100" 
+                                                 alt="#{product.name}" 
+                                                 style="height: 200px; object-fit: cover;"
+                                                 onerror="this.src='#{facesContext.externalContext.requestContextPath}/resources/Customer/img/no-image.jpg'"/>
+                                        </h:panelGroup>
+                                        <h:panelGroup rendered="#{customerProductMBean.getImageUrl(product) eq null}">
+                                            <img src="#{facesContext.externalContext.requestContextPath}/resources/Customer/img/no-image.jpg" 
+                                                 class="img-fluid w-100" 
+                                                 alt="#{product.name}" 
+                                                 style="height: 200px; object-fit: cover;"/>
+                                        </h:panelGroup>
+                                        <div class="p-3">
+                                            <h6 class="mb-2">#{product.name}</h6>
+                                            <div class="d-flex align-items-baseline mb-2">
+                                                <h5 class="text-danger fw-bold mb-0 me-2">#{customerProductMBean.formatPrice(product.unitPrice)}</h5>
+                                            </div>
+                                            <h:panelGroup rendered="#{product.description ne null and not empty product.description}">
+                                                <p class="text-muted small mb-2">#{product.description}</p>
+                                            </h:panelGroup>
+                                            <h:panelGroup rendered="#{product.categoryID ne null}">
+                                                <p class="text-muted small mb-2">
+                                                    <i class="fas fa-tag"></i> #{product.categoryID.categoryName}
+                                                </p>
+                                            </h:panelGroup>
+                                            <h:panelGroup rendered="#{customerProductMBean.isInStock(product)}">
+                                                <p class="text-success small mb-2">
+                                                    <i class="fas fa-check-circle"></i> Còn hàng (#{customerProductMBean.getStock(product)} sản phẩm)
+                                                </p>
+                                            </h:panelGroup>
+                                            <h:panelGroup rendered="#{not customerProductMBean.isInStock(product)}">
+                                                <p class="text-danger small mb-2">
+                                                    <i class="fas fa-times-circle"></i> Hết hàng
+                                                </p>
+                                            </h:panelGroup>
+                                            <h:commandButton value="MUA" 
+                                                           styleClass="btn btn-success w-100"
+                                                           action="#{shoppingCartMBean.addToCart(product)}"
+                                                           disabled="#{not customerProductMBean.isInStock(product)}"/>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-
-                            <!-- Product Card 2 -->
-                            <div class="col-md-6 col-lg-4">
-                                <div class="border rounded position-relative">
-                                    <div class="position-absolute top-0 start-0 m-2">
-                                        <span class="badge bg-warning">-53%</span>
-                                        <span class="badge bg-info">CP</span>
-                                        <span class="badge bg-danger">HOT</span>
-                                    </div>
-                                    <img src="img/chicken-drumstick.jpg" class="img-fluid w-100" alt="Đùi gà góc tư" style="height: 200px; object-fit: cover;"/>
-                                    <div class="p-3">
-                                        <h6 class="mb-2">Đùi gà góc tư</h6>
-                                        <div class="d-flex align-items-baseline mb-2">
-                                            <h5 class="text-danger fw-bold mb-0 me-2">28.500đ</h5>
-                                            <small class="text-muted">/300g</small>
-                                        </div>
-                                        <p class="text-muted text-decoration-line-through small mb-2">(95.000đ/kg)</p>
-                                        <button class="btn btn-success w-100">MUA</button>
-                                    </div>
+                            </ui:repeat>
+                            
+                            <!-- Empty state -->
+                            <h:panelGroup rendered="#{empty customerProductMBean.products}">
+                                <div class="col-12 text-center py-5">
+                                    <p class="text-muted">Không tìm thấy sản phẩm nào.</p>
                                 </div>
-                            </div>
-
-                            <!-- Product Card 3 -->
-                            <div class="col-md-6 col-lg-4">
-                                <div class="border rounded position-relative">
-                                    <div class="position-absolute top-0 start-0 m-2">
-                                        <span class="badge bg-warning">-53%</span>
-                                        <span class="badge bg-info">CP</span>
-                                        <span class="badge bg-danger">HOT</span>
-                                    </div>
-                                    <img src="img/chicken-drumstick2.jpg" class="img-fluid w-100" alt="Đùi gà góc tư" style="height: 200px; object-fit: cover;"/>
-                                    <div class="p-3">
-                                        <h6 class="mb-2">Đùi gà góc tư</h6>
-                                        <div class="d-flex align-items-baseline mb-2">
-                                            <h5 class="text-danger fw-bold mb-0 me-2">48.000đ</h5>
-                                            <small class="text-muted">/500g</small>
-                                        </div>
-                                        <button class="btn btn-success w-100">MUA</button>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Product Card 4 -->
-                            <div class="col-md-6 col-lg-4">
-                                <div class="border rounded position-relative">
-                                    <div class="position-absolute top-0 start-0 m-2">
-                                        <span class="badge bg-warning">-53%</span>
-                                        <span class="badge bg-danger">HOT</span>
-                                    </div>
-                                    <img src="img/chicken-wing.jpg" class="img-fluid w-100" alt="Cánh gà" style="height: 200px; object-fit: cover;"/>
-                                    <div class="p-3">
-                                        <h6 class="mb-2">Cánh gà</h6>
-                                        <div class="d-flex align-items-baseline mb-2">
-                                            <h5 class="text-danger fw-bold mb-0 me-2">52.275đ</h5>
-                                            <small class="text-muted">/500g</small>
-                                        </div>
-                                        <p class="text-muted text-decoration-line-through small mb-2">61.500đ <span class="badge bg-danger">-15%</span></p>
-                                        <p class="text-warning small mb-2">⚠ Tối đa 10 sp/đơn</p>
-                                        <p class="text-muted small mb-2">🟡 Còn 38 suất</p>
-                                        <p class="text-muted small mb-2">Kết thúc sau 00:32:24</p>
-                                        <button class="btn btn-success w-100">MUA</button>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Product Card 5 -->
-                            <div class="col-md-6 col-lg-4">
-                                <div class="border rounded position-relative">
-                                    <div class="position-absolute top-0 start-0 m-2">
-                                        <span class="badge bg-warning">-53%</span>
-                                        <span class="badge bg-danger">HOT</span>
-                                    </div>
-                                    <img src="img/chicken-wing2.jpg" class="img-fluid w-100" alt="Cánh gà" style="height: 200px; object-fit: cover;"/>
-                                    <div class="p-3">
-                                        <h6 class="mb-2">Cánh gà</h6>
-                                        <div class="d-flex align-items-baseline mb-2">
-                                            <h5 class="text-danger fw-bold mb-0 me-2">35.700đ</h5>
-                                            <small class="text-muted">/300g</small>
-                                        </div>
-                                        <p class="text-muted text-decoration-line-through small mb-2">(119.000đ/kg)</p>
-                                        <button class="btn btn-success w-100">MUA</button>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Product Card 6 -->
-                            <div class="col-md-6 col-lg-4">
-                                <div class="border rounded position-relative">
-                                    <div class="position-absolute top-0 start-0 m-2">
-                                        <span class="badge bg-danger text-white">Nhập Khẩu Balan</span>
-                                    </div>
-                                    <img src="img/chicken-whole.jpg" class="img-fluid w-100" alt="Cánh gà giữa" style="height: 200px; object-fit: cover;"/>
-                                    <div class="p-3">
-                                        <h6 class="mb-2">Cánh gà giữa</h6>
-                                        <div class="d-flex align-items-baseline mb-2">
-                                            <h5 class="text-danger fw-bold mb-0 me-2">82.500đ</h5>
-                                            <small class="text-muted">/500g</small>
-                                        </div>
-                                        <button class="btn btn-success w-100">MUA</button>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Product Card 7 -->
-                            <div class="col-md-6 col-lg-4">
-                                <div class="border rounded position-relative">
-                                    <div class="position-absolute top-0 start-0 m-2">
-                                        <span class="badge bg-info">CP</span>
-                                        <span class="badge bg-warning">HOT</span>
-                                    </div>
-                                    <img src="img/chicken-breast.jpg" class="img-fluid w-100" alt="Cánh tỏi gà" style="height: 200px; object-fit: cover;"/>
-                                    <div class="p-3">
-                                        <h6 class="mb-2">Cánh tỏi gà</h6>
-                                        <div class="d-flex align-items-baseline mb-2">
-                                            <h5 class="text-danger fw-bold mb-0 me-2">34.200đ</h5>
-                                            <small class="text-muted">/300g</small>
-                                        </div>
-                                        <p class="text-muted text-decoration-line-through small mb-2">(114.000đ/kg)</p>
-                                        <button class="btn btn-success w-100">MUA</button>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Product Card 8 -->
-                            <div class="col-md-6 col-lg-4">
-                                <div class="border rounded position-relative">
-                                    <div class="position-absolute top-0 start-0 m-2">
-                                        <span class="badge bg-info">CP</span>
-                                        <span class="badge bg-warning">HOT</span>
-                                    </div>
-                                    <img src="img/chicken-breast2.jpg" class="img-fluid w-100" alt="Cánh tỏi gà" style="height: 200px; object-fit: cover;"/>
-                                    <div class="p-3">
-                                        <h6 class="mb-2">Cánh tỏi gà</h6>
-                                        <div class="d-flex align-items-baseline mb-2">
-                                            <h5 class="text-danger fw-bold mb-0 me-2">34.200đ</h5>
-                                            <small class="text-muted">/300g</small>
-                                        </div>
-                                        <button class="btn btn-success w-100">MUA</button>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Product Card 9 -->
-                            <div class="col-md-6 col-lg-4">
-                                <div class="border rounded position-relative">
-                                    <div class="position-absolute top-0 start-0 m-2">
-                                        <span class="badge bg-danger">HOT</span>
-                                    </div>
-                                    <img src="img/chicken-whole-meat.jpg" class="img-fluid w-100" alt="Gà vườn đất đỏ" style="height: 200px; object-fit: cover;"/>
-                                    <div class="p-3">
-                                        <h6 class="mb-2">Gà vườn đất đỏ</h6>
-                                        <div class="d-flex align-items-baseline mb-2">
-                                            <h5 class="text-danger fw-bold mb-0 me-2">44.500đ</h5>
-                                            <small class="text-muted">/500g</small>
-                                        </div>
-                                        <p class="text-muted text-decoration-line-through small mb-2">49.500đ <span class="badge bg-danger">-10%</span></p>
-                                        <p class="text-muted small mb-2">(89.000đ/kg)</p>
-                                        <button class="btn btn-success w-100">MUA</button>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Product Card 10 -->
-                            <div class="col-md-6 col-lg-4">
-                                <div class="border rounded position-relative">
-                                    <div class="position-absolute top-0 start-0 m-2">
-                                        <span class="badge bg-danger text-white">Nhập Khẩu Hàn Quốc</span>
-                                    </div>
-                                    <img src="img/chicken-import.jpg" class="img-fluid w-100" alt="Gà dai nhập khẩu" style="height: 200px; object-fit: cover;"/>
-                                    <div class="p-3">
-                                        <h6 class="mb-2">Gà dai nhập khẩu</h6>
-                                        <div class="d-flex align-items-baseline mb-2">
-                                            <h5 class="text-danger fw-bold mb-0 me-2">42.000đ</h5>
-                                            <small class="text-muted">/500g</small>
-                                        </div>
-                                        <p class="text-muted text-decoration-line-through small mb-2">57.000đ <span class="badge bg-danger">-27%</span></p>
-                                        <p class="text-warning small mb-2">⚠ Tối đa 10 sp/đơn</p>
-                                        <p class="text-muted small mb-2">🟡 Còn 86 suất</p>
-                                        <p class="text-muted small mb-2">Kết thúc sau 00:32:25</p>
-                                        <button class="btn btn-success w-100">MUA</button>
-                                    </div>
-                                </div>
-                            </div>
+                            </h:panelGroup>
                         </div>
                     </div>
                 </div>

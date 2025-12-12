@@ -987,3 +987,155 @@
     object-fit: cover;
     border-radius: 10px;
 }
+
+/*thanh toán*/
+.checkout-page {
+    padding: 40px 0;
+}
+
+.checkout-title {
+    font-weight: 700;
+    margin-bottom: 25px;
+}
+
+/* Card chung */
+.card-box {
+    background: #fff;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.card-box h5 {
+    margin-bottom: 15px;
+    font-weight: 600;
+}
+
+.card-box .form-control {
+    margin-bottom: 12px;
+}
+
+/* Radio */
+.radio-item {
+    display: block;
+    margin-bottom: 10px;
+    cursor: pointer;
+}
+
+/* Order summary */
+.order-summary {
+    background: #fff;
+    border-radius: 12px;
+    padding: 20px;
+    position: sticky;
+    top: 120px;
+}
+
+.order-summary h5 {
+    font-weight: 600;
+    margin-bottom: 15px;
+}
+
+.order-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 8px;
+}
+
+.order-row.discount {
+    color: #28a745;
+}
+
+.order-total {
+    display: flex;
+    justify-content: space-between;
+    font-size: 18px;
+    font-weight: 700;
+    color: #dc3545;
+    margin-bottom: 15px;
+}
+
+/* Voucher */
+.voucher-box {
+    display: flex;
+    gap: 8px;
+}
+
+.voucher-box input {
+    flex: 1;
+    padding: 8px;
+    border-radius: 6px;
+    border: 1px solid #ddd;
+}
+
+.voucher-box button {
+    background: #28a745;
+    color: #fff;
+    border: none;
+    padding: 8px 15px;
+    border-radius: 6px;
+}
+
+/* Button */
+.btn-checkout {
+    width: 100%;
+    background: #28a745;
+    color: #fff;
+    border: none;
+    padding: 12px;
+    font-size: 16px;
+    font-weight: 700;
+    border-radius: 8px;
+    transition: 0.3s;
+}
+
+.btn-checkout:hover {
+    background: #218838;
+}
+
+/*add qr*/
+.card-box {
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    padding: 20px;
+    background: #fff;
+}
+
+.radio-item,
+.checkbox-item {
+    display: block;
+    margin: 10px 0;
+    cursor: pointer;
+}
+
+.bank-box {
+    border: 1px dashed #81c408;
+    padding: 15px;
+    border-radius: 10px;
+    background: #f9fff6;
+}
+
+.bank-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.bank-logo {
+    width: 50px;
+    height: auto;
+}
+
+.qr-img {
+    width: 180px;
+    display: block;
+    margin: 10px auto;
+}
+
+.transfer-text {
+    color: #d9534f;
+    font-weight: bold;
+    font-size: 15px;
+}
+
