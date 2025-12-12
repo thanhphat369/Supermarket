@@ -1,0 +1,29 @@
+<ui:composition template="/templates/layoutCustomer.xhtml"
+                xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
+                xmlns:h="jakarta.faces.html">
+    <ui:define name="content">
+            <div class="empty-cart-wrapper py-5 mb-5 hero-header">
+                <div class="empty-cart-box">
+                    <div class="empty-cart-icon">
+
+                        <h:graphicImage library="Customer" name="img/cart-empty.png" alt="Giỏ hàng trống" />
+                    </div>
+                    <h2 class="empty-cart-title">Giỏ hàng trống</h2>
+                    <p class="empty-cart-desc">
+                        Không có sản phẩm nào trong giỏ hàng
+                    </p>
+                    <a href="index.xhtml" class="btn-back-home">
+                        Về trang chủ
+                    </a>
+                    <p class="empty-cart-support">
+                        Khi cần trợ giúp vui lòng gọi
+                        <strong>1900 232 460</strong> hoặc
+                        <strong>028 3622 1060</strong>
+                        <span>(8h00 - 21h30)</span>
+                    </p>
+
+                </div>
+            </div>
+    </ui:define>
+</ui:composition>

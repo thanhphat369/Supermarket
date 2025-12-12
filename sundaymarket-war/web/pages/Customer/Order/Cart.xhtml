@@ -1,0 +1,90 @@
+<ui:composition template="/templates/layoutCustomer.xhtml"
+                xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
+                xmlns:h="jakarta.faces.html">
+    <ui:define name="content">
+        <div class="container py-5 mb-5 main-cart">
+            <h3 class="mb-4">🛒 Giỏ hàng của bạn</h3>
+
+            <div class="row">
+                <!-- ================= LEFT: CART ITEMS ================= -->
+                <div class="col-lg-8">
+
+                    <!-- ITEM -->
+                    <div class="cart-item d-flex align-items-center mb-3 p-3 border rounded">
+                        <img src="img/chicken-wing.jpg" class="cart-img" alt="Cánh gà"/>
+
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="mb-1">Cánh gà</h6>
+                            <p class="text-muted small mb-1">500g</p>
+                            <span class="text-danger fw-bold">52.275đ</span>
+                        </div>
+
+                        <!-- Quantity -->
+                        <div class="quantity-box d-flex align-items-center">
+                            <button class="btn btn-light btn-sm">−</button>
+                            <input type="text" value="1" class="qty-input"/>
+                            <button class="btn btn-light btn-sm">+</button>
+                        </div>
+
+                        <!-- Remove -->
+                        <button class="btn btn-link text-danger ms-3">✕</button>
+                    </div>
+
+                    <!-- ITEM -->
+                    <div class="cart-item d-flex align-items-center mb-3 p-3 border rounded">
+                        <img src="img/chicken-drumstick.jpg" class="cart-img" alt="Đùi gà"/>
+
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="mb-1">Đùi gà góc tư</h6>
+                            <p class="text-muted small mb-1">300g</p>
+                            <span class="text-danger fw-bold">28.500đ</span>
+                        </div>
+
+                        <div class="quantity-box d-flex align-items-center">
+                            <button class="btn btn-light btn-sm">−</button>
+                            <input type="text" value="2" class="qty-input"/>
+                            <button class="btn btn-light btn-sm">+</button>
+                        </div>
+
+                        <button class="btn btn-link text-danger ms-3">✕</button>
+                    </div>
+
+                </div>
+
+                <!-- ================= RIGHT: SUMMARY ================= -->
+                <div class="col-lg-4">
+                    <div class="border rounded p-4 sticky-summary">
+
+                        <h5 class="mb-3">Tóm tắt đơn hàng</h5>
+
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Tạm tính</span>
+                            <span>109.275đ</span>
+                        </div>
+
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Phí giao hàng</span>
+                            <span>15.000đ</span>
+                        </div>
+
+                        <hr/>
+
+                        <div class="d-flex justify-content-between fw-bold mb-3">
+                            <span>Tổng cộng</span>
+                            <span class="text-danger">124.275đ</span>
+                        </div>
+
+                        <h:link outcome="/pages/Customer/ProductPage"
+                                styleClass="btn btn-success w-100 mb-2"
+                                value="Thanh toán"/>
+
+                        <h:link outcome="/pages/Customer/ProductPage"
+                                styleClass="btn btn-outline-secondary w-100"
+                                value="Tiếp tục mua sắm"/>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </ui:define>
+</ui:composition>
