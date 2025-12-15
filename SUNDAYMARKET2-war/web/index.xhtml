@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:h="jakarta.faces.html"
+      xmlns:ui="jakarta.faces.facelets"
+      xmlns:f="jakarta.faces.core">
+
+    <ui:composition template="/template.xhtml">
+        <ui:define name="title">🛒 Sunday Market - Home</ui:define>
+
+        <ui:define name="content">
+            <h:messages globalOnly="true" />
+            
+            <div style="padding: 20px;">
+                <h1 style="color: #2f5061; margin-bottom: 20px; text-align: center;">🛒 Sunday Market</h1>
+                
+                <h:panelGroup rendered="#{loginMBean.currentUser == null}">
+                    <div style="text-align: center; padding: 40px 20px;">
+                        <p style="font-size: 18px; color: #64748b; margin-bottom: 30px;">
+                            Welcome to Sunday Market - Your trusted online shopping destination
+                        </p>
+                        <div style="margin-top: 30px;">
+                            <h:link outcome="login" value="🔓 Login" 
+                                    style="display: inline-block; padding: 12px 24px; background-color: #3f72af; color: white; text-decoration: none; border-radius: 6px; margin: 10px; font-weight: 500;" />
+                            <h:link outcome="register" value="📝 Register" 
+                                    style="display: inline-block; padding: 12px 24px; background-color: #28a745; color: white; text-decoration: none; border-radius: 6px; margin: 10px; font-weight: 500;" />
+                        </div>
+                    </div>
+                </h:panelGroup>
+                
+                <h:panelGroup rendered="#{loginMBean.currentUser != null and loginMBean.isCustomer()}">
+                    <!-- Customer View: Product Grid -->
+                    <div style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
+                        <h2 style="color: #2f5061; margin: 0;">Products</h2>
+                        <h:panelGroup id="cartCountPanel">
+                            <h:link outcome="shoppingcart" value="🛒 Cart (#{shoppingCartMBean.cartCount})" 
+                                    style="display: inline-block; padding: 10px 20px; background-color: #3f72af; color: white; text-decoration: none; border-radius: 6px; font-weight: 500;" />
+                        </h:panelGroup>
+                    </div>
+                    
+                    <h:form id="productForm">
+                        <!-- Search -->
+                        <div style="margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px;">
+                            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                                <h:inputText value="#{productMBean.searchKeyword}" 
+                                           styleClass="form-control"
+                                           style="flex: 1; min-width: 250px;">
+                                    <f:passThroughAttribute name="placeholder" value="🔍 Search products..." />
+                                    <f:ajax event="keyup" delay="300" listener="#{productMBean.performSearch()}" render="productGrid" />
+                                </h:inputText>
+                                <h:commandButton value="🔍 Search" 
+                                               actionListener="#{productMBean.performSearch()}"
+                                               styleClass="btn btn-primary">
+                                    <f:ajax render="productGrid" />
+                                </h:commandButton>
+                                <h:commandButton value="✖ Clear" 
+                                               actionListener="#{productMBean.clearSearch()}"
+                                               rendered="#{not empty productMBean.searchKeyword}"
+                                               styleClass="btn btn-secondary">
+                                    <f:ajax render="productGrid" />
+                                </h:commandButton>
+                            </div>
+                        </div>
+                        
+                        <!-- Product Grid -->
+                        <div id="productGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px;">
+                            <ui:repeat value="#{productMBean.pagedItems}" var="product">
+                                <div style="border: 1px solid #ddd; border-radius: 8px; padding: 15px; background: white; box-shadow: 0 2px 4px rgba(0,0,0,0.1); transition: transform 0.2s;"
+                                     onmouseover="this.style.transform='scale(1.02)'; this.style.boxShadow='0 4px 8px rgba(0,0,0,0.15)';"
+                                     onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 2px 4px rgba(0,0,0,0.1)';">
+                                    
+                                    <!-- Product Image -->
+                                    <div style="text-align: center; margin-bottom: 15px; height: 200px; display: flex; align-items: center; justify-content: center; background: #f8f9fa; border-radius: 4px;">
+                                        <img src="#{productMBean.getImageUrlForProduct(product)}"
+                                             alt="#{product.name}"
+                                             style="max-width: 100%; max-height: 100%; object-fit: contain;"
+                                             onerror="this.style.display='none'; this.nextElementSibling.style.display='block';" />
+                                        <div style="display: none; color: #999; font-style: italic;">No Image</div>
+                                    </div>
+                                    
+                                    <!-- Product Info -->
+                                    <h3 style="font-size: 18px; color: #2f5061; margin: 0 0 10px 0; height: 50px; overflow: hidden; text-overflow: ellipsis;">
+                                        #{product.name}
+                                    </h3>
+                                    
+                                    <p style="color: #64748b; font-size: 14px; margin: 0 0 10px 0; height: 40px; overflow: hidden; text-overflow: ellipsis;">
+                                        #{product.description}
+                                    </p>
+                                    
+                                    <div style="margin-top: 10px;">
+                                        <!-- Rating -->
+                                        <div style="margin-bottom: 10px; color: #ffc107; font-size: 14px;">
+                                            #{feedbackMBean.getRatingStars(feedbackMBean.getAverageRating(product).intValue())}
+                                            <span style="color: #64748b; margin-left: 5px;">
+                                                (#{feedbackMBean.getFeedbacksForProduct(product).size()} reviews)
+                                            </span>
+                                        </div>
+                                        
+                                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                                            <span style="font-size: 20px; font-weight: bold; color: #3f72af;">
+                                                #{shoppingCartMBean.formatAmount(product.unitPrice)}
+                                            </span>
+                                            <h:commandButton value="🛒 Add to Cart" 
+                                                           actionListener="#{shoppingCartMBean.addToCart(product)}"
+                                                           styleClass="btn btn-primary"
+                                                           style="padding: 8px 16px; font-size: 14px;">
+                                                <f:ajax render=":messages cartCountPanel" />
+                                            </h:commandButton>
+                                        </div>
+                                    </div>
+                                </div>
+                            </ui:repeat>
+                        </div>
+                        
+                        <!-- Empty State -->
+                        <h:outputText value="No products found" 
+                                     rendered="#{empty productMBean.pagedItems}" 
+                                     style="display: block; text-align: center; padding: 40px; color: #999; font-style: italic; background: #f5f5f5; border-radius: 8px; margin: 20px 0;" />
+                        
+                        <!-- Pagination -->
+                        <div style="margin-top: 30px; padding: 15px; background: #f8f9fa; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
+                            <h:outputText value="Page #{productMBean.currentPage} / #{productMBean.totalPages} (Total: #{productMBean.totalItems} products)" 
+                                         style="font-weight: 500; color: #333; font-size: 14px;" />
+                            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                                <h:commandButton value="⏮️ First" actionListener="#{productMBean.firstPage()}" 
+                                               styleClass="btn btn-secondary" 
+                                               disabled="#{productMBean.currentPage == 1 or productMBean.totalPages le 1}">
+                                    <f:ajax render="productGrid" />
+                                </h:commandButton>
+                                <h:commandButton value="◀️ Previous" actionListener="#{productMBean.previousPage()}" 
+                                               styleClass="btn btn-secondary" 
+                                               disabled="#{productMBean.currentPage == 1 or productMBean.totalPages le 1}">
+                                    <f:ajax render="productGrid" />
+                                </h:commandButton>
+                                <h:commandButton value="Next ▶️" actionListener="#{productMBean.nextPage()}" 
+                                               styleClass="btn btn-secondary" 
+                                               disabled="#{productMBean.currentPage == productMBean.totalPages or productMBean.totalPages le 1}">
+                                    <f:ajax render="productGrid" />
+                                </h:commandButton>
+                                <h:commandButton value="Last ⏭️" actionListener="#{productMBean.lastPage()}" 
+                                               styleClass="btn btn-secondary" 
+                                               disabled="#{productMBean.currentPage == productMBean.totalPages or productMBean.totalPages le 1}">
+                                    <f:ajax render="productGrid" />
+                                </h:commandButton>
+                            </div>
+                        </div>
+                    </h:form>
+                </h:panelGroup>
+                
+                <h:panelGroup rendered="#{loginMBean.currentUser != null and not loginMBean.isCustomer()}">
+                    <!-- Non-Customer View -->
+                    <div style="text-align: center; padding: 40px 20px;">
+                        <div style="margin-top: 30px; padding: 20px; background-color: #f8f9fa; border-radius: 8px; max-width: 600px; margin-left: auto; margin-right: auto;">
+                            <h2 style="color: #2f5061;">Hello, #{loginMBean.currentUser.fullName != null ? loginMBean.currentUser.fullName : loginMBean.currentUser.userName}!</h2>
+                            <p style="color: #64748b;">
+                                Role: #{loginMBean.currentUser.roleID != null ? loginMBean.currentUser.roleID.roleName : 'User'}
+                            </p>
+                            <div style="margin-top: 20px;">
+                                <h:link outcome="profiledetail" value="👤 View Profile" 
+                                        style="display: inline-block; padding: 10px 20px; background-color: #3f72af; color: white; text-decoration: none; border-radius: 6px; margin: 5px;" />
+                                <h:panelGroup rendered="#{loginMBean.isAdmin()}">
+                                    <h:link outcome="user" value="⚙️ User Management" 
+                                            style="display: inline-block; padding: 10px 20px; background-color: #6c757d; color: white; text-decoration: none; border-radius: 6px; margin: 5px;" />
+                                </h:panelGroup>
+                            </div>
+                        </div>
+                    </div>
+                </h:panelGroup>
+            </div>
+        </ui:define>
+    </ui:composition>
+</html>

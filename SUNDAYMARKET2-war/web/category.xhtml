@@ -1,0 +1,304 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:h="jakarta.faces.html"
+      xmlns:f="jakarta.faces.core"
+      xmlns:pt="http://xmlns.jcp.org/jsf/passthrough"
+      xmlns:ui="jakarta.faces.facelets">
+
+    <ui:composition template="/template.xhtml">
+
+        <ui:define name="title">Quản lý Danh mục</ui:define>
+
+        <ui:define name="content">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
+                <h1 style="margin: 0;">📂 Quản lý Danh mục</h1>
+                <h:form>
+                    <h:commandButton value="➕ Add New Category" actionListener="#{categoryMBean.prepareCreate}" 
+                                    styleClass="btn btn-success-modern"
+                                    style="padding: 12px 30px; font-size: 15px; font-weight: 600; border-radius: 8px; border: none; background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white; box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3); transition: all 0.3s; cursor: pointer;"
+                                    onclick="showModal('categoryFormModal');">
+                        <f:ajax render="categoryFormModal categoryTable" 
+                                onevent="function(data){if(data.status=='success'){showModal('categoryFormModal');}}" />
+                    </h:commandButton>
+                </h:form>
+            </div>
+
+            <h:messages globalOnly="true" />
+            
+            <!-- ========== MODAL OVERLAY ========== -->
+            <h:panelGroup id="categoryFormModal">
+                <div id="categoryModalOverlay" 
+                     style="display: #{categoryMBean.showForm ? 'block' : 'none'}; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; overflow-y: auto; animation: fadeIn 0.3s ease-out;"
+                     onclick="if(event.target === this) { closeModal('categoryFormModal'); }">
+                    <div class="form-section" style="background: #ffffff; border-radius: 16px; box-shadow: 0 8px 32px rgba(0,0,0,0.2); padding: 0; margin: 40px auto; max-width: 800px; width: 95%; max-height: 90vh; overflow-y: auto; position: relative; animation: slideUp 0.3s ease-out;">
+                        <div style="position: sticky; top: 0; background: linear-gradient(135deg, #3f72af 0%, #2b517f 100%); color: white; padding: 20px 30px; border-radius: 16px 16px 0 0; display: flex; justify-content: space-between; align-items: center; z-index: 10; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+                            <h2 style="margin: 0; font-size: 24px; font-weight: 600;">
+                                <h:outputText value="#{categoryMBean.editMode ? '✏️ Update Category Information' : '➕ Add New Category'}" />
+                            </h2>
+                            <h:form>
+                                <h:commandButton id="closeCategoryFormBtn" value="✕" actionListener="#{categoryMBean.cancelForm}" 
+                                                styleClass="btn-close-modal"
+                                                style="background: rgba(255,255,255,0.2); border: none; color: white; width: 40px; height: 40px; border-radius: 50%; font-size: 20px; cursor: pointer; transition: all 0.3s; display: flex; align-items: center; justify-content: center;"
+                                                title="Close"
+                                                onclick="closeModal('categoryFormModal');">
+                                    <f:ajax render="categoryFormModal categoryTable" 
+                                            onevent="function(data){if(data.status=='success'){closeModal('categoryFormModal');}}" />
+                                </h:commandButton>
+                            </h:form>
+                        </div>
+                        <div style="padding: 30px;">
+                            <h:form styleClass="fu-form">
+                                <!-- Tên danh mục -->
+                                <div style="margin-bottom: 20px;">
+                                    <h:outputLabel value="Tên danh mục:" for="categoryName" style="font-weight: 500; color: #495057; display: block; margin-bottom: 8px;" />
+                                    <h:inputText id="categoryName" value="#{categoryMBean.selected.categoryName}" required="true" styleClass="form-control" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ced4da;">
+                                        <f:passThroughAttribute name="placeholder" value="Nhập tên danh mục" />
+                                    </h:inputText>
+                                </div>
+                                
+                                <!-- Danh mục cha (Tùy chọn) - Chỉ hiển thị khi đã có category -->
+                                <h:panelGroup rendered="#{categoryMBean.hasCategories()}">
+                                    <div style="margin-bottom: 20px;">
+                                        <h:outputLabel value="Danh mục cha:" for="parentCategory" style="font-weight: 500; color: #495057; display: block; margin-bottom: 8px;" />
+                                        <h:selectOneMenu id="parentCategory" value="#{categoryMBean.selectedParentCategoryId}" styleClass="form-select" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ced4da;">
+                                            <f:selectItem itemLabel="-- Không chọn (Tạo thư mục cha) --" noSelectionOption="true" itemValue="" />
+                                            <f:selectItems value="#{categoryMBean.allCategories}" var="cat"
+                                                           itemValue="#{cat.categoryID}" itemLabel="#{categoryMBean.getCategoryDisplayName(cat)}" />
+                                        </h:selectOneMenu>
+                                        <small style="color: #6c757d; font-size: 12px; margin-top: 5px; display: block;">
+                                            💡 Để trống để tạo thư mục cha, chọn danh mục để tạo thư mục con
+                                        </small>
+                                    </div>
+                                </h:panelGroup>
+                                
+                                <!-- Thông báo khi chưa có category -->
+                                <h:panelGroup rendered="#{not categoryMBean.hasCategories()}">
+                                    <div style="background: #fff3cd; padding: 15px; border-radius: 8px; border-left: 4px solid #ffc107; margin-bottom: 20px;">
+                                        <div style="display: flex; align-items: center; gap: 10px;">
+                                            <span style="font-size: 20px;">ℹ️</span>
+                                            <div>
+                                                <strong style="color: #856404;">Thông báo:</strong>
+                                                <p style="margin: 5px 0 0 0; color: #856404; font-size: 14px;">
+                                                    Chưa có danh mục nào. Danh mục đầu tiên sẽ được tạo làm <strong>thư mục cha</strong>.
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </h:panelGroup>
+                                
+                                <br/>
+                                <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 30px; padding-top: 25px; border-top: 2px solid #e9ecef;">
+                                    <h:commandButton value="❌ Cancel" actionListener="#{categoryMBean.cancelForm}" 
+                                                    styleClass="btn btn-secondary-modern"
+                                                    style="padding: 12px 30px; font-size: 15px; font-weight: 600; border-radius: 8px; border: 2px solid #6c757d; background: white; color: #6c757d; transition: all 0.3s; cursor: pointer;"
+                                                    onclick="closeModal('categoryFormModal');">
+                                        <f:ajax render="categoryFormModal categoryTable" 
+                                                onevent="function(data){if(data.status=='success'){closeModal('categoryFormModal');}}" />
+                                    </h:commandButton>
+                                    <h:commandButton value="💾 Save" actionListener="#{categoryMBean.save}" 
+                                                    styleClass="btn btn-primary-modern"
+                                                    style="padding: 12px 30px; font-size: 15px; font-weight: 600; border-radius: 8px; border: none; background: linear-gradient(135deg, #3f72af 0%, #2b517f 100%); color: white; box-shadow: 0 4px 15px rgba(63, 114, 175, 0.3); transition: all 0.3s; cursor: pointer;">
+                                        <f:ajax execute="@form" render="categoryFormModal categoryTable :messages" 
+                                                onevent="function(data){if(data.status=='success'){closeModal('categoryFormModal');}}" />
+                                    </h:commandButton>
+                                </div>
+                            </h:form>
+                        </div>
+                    </div>
+                </div>
+            </h:panelGroup>
+
+            <!-- ========== TÌM KIẾM - Design đẹp hơn ========== -->
+            <div class="search-section" style="margin: 20px 0; padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 16px;">
+                <h:form id="searchForm">
+                    <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+                        <div style="flex: 1; min-width: 280px; position: relative; background: white; border-radius: 12px; overflow: hidden;">
+                            <h:inputText id="searchInput" 
+                                       value="#{categoryMBean.searchKeyword}" 
+                                       styleClass="form-control search-input"
+                                       style="width: 100%; padding: 14px 50px 14px 14px; border: none; border-radius: 12px; font-size: 15px; outline: none; background: transparent;">
+                                <f:passThroughAttribute name="placeholder" value="Tìm kiếm theo tên danh mục..." />
+                                <f:ajax event="keyup" delay="300" listener="#{categoryMBean.performSearch()}" render="categoryTable paginationInfo" />
+                            </h:inputText>
+                            <h:commandButton value="✕" 
+                                           actionListener="#{categoryMBean.clearSearch()}"
+                                           rendered="#{not empty categoryMBean.searchKeyword}"
+                                           styleClass="btn-clear-search"
+                                           style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); width: 32px; height: 32px; padding: 0; background: #f0f0f0; border: none; color: #999; font-size: 16px; cursor: pointer; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: all 0.3s; font-weight: bold;"
+                                           title="Xóa tìm kiếm">
+                                <f:ajax render="searchForm categoryTable paginationInfo" />
+                            </h:commandButton>
+                        </div>
+                        <h:commandButton value="🔍 Tìm kiếm" 
+                                       actionListener="#{categoryMBean.performSearch()}"
+                                       styleClass="btn-search-modern"
+                                       style="padding: 14px 28px; font-size: 15px; font-weight: 600; border-radius: 12px; border: none; background: white; color: #667eea; box-shadow: 0 4px 12px rgba(255,255,255,0.3); transition: all 0.3s; cursor: pointer; white-space: nowrap;">
+                            <f:ajax render="categoryTable paginationInfo" />
+                        </h:commandButton>
+                    </div>
+                    <h:outputText value="📊 Tìm thấy: #{categoryMBean.totalItems} danh mục" 
+                                rendered="#{not empty categoryMBean.searchKeyword}"
+                                style="display: block; margin-top: 12px; color: white; font-size: 14px; font-weight: 500; text-align: center; padding: 8px; background: rgba(255,255,255,0.2); border-radius: 8px;" />
+                </h:form>
+            </div>
+
+            <!-- ========== DANH SÁCH CATEGORY ========== -->
+            <h:form id="categoryTable">
+                <h:outputText value="Không có danh mục nào" 
+                             rendered="#{empty categoryMBean.pagedItems}" 
+                             style="display: block; text-align: center; padding: 20px; color: #999; font-style: italic; background: #f5f5f5; border-radius: 8px; margin: 20px 0;" />
+                <h:dataTable value="#{categoryMBean.pagedItems}" var="c" styleClass="table table-striped table-hover table-full-width table-margin-top"
+                             border="0"
+                             rendered="#{not empty categoryMBean.pagedItems}">
+                    <h:column>
+                        <f:facet name="header">ID</f:facet>
+                        #{c.categoryID}
+                    </h:column>
+                    <h:column>
+                        <f:facet name="header">Tên danh mục</f:facet>
+                        #{c.categoryName}
+                    </h:column>
+                    <h:column>
+                        <f:facet name="header">Danh mục cha</f:facet>
+                        <h:outputText value="#{c.parentCategoryID.categoryName}" rendered="#{c.parentCategoryID != null}" />
+                        <h:outputText rendered="#{c.parentCategoryID == null}" escape="false">
+                            <em style="color: #999;">Thư mục gốc</em>
+                        </h:outputText>
+                    </h:column>
+                    <h:column>
+                        <f:facet name="header">Hành động</f:facet>
+                        <h:commandButton value="✏️ Sửa" actionListener="#{categoryMBean.prepareEdit(c)}" 
+                                        styleClass="btn btn-soft-primary"
+                                        style="margin-right: 5px;"
+                                        onclick="showModal('categoryFormModal');">
+                            <f:ajax render="categoryFormModal categoryTable" 
+                                    onevent="function(data){if(data.status=='success'){showModal('categoryFormModal');}}" />
+                        </h:commandButton>
+                        <h:commandButton value="🗑️ Xóa" actionListener="#{categoryMBean.delete(c)}"
+                                         styleClass="btn btn-soft-danger"
+                                         onclick="return confirm('Xóa danh mục này?');">
+                            <f:ajax render="categoryTable paginationInfo" />
+                        </h:commandButton>
+                    </h:column>
+                </h:dataTable>
+                
+                <!-- ===== PHÂN TRANG ===== -->
+                <div class="pagination-container" id="paginationInfo" style="margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px; display: block; width: 100%;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 15px;">
+                        <h:outputText value="Trang #{categoryMBean.currentPage} / #{categoryMBean.totalPages} (Tổng: #{categoryMBean.totalItems} danh mục)" 
+                                     styleClass="pagination-info" 
+                                     style="font-weight: 500; color: #333; font-size: 14px;" />
+                        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                            <h:commandButton value="⏮️ Trang đầu" actionListener="#{categoryMBean.firstPage()}" 
+                                           styleClass="btn btn-secondary" 
+                                           disabled="#{categoryMBean.currentPage == 1 or categoryMBean.totalPages le 1}"
+                                           style="min-width: 100px;">
+                                <f:ajax render="categoryTable paginationInfo" />
+                            </h:commandButton>
+                            <h:commandButton value="◀️ Trước" actionListener="#{categoryMBean.previousPage()}" 
+                                           styleClass="btn btn-secondary" 
+                                           disabled="#{categoryMBean.currentPage == 1 or categoryMBean.totalPages le 1}"
+                                           style="min-width: 80px;">
+                                <f:ajax render="categoryTable paginationInfo" />
+                            </h:commandButton>
+                            <h:commandButton value="Sau ▶️" actionListener="#{categoryMBean.nextPage()}" 
+                                           styleClass="btn btn-secondary" 
+                                           disabled="#{categoryMBean.currentPage == categoryMBean.totalPages or categoryMBean.totalPages le 1}"
+                                           style="min-width: 80px;">
+                                <f:ajax render="categoryTable paginationInfo" />
+                            </h:commandButton>
+                            <h:commandButton value="Trang cuối ⏭️" actionListener="#{categoryMBean.lastPage()}" 
+                                           styleClass="btn btn-secondary" 
+                                           disabled="#{categoryMBean.currentPage == categoryMBean.totalPages or categoryMBean.totalPages le 1}"
+                                           style="min-width: 100px;">
+                                <f:ajax render="categoryTable paginationInfo" />
+                            </h:commandButton>
+                        </div>
+                    </div>
+                </div>
+            </h:form>
+
+            <br/>
+        </ui:define>
+    </ui:composition>
+    
+    <style>
+        .btn-clear-search:hover {
+            background: #e0e0e0 !important;
+            color: #667eea !important;
+            transform: translateY(-50%) rotate(90deg) !important;
+        }
+        
+        .btn-search-modern:hover {
+            background: #f8f9fa !important;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(255,255,255,0.4) !important;
+        }
+        
+        .search-input:focus {
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+    </style>
+    
+    <h:outputScript>
+        <![CDATA[
+            function showModal(modalId) {
+                var modal = document.getElementById(modalId.replace('FormModal', 'ModalOverlay'));
+                if (modal) {
+                    modal.style.display = 'block';
+                    document.body.style.overflow = 'hidden';
+                    document.body.classList.add('modal-open');
+                }
+            }
+            
+            function closeModal(modalId) {
+                var modal = document.getElementById(modalId.replace('FormModal', 'ModalOverlay'));
+                if (modal) {
+                    modal.style.display = 'none';
+                    document.body.style.overflow = '';
+                    document.body.classList.remove('modal-open');
+                }
+            }
+            
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    var modals = document.querySelectorAll('[id$="ModalOverlay"]');
+                    modals.forEach(function(modal) {
+                        if (modal.style.display === 'block') {
+                            closeModal(modal.id.replace('ModalOverlay', 'FormModal'));
+                        }
+                    });
+                }
+            });
+        ]]>
+    </h:outputScript>
+    
+    <style>
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .btn-close-modal:hover {
+            background: rgba(255,255,255,0.3) !important;
+            transform: rotate(90deg);
+        }
+        
+        body.modal-open {
+            overflow: hidden;
+        }
+    </style>
+</html>
+

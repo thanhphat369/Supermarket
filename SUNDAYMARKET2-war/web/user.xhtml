@@ -1,0 +1,698 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:h="jakarta.faces.html"
+      xmlns:f="jakarta.faces.core"
+      xmlns:pt="http://xmlns.jcp.org/jsf/passthrough"
+      xmlns:ui="jakarta.faces.facelets">
+
+    <ui:composition template="/template.xhtml">
+
+        <ui:define name="title">User Management</ui:define>
+
+        <ui:define name="content">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
+                <h1 style="margin: 0;">👤 User Management</h1>
+                <h:form>
+                    <h:commandButton value="➕ Add New User" actionListener="#{userMBean.prepareCreate}" 
+                                    styleClass="btn btn-success-modern"
+                                    style="padding: 12px 30px; font-size: 15px; font-weight: 600; border-radius: 8px; border: none; background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white; box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3); transition: all 0.3s; cursor: pointer;"
+                                    onclick="showModal();">
+                        <f:ajax render="userFormModal userTable" 
+                                onevent="function(data){if(data.status=='success'){showModal();}}" />
+                    </h:commandButton>
+                </h:form>
+            </div>
+
+            <!-- Professional Messages Display -->
+            <div id="messagesContainer" style="margin-bottom: 20px;">
+                <h:messages globalOnly="true" 
+                           infoClass="alert alert-success alert-dismissible" 
+                           errorClass="alert alert-danger alert-dismissible"
+                           warnClass="alert alert-warning alert-dismissible"
+                           style="display: block; padding: 12px 20px; margin-bottom: 15px; border-radius: 8px; border-left: 4px solid; box-shadow: 0 2px 8px rgba(0,0,0,0.1); animation: slideIn 0.3s ease-out;" />
+            </div>
+            
+            <!-- ========== MODAL OVERLAY ========== -->
+            <h:panelGroup id="userFormModal">
+                <div id="modalOverlay" 
+                     style="display: #{userMBean.showForm ? 'block' : 'none'}; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; overflow-y: auto; animation: fadeIn 0.3s ease-out;"
+                     onclick="if(event.target === this) { closeModal(); }">
+                <!-- ========== ADD / EDIT USER FORM ========== -->
+                <div class="form-section" style="background: #ffffff; border-radius: 16px; box-shadow: 0 8px 32px rgba(0,0,0,0.2); padding: 0; margin: 40px auto; max-width: 1200px; width: 95%; max-height: 90vh; overflow-y: auto; position: relative; animation: slideUp 0.3s ease-out;">
+                    <!-- Modal Header -->
+                    <div style="position: sticky; top: 0; background: linear-gradient(135deg, #3f72af 0%, #2b517f 100%); color: white; padding: 20px 30px; border-radius: 16px 16px 0 0; display: flex; justify-content: space-between; align-items: center; z-index: 10; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+                        <h2 style="margin: 0; font-size: 24px; font-weight: 600;">
+                            <h:outputText value="#{userMBean.editMode ? '✏️ Update User Information' : '➕ Add New User'}" />
+                        </h2>
+                        <h:form>
+                            <h:commandButton id="closeFormBtn" value="✕" actionListener="#{userMBean.cancelForm}" 
+                                            styleClass="btn-close-modal"
+                                            style="background: rgba(255,255,255,0.2); border: none; color: white; width: 40px; height: 40px; border-radius: 50%; font-size: 20px; cursor: pointer; transition: all 0.3s; display: flex; align-items: center; justify-content: center;"
+                                            title="Close"
+                                            onclick="closeModal();">
+                                <f:ajax render="userFormModal userTable" 
+                                        onevent="function(data){if(data.status=='success'){closeModal();}}" />
+                            </h:commandButton>
+                        </h:form>
+                    </div>
+                    
+                    <!-- Modal Body -->
+                    <div style="padding: 30px;">
+
+                <!-- ✅ Main form - Horizontal Layout -->
+<h:form styleClass="user-form" enctype="multipart/form-data" style="display: block;">
+
+    <!-- Two Column Grid Layout -->
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 25px 30px; align-items: start;">
+        <!-- Column 1: Basic Information -->
+        <div style="display: flex; flex-direction: column; gap: 20px;">
+            <h3 style="margin: 0 0 10px 0; color: #3f72af; font-size: 18px; font-weight: 600; padding-bottom: 10px; border-bottom: 2px solid #e9ecef;">📋 Basic Information</h3>
+            
+            <div class="form-field-group">
+                <h:outputLabel value="Username *" for="userName" style="display: block; margin-bottom: 8px; font-weight: 500; color: #495057; font-size: 14px;" />
+                <h:inputText id="userName" value="#{userMBean.selected.userName}" required="true" 
+                            styleClass="form-control modern-input"
+                            style="width: 100%; padding: 12px 15px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 15px; transition: all 0.3s;">
+                    <f:passThroughAttribute name="placeholder" value="Enter username" />
+                </h:inputText>
+                <h:message for="userName" styleClass="field-error" />
+            </div>
+
+            <div class="form-field-group">
+                <h:outputLabel value="Password #{userMBean.editMode ? '' : '*'}" for="password" style="display: block; margin-bottom: 8px; font-weight: 500; color: #495057; font-size: 14px;" />
+                <!-- Password field: dùng inputText khi edit để hiển thị mật khẩu, inputSecret khi tạo mới -->
+                <h:inputText id="password" value="#{userMBean.selected.password}" 
+                            rendered="#{userMBean.editMode}"
+                            required="false"
+                            styleClass="form-control modern-input"
+                            style="width: 100%; padding: 12px 15px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 15px; transition: all 0.3s;">
+                    <f:passThroughAttribute name="placeholder" value="Mật khẩu hiện tại đã được tải, để trống nếu không muốn thay đổi" />
+                </h:inputText>
+                <h:inputSecret id="passwordNew" value="#{userMBean.selected.password}" 
+                              rendered="#{!userMBean.editMode}"
+                              required="true"
+                              requiredMessage="⚠️ Please enter password!"
+                              styleClass="form-control modern-input"
+                              style="width: 100%; padding: 12px 15px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 15px; transition: all 0.3s;">
+                    <f:passThroughAttribute name="placeholder" value="Enter password" />
+                </h:inputSecret>
+                <h:message for="password" styleClass="field-error" style="display: block; margin-top: 5px; color: #dc3545; font-size: 13px;" />
+                <h:message for="passwordNew" styleClass="field-error" style="display: block; margin-top: 5px; color: #dc3545; font-size: 13px;" />
+                <small style="color: #6c757d; font-size: 12px; margin-top: 5px; display: #{userMBean.editMode ? 'block' : 'none'};">💡 Mật khẩu hiện tại đã được tải. Để trống nếu không muốn thay đổi.</small>
+            </div>
+
+            <div class="form-field-group">
+                <h:outputLabel value="Full Name" for="fullName" style="display: block; margin-bottom: 8px; font-weight: 500; color: #495057; font-size: 14px;" />
+                <h:inputText id="fullName" value="#{userMBean.selected.fullName}" 
+                            styleClass="form-control modern-input"
+                            style="width: 100%; padding: 12px 15px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 15px; transition: all 0.3s;">
+                    <f:passThroughAttribute name="placeholder" value="Enter full name" />
+                </h:inputText>
+            </div>
+
+            <div class="form-field-group">
+                <h:outputLabel value="Email" for="email" style="display: block; margin-bottom: 8px; font-weight: 500; color: #495057; font-size: 14px;" />
+                <h:inputText id="email" value="#{userMBean.selected.email}" 
+                            styleClass="form-control modern-input"
+                            style="width: 100%; padding: 12px 15px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 15px; transition: all 0.3s;">
+                    <f:passThroughAttribute name="placeholder" value="Enter email address" />
+                </h:inputText>
+            </div>
+
+            <div class="form-field-group">
+                <h:outputLabel value="Phone" for="phone" style="display: block; margin-bottom: 8px; font-weight: 500; color: #495057; font-size: 14px;" />
+                <h:inputText id="phone" value="#{userMBean.selected.phone}" 
+                            styleClass="form-control modern-input"
+                            style="width: 100%; padding: 12px 15px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 15px; transition: all 0.3s;">
+                    <f:passThroughAttribute name="placeholder" value="Enter phone number" />
+                </h:inputText>
+            </div>
+
+            <div class="form-field-group">
+                <h:outputLabel value="Address" for="address" style="display: block; margin-bottom: 8px; font-weight: 500; color: #495057; font-size: 14px;" />
+                <h:inputText id="address" value="#{userMBean.selected.address}" 
+                            styleClass="form-control modern-input"
+                            style="width: 100%; padding: 12px 15px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 15px; transition: all 0.3s;">
+                    <f:passThroughAttribute name="placeholder" value="Enter address" />
+                </h:inputText>
+            </div>
+        </div>
+
+        <!-- Column 2: Role, Status & Avatar -->
+        <div style="display: flex; flex-direction: column; gap: 20px;">
+            <h3 style="margin: 0 0 10px 0; color: #3f72af; font-size: 18px; font-weight: 600; padding-bottom: 10px; border-bottom: 2px solid #e9ecef;">⚙️ Settings &amp; Avatar</h3>
+            
+            <div class="form-field-group">
+                <h:outputLabel value="Role *" for="role" style="display: block; margin-bottom: 8px; font-weight: 500; color: #495057; font-size: 14px;" />
+                <h:selectOneMenu id="role" value="#{userMBean.selectedRoleId}" 
+                                styleClass="form-select modern-select"
+                                style="width: 100%; padding: 12px 15px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 15px; background: white; transition: all 0.3s;">
+                    <f:selectItem itemLabel="-- Select Role --" noSelectionOption="true" />
+                    <f:selectItems value="#{userMBean.allRoles}" var="r"
+                                   itemValue="#{r.roleID}" itemLabel="#{r.roleName}" />
+                </h:selectOneMenu>
+            </div>
+
+            <div class="form-field-group" rendered="#{loginMBean.isAdmin()}">
+                <h:outputLabel value="Status" for="isActive" style="display: block; margin-bottom: 8px; font-weight: 500; color: #495057; font-size: 14px;" />
+                <h:selectOneMenu id="isActive" value="#{userMBean.selected.isActive}" 
+                                styleClass="form-select modern-select"
+                                style="width: 100%; padding: 12px 15px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 15px; background: white; transition: all 0.3s;">
+                    <f:selectItem itemValue="true" itemLabel="✅ Active" />
+                    <f:selectItem itemValue="false" itemLabel="🔒 Locked" />
+                </h:selectOneMenu>
+            </div>
+
+            <!-- Avatar Section -->
+            <div class="form-field-group">
+                <h:outputLabel value="Avatar" style="display: block; margin-bottom: 12px; font-weight: 500; color: #495057; font-size: 14px;" />
+                <h:panelGroup layout="block" id="avatarPanel" style="display: flex; flex-direction: column; align-items: center; gap: 15px; padding: 20px; background: #f8f9fa; border-radius: 12px; border: 2px dashed #dee2e6;">
+                    <!-- Container for avatar -->
+                    <div style="position: relative; width: 160px; height: 160px; display: flex; align-items: center; justify-content: center; background: white; border-radius: 50%; border: 4px solid #3f72af; box-shadow: 0 4px 15px rgba(63, 114, 175, 0.2);">
+                        <!-- Preview existing image from DB -->
+                        <img src="#{userMBean.avatarUrl}"
+                             id="existingAvatar"
+                             alt="Avatar"
+                             style="display: #{not empty userMBean.selected.avatar ? 'block' : 'none'}; max-width: 152px; max-height: 152px; width: auto; height: auto; object-fit: cover; border-radius: 50%;"
+                             onerror="console.error('Avatar load error:', this.src); this.style.display='none'; var noAvatar = document.getElementById('noAvatarText'); if(noAvatar) noAvatar.style.display='block';" />
+                        
+                        <!-- Preview new selected image (JavaScript) -->
+                        <img id="avatarPreview" 
+                             src="" 
+                             style="display: none; max-width: 152px; max-height: 152px; width: auto; height: auto; object-fit: cover; border-radius: 50%; position: absolute; top: 4px; left: 4px;" />
+                        
+                        <!-- Text "No image" -->
+                        <h:outputText value="👤" 
+                                      id="noAvatarText"
+                                      style="display: #{empty userMBean.selected.avatar ? 'block' : 'none'}; color: #adb5bd; font-size: 48px; text-align: center;"
+                                      rendered="#{empty userMBean.selected.avatar}" />
+                    </div>
+                    
+                    <!-- Input file to select image -->
+                    <h:inputFile value="#{userMBean.uploadedFile}" 
+                                 id="avatarFileInput"
+                                 styleClass="form-control modern-input"
+                                 style="width: 100%; max-width: 100%; padding: 10px 15px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 14px; background: white; cursor: pointer; transition: all 0.3s;"
+                                 onchange="previewAvatar(this);" />
+                    <small style="color: #6c757d; font-size: 12px; text-align: center; display: block; margin-top: 5px;">📷 Click to upload avatar image</small>
+                </h:panelGroup>
+            </div>
+        </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 30px; padding-top: 25px; border-top: 2px solid #e9ecef;">
+        <h:commandButton value="❌ Cancel" actionListener="#{userMBean.cancelForm}" 
+                        styleClass="btn btn-secondary-modern"
+                        style="padding: 12px 30px; font-size: 15px; font-weight: 600; border-radius: 8px; border: 2px solid #6c757d; background: white; color: #6c757d; transition: all 0.3s; cursor: pointer;"
+                        onclick="closeModal();">
+            <f:ajax render="userFormModal userTable" 
+                    onevent="function(data){if(data.status=='success'){closeModal();}}" />
+        </h:commandButton>
+        <h:commandButton value="💾 Save" actionListener="#{userMBean.save}" 
+                        styleClass="btn btn-primary-modern"
+                        style="padding: 12px 30px; font-size: 15px; font-weight: 600; border-radius: 8px; border: none; background: linear-gradient(135deg, #3f72af 0%, #2b517f 100%); color: white; box-shadow: 0 4px 15px rgba(63, 114, 175, 0.3); transition: all 0.3s; cursor: pointer;">
+            <f:ajax execute="@form" render="userFormModal userTable :messages avatarPanel" 
+                    onevent="function(data){if(data.status=='success'){hidePreview(); refreshAvatar(); closeModal();}}" />
+        </h:commandButton>
+    </div>
+                </h:form>
+                    </div>
+                </div>
+                </div>
+            </h:panelGroup>
+    
+    <h:outputScript>
+        <![CDATA[
+            // Show/hide modal functions
+            function showModal() {
+                var modal = document.getElementById('modalOverlay');
+                if (modal) {
+                    modal.style.display = 'block';
+                    document.body.style.overflow = 'hidden';
+                    document.body.classList.add('modal-open');
+                }
+            }
+            
+            function closeModal() {
+                var modal = document.getElementById('modalOverlay');
+                if (modal) {
+                    modal.style.display = 'none';
+                    document.body.style.overflow = '';
+                    document.body.classList.remove('modal-open');
+                }
+            }
+            
+            // Update modal visibility based on server state
+            function updateModalVisibility() {
+                var modal = document.getElementById('modalOverlay');
+                if (modal) {
+                    // Check if modal should be visible (this will be updated by AJAX)
+                    var shouldShow = modal.getAttribute('data-show') === 'true';
+                    if (shouldShow !== undefined) {
+                        modal.style.display = shouldShow ? 'block' : 'none';
+                    }
+                }
+            }
+            
+            function previewAvatar(input) {
+                if (input.files && input.files[0]) {
+                    var reader = new FileReader();
+                    var preview = document.getElementById('avatarPreview');
+                    var existing = document.getElementById('existingAvatar');
+                    var noAvatar = document.getElementById('noAvatarText');
+                    
+                    reader.onload = function(e) {
+                        if (preview) {
+                            preview.src = e.target.result;
+                            preview.style.display = 'block';
+                            preview.style.maxWidth = '152px';
+                            preview.style.maxHeight = '152px';
+                            preview.style.width = 'auto';
+                            preview.style.height = 'auto';
+                            preview.style.objectFit = 'cover';
+                            preview.style.borderRadius = '50%';
+                        }
+                        if (existing) existing.style.display = 'none';
+                        if (noAvatar) noAvatar.style.display = 'none';
+                    };
+                    
+                    reader.readAsDataURL(input.files[0]);
+                }
+            }
+            
+            function hidePreview() {
+                var preview = document.getElementById('avatarPreview');
+                var existing = document.getElementById('existingAvatar');
+                var noAvatar = document.getElementById('noAvatarText');
+                
+                if (preview) preview.style.display = 'none';
+                if (existing) {
+                    var avatarUrl = existing.src;
+                    if (avatarUrl && avatarUrl.indexOf('resources/avatars') !== -1) {
+                        existing.style.display = 'block';
+                    }
+                }
+                if (noAvatar) {
+                    var hasAvatar = false;
+                    if (existing && existing.src && existing.src.indexOf('resources/avatars') !== -1) {
+                        hasAvatar = true;
+                    }
+                    noAvatar.style.display = hasAvatar ? 'none' : 'block';
+                }
+            }
+            
+            // Add hover effects to inputs
+            document.addEventListener('DOMContentLoaded', function() {
+                var inputs = document.querySelectorAll('.modern-input, .modern-select');
+                inputs.forEach(function(input) {
+                    input.addEventListener('focus', function() {
+                        this.style.borderColor = '#3f72af';
+                        this.style.boxShadow = '0 0 0 3px rgba(63, 114, 175, 0.1)';
+                    });
+                    input.addEventListener('blur', function() {
+                        this.style.borderColor = '#e0e0e0';
+                        this.style.boxShadow = 'none';
+                    });
+                });
+                
+                // Button hover effects
+                var buttons = document.querySelectorAll('.btn-primary-modern, .btn-secondary-modern, .btn-success-modern');
+                buttons.forEach(function(btn) {
+                    btn.addEventListener('mouseenter', function() {
+                        this.style.transform = 'translateY(-2px)';
+                        var currentShadow = this.style.boxShadow;
+                        if (currentShadow) {
+                            this.style.boxShadow = currentShadow.replace('0.3', '0.5');
+                        }
+                    });
+                    btn.addEventListener('mouseleave', function() {
+                        this.style.transform = 'translateY(0)';
+                        var currentShadow = this.style.boxShadow;
+                        if (currentShadow) {
+                            this.style.boxShadow = currentShadow.replace('0.5', '0.3');
+                        }
+                    });
+                });
+            });
+            
+            function refreshAvatar() {
+                // Refresh avatar image với cache buster để load ảnh mới
+                var existing = document.getElementById('existingAvatar');
+                if (existing && existing.src) {
+                    var url = existing.src;
+                    // Remove old cache buster
+                    url = url.split('?')[0];
+                    // Add new cache buster
+                    existing.src = url + '?v=' + new Date().getTime();
+                    existing.style.display = 'block';
+                    
+                    // Hide preview và noAvatar
+                    var preview = document.getElementById('avatarPreview');
+                    var noAvatar = document.getElementById('noAvatarText');
+                    if (preview) preview.style.display = 'none';
+                    if (noAvatar) noAvatar.style.display = 'none';
+                }
+            }
+            
+            // Auto-hide messages after 5 seconds
+            setTimeout(function() {
+                var messages = document.querySelectorAll('.ui-messages, .alert');
+                messages.forEach(function(msg) {
+                    msg.style.transition = 'opacity 0.5s';
+                    msg.style.opacity = '0';
+                    setTimeout(function() {
+                        msg.style.display = 'none';
+                    }, 500);
+                });
+            }, 5000);
+            
+            // Prevent body scroll when modal is open
+            function toggleBodyScroll(isOpen) {
+                if (isOpen) {
+                    document.body.style.overflow = 'hidden';
+                    document.body.classList.add('modal-open');
+                } else {
+                    document.body.style.overflow = '';
+                    document.body.classList.remove('modal-open');
+                }
+            }
+            
+            // Watch for modal visibility changes
+            var modalObserver = new MutationObserver(function(mutations) {
+                mutations.forEach(function(mutation) {
+                    if (mutation.type === 'attributes' && mutation.attributeName === 'style') {
+                        var modal = document.getElementById('userFormModal');
+                        if (modal) {
+                            var isVisible = modal.style.display === 'block';
+                            toggleBodyScroll(isVisible);
+                        }
+                    }
+                });
+            });
+            
+            // Observe modal element
+            var modal = document.getElementById('userFormModal');
+            if (modal) {
+                modalObserver.observe(modal, { attributes: true, attributeFilter: ['style'] });
+                // Initial check
+                toggleBodyScroll(modal.style.display === 'block');
+            }
+            
+            // Close modal on ESC key
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    var modal = document.getElementById('modalOverlay');
+                    if (modal && modal.style.display === 'block') {
+                        closeModal();
+                        // Also trigger server-side cancel
+                        var closeBtn = document.getElementById('closeFormBtn');
+                        if (closeBtn) {
+                            var form = closeBtn.closest('form');
+                            if (form) {
+                                var event = document.createEvent('Event');
+                                event.initEvent('submit', true, true);
+                                form.dispatchEvent(event);
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // Watch for AJAX updates and sync modal visibility with server state
+            // This ensures modal shows/hides immediately after AJAX completes
+            if (typeof jsf !== 'undefined' && jsf.ajax) {
+                jsf.ajax.addOnEvent(function(data) {
+                    if (data.status === 'success') {
+                        // Small delay to ensure DOM is updated
+                        setTimeout(function() {
+                            var modal = document.getElementById('modalOverlay');
+                            if (modal) {
+                                // Check computed style to see if server wants it visible
+                                var computedStyle = window.getComputedStyle(modal);
+                                var isVisible = computedStyle.display === 'block';
+                                
+                                if (isVisible) {
+                                    showModal();
+                                } else {
+                                    closeModal();
+                                }
+                            }
+                        }, 50);
+                    }
+                });
+            }
+            
+            // Initialize modal state on page load
+            document.addEventListener('DOMContentLoaded', function() {
+                var modal = document.getElementById('modalOverlay');
+                if (modal) {
+                    var computedStyle = window.getComputedStyle(modal);
+                    if (computedStyle.display === 'block') {
+                        showModal();
+                    } else {
+                        closeModal();
+                    }
+                }
+            });
+        ]]>
+    </h:outputScript>
+    
+    <style>
+        .ui-messages {
+            margin-bottom: 20px;
+        }
+        
+        .ui-messages-info {
+            background-color: #d1ecf1;
+            border: 1px solid #bee5eb;
+            border-left: 4px solid #17a2b8;
+            color: #0c5460;
+            padding: 12px 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            animation: slideIn 0.3s ease-out;
+        }
+        
+        .ui-messages-error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            border-left: 4px solid #dc3545;
+            color: #721c24;
+            padding: 12px 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            animation: slideIn 0.3s ease-out;
+        }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+        
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .btn-close-modal:hover {
+            background: rgba(255,255,255,0.3) !important;
+            transform: rotate(90deg);
+        }
+        
+        /* Prevent body scroll when modal is open */
+        body.modal-open {
+            overflow: hidden;
+        }
+        
+        .btn-clear-search:hover {
+            background: #e0e0e0 !important;
+            color: #667eea !important;
+            transform: translateY(-50%) rotate(90deg) !important;
+        }
+        
+        .btn-search-modern:hover {
+            background: #f8f9fa !important;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(255,255,255,0.4) !important;
+        }
+        
+        .search-input:focus {
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+    </style>
+
+            <!-- ========== TÌM KIẾM - Design đẹp hơn ========== -->
+            <div class="search-section" style="margin: 20px 0; padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 16px;">
+                <h:form id="searchForm">
+                    <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+                        <div style="flex: 1; min-width: 280px; position: relative; background: white; border-radius: 12px; overflow: hidden;">
+                            <h:inputText id="searchInput" 
+                                       value="#{userMBean.searchKeyword}" 
+                                       styleClass="form-control search-input"
+                                       style="width: 100%; padding: 14px 50px 14px 14px; border: none; border-radius: 12px; font-size: 15px; outline: none; background: transparent;">
+                                <f:passThroughAttribute name="placeholder" value="Tìm kiếm theo tên, email, số điện thoại, vai trò..." />
+                                <f:ajax event="keyup" delay="300" listener="#{userMBean.performSearch()}" render="userTable paginationInfo" />
+                            </h:inputText>
+                            <h:commandButton value="✕" 
+                                           actionListener="#{userMBean.clearSearch()}"
+                                           rendered="#{not empty userMBean.searchKeyword}"
+                                           styleClass="btn-clear-search"
+                                           style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); width: 32px; height: 32px; padding: 0; background: #f0f0f0; border: none; color: #999; font-size: 16px; cursor: pointer; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: all 0.3s; font-weight: bold;"
+                                           title="Xóa tìm kiếm">
+                                <f:ajax render="searchForm userTable paginationInfo" />
+                            </h:commandButton>
+                        </div>
+                        <h:commandButton value="🔍 Tìm kiếm" 
+                                       actionListener="#{userMBean.performSearch()}"
+                                       styleClass="btn-search-modern"
+                                       style="padding: 14px 28px; font-size: 15px; font-weight: 600; border-radius: 12px; border: none; background: white; color: #667eea; box-shadow: 0 4px 12px rgba(255,255,255,0.3); transition: all 0.3s; cursor: pointer; white-space: nowrap;">
+                            <f:ajax render="userTable paginationInfo" />
+                        </h:commandButton>
+                    </div>
+                    <h:outputText value="📊 Tìm thấy: #{userMBean.totalItems} người dùng" 
+                                rendered="#{not empty userMBean.searchKeyword}"
+                                style="display: block; margin-top: 12px; color: white; font-size: 14px; font-weight: 500; text-align: center; padding: 8px; background: rgba(255,255,255,0.2); border-radius: 8px;" />
+                </h:form>
+            </div>
+
+            <!-- ========== USER LIST ========== -->
+            <h:form id="userTable">
+                <h:outputText value="No users found" 
+                             rendered="#{empty userMBean.pagedItems}" 
+                             style="display: block; text-align: center; padding: 20px; color: #999; font-style: italic; background: #f5f5f5; border-radius: 8px; margin: 20px 0;" />
+                <h:dataTable value="#{userMBean.pagedItems}" var="u" styleClass="table table-striped table-hover table-full-width table-margin-top"
+                             border="0"
+                             rendered="#{not empty userMBean.pagedItems}">
+                    <h:column>
+                        <f:facet name="header">ID</f:facet>
+                            #{u.userID}
+                    </h:column>
+                    <h:column>
+                        <f:facet name="header">Username</f:facet>
+                            #{u.userName}
+                    </h:column>
+                    <h:column>
+                        <f:facet name="header">Password</f:facet>
+                            #{u.password}
+                    </h:column>
+                    <h:column>
+                        <f:facet name="header">Full Name</f:facet>
+                            #{u.fullName}
+                    </h:column>
+                    <h:column>
+                        <f:facet name="header">Email</f:facet>
+                            #{u.email}
+                    </h:column>
+                    <h:column>
+                        <f:facet name="header">Phone</f:facet>
+                            #{u.phone}
+                    </h:column>
+                    <h:column>
+                        <f:facet name="header">Address</f:facet>
+                            #{u.address}
+                    </h:column>
+                    <h:column>
+                        <f:facet name="header">Role</f:facet>
+                            #{u.roleID != null ? u.roleID.roleName : '-'}
+                    </h:column>
+                    <h:column rendered="#{loginMBean.isAdmin()}">
+                        <f:facet name="header">Status</f:facet>
+                        <h:panelGroup>
+                            <h:outputText value="✅ Active" 
+                                        style="color: #28a745; font-weight: bold;"
+                                        rendered="#{u.isActive != null and u.isActive}" />
+                            <h:outputText value="🔒 Locked" 
+                                        style="color: #dc3545; font-weight: bold;"
+                                        rendered="#{u.isActive == null or not u.isActive}" />
+                        </h:panelGroup>
+                    </h:column>
+                    <h:column>
+                        <f:facet name="header">Avatar</f:facet>
+                        <h:panelGroup>
+                            <img src="#{userMBean.getAvatarUrlForUser(u)}"
+                                 alt="Avatar"
+                                 style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover; display: #{not empty u.avatar ? 'inline-block' : 'none'};"
+                                 onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';" />
+                            <h:outputText value="No image" 
+                                          style="display: #{empty u.avatar ? 'inline' : 'none'}; color: #999; font-style: italic; vertical-align: middle;" />
+                        </h:panelGroup>
+                    </h:column>
+                    <h:column>
+                        <f:facet name="header">Action</f:facet>
+                        <h:commandButton value="✏️ Edit" actionListener="#{userMBean.prepareEdit(u)}" 
+                                        styleClass="btn btn-soft-primary"
+                                        style="margin-right: 5px;"
+                                        onclick="showModal();">
+                            <f:ajax render="userFormModal userTable" 
+                                    onevent="function(data){if(data.status=='success'){showModal();}}" />
+                        </h:commandButton>
+                        <h:commandButton value="🗑️ Delete" actionListener="#{userMBean.delete(u)}"
+                                         styleClass="btn btn-soft-danger"
+                                         onclick="return confirm('Delete this user?');">
+                            <f:ajax render="userTable paginationInfo" />
+                        </h:commandButton>
+                    </h:column>
+                </h:dataTable>
+                
+                <!-- ===== PAGINATION ===== -->
+                <div class="pagination-container" id="paginationInfo" style="margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px; display: block; width: 100%;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 15px;">
+                        <h:outputText value="Page #{userMBean.currentPage} / #{userMBean.totalPages} (Total: #{userMBean.totalItems} users)" 
+                                     styleClass="pagination-info" 
+                                     style="font-weight: 500; color: #333; font-size: 14px;" />
+                        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                            <h:commandButton value="⏮️ First" actionListener="#{userMBean.firstPage()}" 
+                                           styleClass="btn btn-secondary" 
+                                           disabled="#{userMBean.currentPage == 1 or userMBean.totalPages le 1}"
+                                           style="min-width: 100px;">
+                                <f:ajax render="userTable paginationInfo" />
+                            </h:commandButton>
+                            <h:commandButton value="◀️ Previous" actionListener="#{userMBean.previousPage()}" 
+                                           styleClass="btn btn-secondary" 
+                                           disabled="#{userMBean.currentPage == 1 or userMBean.totalPages le 1}"
+                                           style="min-width: 80px;">
+                                <f:ajax render="userTable paginationInfo" />
+                            </h:commandButton>
+                            <h:commandButton value="Next ▶️" actionListener="#{userMBean.nextPage()}" 
+                                           styleClass="btn btn-secondary" 
+                                           disabled="#{userMBean.currentPage == userMBean.totalPages or userMBean.totalPages le 1}"
+                                           style="min-width: 80px;">
+                                <f:ajax render="userTable paginationInfo" />
+                            </h:commandButton>
+                            <h:commandButton value="Last ⏭️" actionListener="#{userMBean.lastPage()}" 
+                                           styleClass="btn btn-secondary" 
+                                           disabled="#{userMBean.currentPage == userMBean.totalPages or userMBean.totalPages le 1}"
+                                           style="min-width: 100px;">
+                                <f:ajax render="userTable paginationInfo" />
+                            </h:commandButton>
+                        </div>
+                    </div>
+                </div>
+            </h:form>
+            <br/>
+        </ui:define>
+    </ui:composition>
+</html>

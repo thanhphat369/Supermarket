@@ -1,0 +1,127 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:h="jakarta.faces.html"
+      xmlns:ui="jakarta.faces.facelets"
+      xmlns:f="jakarta.faces.core">
+    
+    <h:outputScript>
+        function toggleUserDropdown() {
+            var wrapper = document.querySelector('.user-info-wrapper');
+            var dropdown = document.getElementById('userDropdown');
+            
+            if (wrapper) {
+                wrapper.classList.toggle('active');
+                
+                // Tính toán và hiển thị dropdown khi mở
+                if (wrapper.classList.contains('active')) {
+                    if (dropdown) {
+                        var userInfo = wrapper.querySelector('.user-info');
+                        if (userInfo) {
+                            var rect = userInfo.getBoundingClientRect();
+                            dropdown.style.top = (rect.bottom + 8) + 'px';
+                            dropdown.style.right = (window.innerWidth - rect.right) + 'px';
+                            dropdown.style.display = 'block';
+                        }
+                    }
+                } else {
+                    // Ẩn dropdown khi đóng
+                    if (dropdown) {
+                        dropdown.style.display = 'none';
+                    }
+                }
+            }
+        }
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            // Di chuyển dropdown ra ngoài body để tránh bị header che
+            var dd = document.getElementById('userDropdown');
+            if (dd) {
+                document.body.appendChild(dd);
+            }
+            
+            document.addEventListener('click', function(event) {
+                var wrapper = document.querySelector('.user-info-wrapper');
+                var dropdown = document.getElementById('userDropdown');
+                
+                if (wrapper) {
+                    if (!wrapper.contains(event.target)) {
+                        if (dropdown) {
+                            if (!dropdown.contains(event.target)) {
+                                wrapper.classList.remove('active');
+                                dropdown.style.display = 'none';
+                            }
+                        } else {
+                            wrapper.classList.remove('active');
+                        }
+                    }
+                }
+            });
+            
+            var dropdownItems = document.querySelectorAll('.dropdown-item');
+            dropdownItems.forEach(function(item) {
+                item.addEventListener('click', function() {
+                    var wrapper = document.querySelector('.user-info-wrapper');
+                    var dropdown = document.getElementById('userDropdown');
+                    if (wrapper) {
+                        wrapper.classList.remove('active');
+                    }
+                    if (dropdown) {
+                        dropdown.style.display = 'none';
+                    }
+                });
+            });
+        });
+    </h:outputScript>
+    
+    <div class="header-bar">
+        <!-- Góc trái: Tên project -->
+        <div class="header-title">
+            🛒 SunDay
+        </div>
+        
+        <!-- Góc phải: Avatar + Username + Dropdown -->
+        <div style="display: flex; align-items: center; gap: 15px;">
+            <!-- Thông tin user đã đăng nhập -->
+            <ui:fragment rendered="#{loginMBean.currentUser != null}">
+                <div class="user-info-wrapper">
+                    <div class="user-info" onclick="toggleUserDropdown()" style="cursor: pointer;">
+                        <!-- Avatar tròn -->
+                        <img src="#{loginMBean.currentUserAvatarUrl}"
+                             alt="Avatar"
+                             class="user-avatar-img"
+                             style="display: #{not empty loginMBean.currentUserAvatarUrl ? 'block' : 'none'};"
+                             onerror="this.style.display='none'; var fallback = this.nextElementSibling; if(fallback) fallback.style.display='flex';" />
+                        <!-- Fallback icon nếu không có avatar -->
+                        <div class="user-avatar" style="display: #{empty loginMBean.currentUserAvatarUrl ? 'flex' : 'none'};">
+                            👤
+                        </div>
+                        <div class="user-details">
+                            <div class="user-name">#{loginMBean.currentUser.fullName != null ? loginMBean.currentUser.fullName : loginMBean.currentUser.userName}</div>
+                            <div class="user-role">
+                                #{loginMBean.currentUser.roleID != null ? loginMBean.currentUser.roleID.roleName : 'User'}
+                            </div>
+                        </div>
+                        <span class="dropdown-arrow">▼</span>
+                    </div>
+                    
+                    <!-- Dropdown Menu -->
+                    <div id="userDropdown" class="user-dropdown">
+                        <h:link outcome="/profiledetail" value="👤 Profile" styleClass="dropdown-item" />
+                        <ui:fragment rendered="#{loginMBean.isAdmin()}">
+                            <h:link outcome="/user" value="⚙️ User Management" styleClass="dropdown-item" />
+                        </ui:fragment>
+                        <div class="dropdown-divider"></div>
+                        <h:form style="display: inline;">
+                            <h:commandLink action="#{loginMBean.logout()}" value="🚪 Logout" styleClass="dropdown-item dropdown-item-logout" />
+                        </h:form>
+                    </div>
+                </div>
+            </ui:fragment>
+            
+            <!-- Show when not logged in and NOT on login/register page -->
+            <ui:fragment rendered="#{loginMBean.currentUser == null and !loginMBean.isLoginOrRegisterPage()}">
+                <h:link outcome="/login" value="🔐 Login" style="color: white; text-decoration: none; padding: 8px 16px; border: 1px solid white; border-radius: 4px; transition: all 0.3s;" />
+                <h:link outcome="/register" value="📝 Register" style="color: white; text-decoration: none; padding: 8px 16px; border: 1px solid white; border-radius: 4px; transition: all 0.3s;" />
+            </ui:fragment>
+        </div>
+    </div>
+</ui:composition>

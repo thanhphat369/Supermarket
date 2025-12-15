@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:h="jakarta.faces.html"
+      xmlns:ui="jakarta.faces.facelets"
+      xmlns:f="jakarta.faces.core">
+
+    <ui:composition template="/template.xhtml">
+        <ui:define name="title">👤 Thông tin cá nhân</ui:define>
+
+        <ui:define name="content">
+            <h:outputStylesheet library="css" name="style.css" />
+            
+            <div class="page-container">
+                <h1 class="page-title">👤 Hồ sơ cá nhân</h1>
+
+                <!-- Thông báo -->
+                <h:messages globalOnly="true" styleClass="messages" />
+            
+            <!-- Form section - nhỏ gọn ở giữa -->
+            <div class="form-section">
+                <h2>Thông tin cá nhân</h2>
+                
+                <h:form rendered="#{loginMBean.currentUser != null}" enctype="multipart/form-data" styleClass="fu-form">
+
+                    <h:panelGrid columns="2" columnClasses="label,value" cellpadding="6">
+
+                    <h:outputLabel value="Tên đăng nhập:" />
+                    <h:outputText value="#{loginMBean.currentUser.userName}" />
+
+                    <h:outputLabel value="Họ và tên:" />
+                    <h:panelGroup>
+                        <h:inputText value="#{loginMBean.currentUser.fullName}" 
+                                     rendered="#{profileDetailMBean.editMode}"
+                                     styleClass="form-control" />
+                        <h:outputText value="#{loginMBean.currentUser.fullName}" 
+                                      rendered="#{!profileDetailMBean.editMode}" />
+                    </h:panelGroup>
+
+                    <h:outputLabel value="Email:" />
+                    <h:panelGroup>
+                        <h:inputText value="#{loginMBean.currentUser.email}" 
+                                     rendered="#{profileDetailMBean.editMode}"
+                                     styleClass="form-control" />
+                        <h:outputText value="#{loginMBean.currentUser.email}" 
+                                      rendered="#{!profileDetailMBean.editMode}" />
+                    </h:panelGroup>
+
+                    <h:outputLabel value="Số điện thoại:" />
+                    <h:panelGroup>
+                        <h:inputText value="#{loginMBean.currentUser.phone}" 
+                                     rendered="#{profileDetailMBean.editMode}"
+                                     styleClass="form-control" />
+                        <h:outputText value="#{loginMBean.currentUser.phone}" 
+                                      rendered="#{!profileDetailMBean.editMode}" />
+                    </h:panelGroup>
+
+                    <h:outputLabel value="Địa chỉ:" />
+                    <h:panelGroup>
+                        <h:inputText value="#{loginMBean.currentUser.address}" 
+                                     rendered="#{profileDetailMBean.editMode}"
+                                     styleClass="form-control">
+                            <f:passThroughAttribute name="placeholder" value="Nhập địa chỉ" />
+                        </h:inputText>
+                        <h:outputText value="#{loginMBean.currentUser.address}" 
+                                      rendered="#{!profileDetailMBean.editMode}" />
+                    </h:panelGroup>
+
+                    <h:outputLabel value="Mật khẩu:" />
+                    <h:panelGroup>
+                        <h:panelGroup rendered="#{profileDetailMBean.editMode}">
+                            <div style="margin-bottom: 10px;">
+                                <h:outputLabel value="Mật khẩu cũ:" for="oldPassword" style="font-size: 0.9em; display: block; margin-bottom: 3px;" />
+                                <h:inputSecret id="oldPassword"
+                                             value="#{profileDetailMBean.oldPassword}" 
+                                             styleClass="form-control">
+                                    <f:passThroughAttribute name="placeholder" value="Nhập mật khẩu cũ (nếu muốn đổi)" />
+                                </h:inputSecret>
+                            </div>
+                            <div style="margin-bottom: 10px;">
+                                <h:outputLabel value="Mật khẩu mới:" for="newPassword" style="font-size: 0.9em; display: block; margin-bottom: 3px;" />
+                                <h:inputSecret id="newPassword"
+                                             value="#{profileDetailMBean.newPassword}" 
+                                             styleClass="form-control">
+                                    <f:passThroughAttribute name="placeholder" value="Nhập mật khẩu mới (tối thiểu 6 ký tự)" />
+                                </h:inputSecret>
+                            </div>
+                            <div>
+                                <h:outputLabel value="Xác nhận mật khẩu mới:" for="confirmPassword" style="font-size: 0.9em; display: block; margin-bottom: 3px;" />
+                                <h:inputSecret id="confirmPassword"
+                                             value="#{profileDetailMBean.confirmPassword}" 
+                                             styleClass="form-control">
+                                    <f:passThroughAttribute name="placeholder" value="Nhập lại mật khẩu mới" />
+                                </h:inputSecret>
+                            </div>
+                            <small class="form-text text-muted" style="display: block; margin-top: 8px; font-style: italic;">
+                                💡 Để trống nếu không muốn đổi mật khẩu
+                            </small>
+                        </h:panelGroup>
+                        <h:panelGroup rendered="#{!profileDetailMBean.editMode}">
+                            <h:outputText value="••••••••" 
+                                          style="font-family: monospace; font-size: 1em;" />
+                            <br/>
+                            <small class="text-muted" style="font-style: italic;">(Nhấn chỉnh sửa để đổi mật khẩu)</small>
+                        </h:panelGroup>
+                    </h:panelGroup>
+
+                    <h:outputLabel value="Vai trò (Role):" />
+                    <h:panelGroup>
+                        <h:outputText value="#{loginMBean.currentUser.roleID.roleName}"
+                                      styleClass="profile-role-text" />
+                        <br/>
+                        <h:outputText value="(Không thể thay đổi)" 
+                                      style="font-size: 0.9em; color: #999; font-style: italic;" />
+                    </h:panelGroup>
+
+                    <h:outputLabel value="Ảnh đại diện:" />
+                    <h:panelGroup layout="block" id="avatarPanel" style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
+                        <!-- Container cho avatar - luôn có trong DOM để JavaScript hoạt động -->
+                        <div class="avatar-container" style="position: relative; width: 150px; height: 150px; display: flex; align-items: center; justify-content: center;">
+                            <!-- Avatar hiện có trong DB - luôn có trong DOM, hiển thị khi có avatar và không có preview -->
+                            <img src="#{profileDetailMBean.currentUserAvatarUrl}"
+                                 id="existingAvatar"
+                                 alt="Avatar"
+                                 style="display: #{not empty loginMBean.currentUser.avatar ? 'block' : 'none'}; max-width: 150px; max-height: 150px; width: auto; height: auto; object-fit: contain; border-radius: 50%; border: 3px solid #3f72af; box-shadow: 0 4px 12px rgba(0,0,0,0.15); background-color: #f5f5f5;"
+                                 onerror="console.error('Avatar load error:', this.src); this.style.display='none'; var noAvatar = document.getElementById('noAvatarText'); if(noAvatar) noAvatar.style.display='block';" />
+                            
+                            <!-- Preview avatar khi chọn file mới - luôn có trong DOM -->
+                            <img id="avatarPreview" 
+                                 src="" 
+                                 class="avatar-preview-hidden"
+                                 style="display: none; max-width: 150px; max-height: 150px; width: auto; height: auto; object-fit: contain; border-radius: 50%; border: 3px solid #3f72af; box-shadow: 0 4px 12px rgba(0,0,0,0.15); position: absolute; top: 0; left: 0; background-color: #f5f5f5;"
+                                 alt="Preview" />
+
+                            <!-- Text "Chưa có ảnh" - luôn có trong DOM -->
+                            <h:outputText value="Chưa có ảnh" 
+                                          id="noAvatarText"
+                                          style="display: #{empty loginMBean.currentUser.avatar and empty profileDetailMBean.previewImageBase64 ? 'block' : 'none'}; color: #999; font-style: italic; text-align: center;" />
+                        </div>
+
+                        <!-- Input file để chọn hình - chỉ hiện khi edit mode -->
+                        <h:inputFile value="#{profileDetailMBean.uploadedFile}" 
+                                     id="avatarFileInput"
+                                     rendered="#{profileDetailMBean.editMode}"
+                                     styleClass="avatar-input"
+                                     onchange="previewAvatar(this, 'avatarPreview', 'existingAvatar', 'noAvatarText');" />
+                    </h:panelGroup>
+                </h:panelGrid>
+
+                <!-- Buttons -->
+                <div class="text-center" style="margin-top: 20px;">
+                    <h:commandButton value="✏️ Chỉnh sửa"
+                                     actionListener="#{profileDetailMBean.enableEdit}"
+                                     rendered="#{!profileDetailMBean.editMode}"
+                                     styleClass="btn btn-edit">
+                        <f:ajax execute="@this" render="@form avatarPanel" />
+                    </h:commandButton>
+
+                    <h:commandButton value="💾 Lưu"
+                                     actionListener="#{profileDetailMBean.saveProfile}"
+                                     rendered="#{profileDetailMBean.editMode}"
+                                     styleClass="btn btn-save">
+                        <f:ajax execute="@form" render="@form :messages avatarPanel" 
+                                onevent="function(data){if(data.status=='success'){hidePreview();}}" />
+                    </h:commandButton>
+
+                    <h:commandButton value="❌ Hủy"
+                                     actionListener="#{profileDetailMBean.cancelEdit}"
+                                     rendered="#{profileDetailMBean.editMode}"
+                                     styleClass="btn btn-cancel">
+                        <f:ajax execute="@this" render="@form avatarPanel" />
+                    </h:commandButton>
+                </div>
+            </h:form>
+            </div>
+            
+                
+                <h:panelGroup rendered="#{loginMBean.currentUser == null}">
+                    <p>⚠️ Bạn chưa đăng nhập! Hãy <h:link outcome="login" value="đăng nhập tại đây" />.</p>
+                </h:panelGroup>
+            </div>
+
+            <!-- ✅ FIXED SCRIPT: dùng CDATA để tránh lỗi "&" -->
+            <h:outputScript>
+                <![CDATA[
+                    function previewAvatar(input, previewId, existingId, noAvatarId) {
+                        if (input.files) {
+                            if (input.files[0]) {
+                            var reader = new FileReader();
+                            reader.onload = function(e) {
+                                var preview = document.getElementById(previewId);
+                                var existing = document.getElementById(existingId);
+                                var noAvatar = document.getElementById(noAvatarId);
+                                
+                                // Hiển thị preview và ẩn existing avatar
+                                if (preview) {
+                                    preview.src = e.target.result;
+                                    preview.style.display = 'block';
+                                    preview.style.maxWidth = '150px';
+                                    preview.style.maxHeight = '150px';
+                                    preview.style.width = 'auto';
+                                    preview.style.height = 'auto';
+                                    preview.style.objectFit = 'contain';
+                                    preview.style.borderRadius = '50%';
+                                    preview.style.border = '3px solid #3f72af';
+                                    preview.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
+                                    preview.classList.remove('avatar-preview-hidden');
+                                }
+                                if (existing) {
+                                    existing.style.display = 'none';
+                                }
+                                if (noAvatar) {
+                                    noAvatar.style.display = 'none';
+                                }
+                            };
+                            reader.readAsDataURL(input.files[0]);
+                            }
+                        } else {
+                            // Nếu không chọn file, hiển thị lại avatar cũ
+                            var preview = document.getElementById(previewId);
+                            var existing = document.getElementById(existingId);
+                            if (preview) {
+                                preview.style.display = 'none';
+                                preview.classList.add('avatar-preview-hidden');
+                            }
+                            if (existing) {
+                                if (existing.src) {
+                                    existing.style.display = 'block';
+                                }
+                            }
+                        }
+                    }
+
+                    function hidePreview() {
+                        var preview = document.getElementById('avatarPreview');
+                        var existing = document.getElementById('existingAvatar');
+                        var noAvatar = document.getElementById('noAvatarText');
+                        if (preview) {
+                            preview.style.display = 'none';
+                            preview.classList.add('avatar-preview-hidden');
+                        }
+                        if (existing) {
+                            if (existing.src) {
+                                existing.style.display = 'block';
+                            }
+                        }
+                        // Hiển thị "Chưa có ảnh" nếu không có avatar
+                        if (noAvatar) {
+                            if (!existing) {
+                                noAvatar.style.display = 'block';
+                            } else {
+                                if (!existing.src) {
+                                    noAvatar.style.display = 'block';
+                                } else {
+                                    if (existing.style.display === 'none') {
+                                        noAvatar.style.display = 'block';
+                                    }
+                                }
+                            }
+                        }
+                    }
+                ]]>
+            </h:outputScript>
+        </ui:define>
+    </ui:composition>
+</html>

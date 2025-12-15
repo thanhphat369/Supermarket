@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:h="jakarta.faces.html"
+      xmlns:f="jakarta.faces.core"
+      xmlns:ui="jakarta.faces.facelets">
+
+    <h:head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>
+            <ui:insert name="title">Sunday Market</ui:insert>
+        </title>
+        <h:outputStylesheet library="css" name="style.css" />
+        <h:outputScript>
+            function toggleUserDropdown() {
+                var wrapper = document.querySelector('.user-info-wrapper');
+                var dropdown = document.getElementById('userDropdown');
+                
+                if (wrapper) {
+                    wrapper.classList.toggle('active');
+                    
+                    if (wrapper.classList.contains('active')) {
+                        if (dropdown) {
+                            var userInfo = wrapper.querySelector('.user-info');
+                            if (userInfo) {
+                                var rect = userInfo.getBoundingClientRect();
+                                dropdown.style.top = (rect.bottom + 8) + 'px';
+                                dropdown.style.right = (window.innerWidth - rect.right) + 'px';
+                                dropdown.style.display = 'block';
+                            }
+                        }
+                    } else {
+                        if (dropdown) {
+                            dropdown.style.display = 'none';
+                        }
+                    }
+                }
+            }
+            
+            document.addEventListener('DOMContentLoaded', function() {
+                var dd = document.getElementById('userDropdown');
+                if (dd) {
+                    document.body.appendChild(dd);
+                }
+                
+                document.addEventListener('click', function(event) {
+                    var wrapper = document.querySelector('.user-info-wrapper');
+                    var dropdown = document.getElementById('userDropdown');
+                    
+                    if (wrapper) {
+                        if (!wrapper.contains(event.target)) {
+                            if (dropdown) {
+                                if (!dropdown.contains(event.target)) {
+                                    wrapper.classList.remove('active');
+                                    dropdown.style.display = 'none';
+                                }
+                            } else {
+                                wrapper.classList.remove('active');
+                            }
+                        }
+                    }
+                });
+                
+                var dropdownItems = document.querySelectorAll('.dropdown-item');
+                dropdownItems.forEach(function(item) {
+                    item.addEventListener('click', function() {
+                        var wrapper = document.querySelector('.user-info-wrapper');
+                        var dropdown = document.getElementById('userDropdown');
+                        if (wrapper) {
+                            wrapper.classList.remove('active');
+                        }
+                        if (dropdown) {
+                            dropdown.style.display = 'none';
+                        }
+                    });
+                });
+            });
+        </h:outputScript>
+    </h:head>
+
+    <h:body>
+        <div class="layout">
+            <!-- Header với logo bên trái, avatar + dropdown bên phải -->
+            <header>
+                <ui:include src="/template/header.xhtml" />
+            </header>
+            
+            <!-- Sidebar bên trái -->
+            <aside>
+                <ui:include src="/template/sidebar.xhtml" />
+            </aside>
+            
+            <!-- Main Content -->
+            <main>
+                <h:messages globalOnly="true" styleClass="messages" />
+                <ui:insert name="content">
+                    <!-- Default content if not defined -->
+                    <p>Nội dung trang</p>
+                </ui:insert>
+            </main>
+            
+            <!-- Footer -->
+            <footer>
+                <ui:include src="/template/footer.xhtml" />
+            </footer>
+        </div>
+    </h:body>
+</html>
+

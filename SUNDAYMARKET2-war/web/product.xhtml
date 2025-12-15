@@ -1,0 +1,737 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:h="jakarta.faces.html"
+      xmlns:f="jakarta.faces.core"
+      xmlns:pt="http://xmlns.jcp.org/jsf/passthrough"
+      xmlns:ui="jakarta.faces.facelets">
+
+    <ui:composition template="/template.xhtml">
+
+        <ui:define name="title">Quản lý Sản phẩm</ui:define>
+
+        <ui:define name="content">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
+                <h1 style="margin: 0;">📦 Quản lý Sản phẩm</h1>
+                <h:form>
+                    <h:commandButton value="➕ Add New Product" actionListener="#{productMBean.prepareCreate}" 
+                                    styleClass="btn btn-success-modern"
+                                    style="padding: 12px 30px; font-size: 15px; font-weight: 600; border-radius: 8px; border: none; background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white; box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3); transition: all 0.3s; cursor: pointer;"
+                                    onclick="showModal('productFormModal');">
+                        <f:ajax render="productFormModal productTable" 
+                                onevent="function(data){if(data.status=='success'){showModal('productFormModal');}}" />
+                    </h:commandButton>
+                </h:form>
+            </div>
+
+            <h:messages globalOnly="true" />
+            
+            <!-- ========== MODAL OVERLAY ========== -->
+            <h:panelGroup id="productFormModal">
+                <div id="productModalOverlay" 
+                     style="display: #{productMBean.showForm ? 'block' : 'none'}; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; overflow-y: auto; animation: fadeIn 0.3s ease-out;"
+                     onclick="if(event.target === this) { closeModal('productFormModal'); }">
+                    <div class="form-section" style="background: #ffffff; border-radius: 16px; box-shadow: 0 8px 32px rgba(0,0,0,0.2); padding: 0; margin: 40px auto; max-width: 1200px; width: 95%; max-height: 90vh; overflow-y: auto; position: relative; animation: slideUp 0.3s ease-out;">
+                        <div style="position: sticky; top: 0; background: linear-gradient(135deg, #3f72af 0%, #2b517f 100%); color: white; padding: 20px 30px; border-radius: 16px 16px 0 0; display: flex; justify-content: space-between; align-items: center; z-index: 10; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+                            <h2 style="margin: 0; font-size: 24px; font-weight: 600;">
+                                <h:outputText value="#{productMBean.editMode ? '✏️ Update Product Information' : '➕ Add New Product'}" />
+                            </h2>
+                            <h:form>
+                                <h:commandButton id="closeProductFormBtn" value="✕" actionListener="#{productMBean.cancelForm}" 
+                                                styleClass="btn-close-modal"
+                                                style="background: rgba(255,255,255,0.2); border: none; color: white; width: 40px; height: 40px; border-radius: 50%; font-size: 20px; cursor: pointer; transition: all 0.3s; display: flex; align-items: center; justify-content: center;"
+                                                title="Close"
+                                                onclick="closeModal('productFormModal');">
+                                    <f:ajax render="productFormModal productTable" 
+                                            onevent="function(data){if(data.status=='success'){closeModal('productFormModal');}}" />
+                                </h:commandButton>
+                            </h:form>
+                        </div>
+                        <div style="padding: 30px;">
+                            <h:form styleClass="fu-form" enctype="multipart/form-data" id="productForm">
+                    <h:panelGrid columns="2" columnClasses="label,value" cellpadding="6">
+                        <h:outputLabel value="Tên sản phẩm:" for="name" />
+                        <h:inputText id="name" value="#{productMBean.selected.name}" required="true" styleClass="form-control">
+                            <f:passThroughAttribute name="placeholder" value="Nhập tên sản phẩm" />
+                        </h:inputText>
+
+                        <h:outputLabel value="Mô tả:" for="description" />
+                        <h:inputTextarea id="description" value="#{productMBean.selected.description}" styleClass="form-control" rows="3">
+                            <f:passThroughAttribute name="placeholder" value="Nhập mô tả sản phẩm" />
+                        </h:inputTextarea>
+
+                        <h:outputLabel value="Giá bán (VNĐ):" for="unitPrice" />
+                        <h:inputText id="unitPrice" value="#{productMBean.selected.unitPrice}" required="true" styleClass="form-control">
+                            <f:passThroughAttribute name="type" value="number" />
+                            <f:passThroughAttribute name="min" value="0" />
+                            <f:passThroughAttribute name="placeholder" value="Nhập giá bán sản phẩm" />
+                        </h:inputText>
+
+                        <h:outputLabel value="Giá nhập (VNĐ):" />
+
+                        <h:panelGroup layout="block">
+                            <!-- HÀNG NGANG: box -->
+                            <div class="info-box import" style="display: inline-block;">
+                                <h:outputText
+                                    value="#{productMBean.formatCurrency(productMBean.getLatestImportPrice(productMBean.selected))}"
+                                    rendered="#{productMBean.getLatestImportPrice(productMBean.selected) != null}" />
+
+                                <h:outputText
+                                    value="-"
+                                    rendered="#{productMBean.getLatestImportPrice(productMBean.selected) == null}" />
+                            </div>
+
+                            <!-- HÀNG DƯỚI: hint -->
+                            <div class="info-hint">
+                                💡 Giá nhập được lấy từ quản lý kho. Chỉ có thể sửa ở trang Quản lý kho.
+                            </div>
+                        </h:panelGroup>
+                        <h:outputLabel value="Số lượng tồn:" />
+
+                        <h:panelGroup layout="block">
+                            <!-- HÀNG NGANG -->
+                            <div class="info-box stock" style="display: inline-block;">
+                                #{productMBean.getStockQuantity(productMBean.selected)}
+                            </div>
+
+                            <!-- HÀNG DƯỚI -->
+                            <div class="info-hint">
+                                💡 Số lượng tồn được quản lý ở trang Quản lý kho. Chỉ có thể sửa ở đó.
+                            </div>
+                        </h:panelGroup>
+
+                        <h:outputLabel value="Thương hiệu:" for="brand" />
+                        <h:selectOneMenu id="brand" value="#{productMBean.selectedBrandId}" required="true" styleClass="form-select">
+                            <f:selectItem itemLabel="-- Chọn thương hiệu --" noSelectionOption="true" />
+                            <f:selectItems value="#{productMBean.allBrands}" var="b"
+                                           itemValue="#{b.brandID}" itemLabel="#{b.brandName}" />
+                        </h:selectOneMenu>
+
+                        <h:outputLabel value="Danh mục:" for="category" />
+                        <h:selectOneMenu id="category" value="#{productMBean.selectedCategoryId}" required="true" styleClass="form-select">
+                            <f:selectItem itemLabel="-- Chọn danh mục --" noSelectionOption="true" />
+                            <f:selectItems value="#{productMBean.allCategories}" var="c"
+                                           itemValue="#{c.categoryID}" itemLabel="#{c.categoryName}" />
+                        </h:selectOneMenu>
+
+                        <h:outputLabel value="Hình ảnh (2-5 ảnh):" />
+                        <h:panelGroup layout="block" id="imagePanel" style="display: flex; flex-direction: column; align-items: center; gap: 15px;">
+                            <!-- Existing Images Display -->
+                            <div id="existingImagesContainer" style="display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; min-height: 100px; width: 100%;">
+                                <ui:repeat value="#{productMBean.getImageUrlsForProduct(productMBean.selected)}" var="imgUrl" varStatus="status">
+                                    <div style="position: relative; display: inline-block;">
+                                        <img src="#{imgUrl}"
+                                             alt="Product Image #{status.index + 1}"
+                                             class="existing-product-image"
+                                             data-image-index="#{status.index}"
+                                             style="max-width: 150px; max-height: 150px; width: auto; height: auto; object-fit: contain; border-radius: 8px; border: 2px solid #3f72af; box-shadow: 0 4px 12px rgba(0,0,0,0.15); background-color: #f5f5f5; cursor: pointer; transition: transform 0.2s;"
+                                             onerror="this.style.display='none';"
+                                             onclick="openImageGalleryFromForm(#{status.index});"
+                                             onmouseover="this.style.transform='scale(1.05)';"
+                                             onmouseout="this.style.transform='scale(1)';"
+                                             title="Click để xem lớn" />
+                                        <span style="position: absolute; top: 5px; right: 5px; background: rgba(63, 114, 175, 0.8); color: white; padding: 2px 6px; border-radius: 10px; font-size: 10px; font-weight: bold;">#{status.index + 1}</span>
+                                    </div>
+                                </ui:repeat>
+                                <h:outputText value="Chưa có ảnh" 
+                                              style="display: #{empty productMBean.getImageUrlsForProduct(productMBean.selected) or productMBean.getImageUrlsForProduct(productMBean.selected).isEmpty() ? 'block' : 'none'}; color: #999; font-style: italic; text-align: center; align-self: center;"
+                                              rendered="#{empty productMBean.getImageUrlsForProduct(productMBean.selected) or productMBean.getImageUrlsForProduct(productMBean.selected).isEmpty()}" />
+                            </div>
+                            
+                            <!-- Preview New Images -->
+                            <div id="previewImagesContainer" style="display: none; flex-wrap: wrap; gap: 10px; justify-content: center;">
+                                <!-- Preview images will be inserted here by JavaScript -->
+                            </div>
+                            
+                            <!-- File Input - Use HTML input with JavaScript upload -->
+                            <input type="file" 
+                                   id="imageFilesInput"
+                                   name="imageFilesInput"
+                                   class="avatar-input"
+                                   multiple="multiple"
+                                   accept="image/*"
+                                   onchange="handleMultipleFileUpload(this);"
+                                   title="Chọn 2-5 ảnh" />
+                            <small style="color: #666; font-size: 12px; margin-top: -10px;">Có thể chọn nhiều ảnh (tối đa 5 ảnh, tối thiểu 2 ảnh)</small>
+                            
+                            <!-- Hidden field to store uploaded file names (JSON array) - will be set by JavaScript -->
+                            <input type="hidden" 
+                                   id="uploadedImageFilesHidden"
+                                   name="uploadedImageFilesHidden" />
+                            <!-- JSF hidden field to bind with MBean -->
+                            <h:inputHidden id="uploadedImageFiles" value="#{productMBean.uploadedImageFilesJson}" />
+                        </h:panelGroup>
+                    </h:panelGrid>
+
+                                <br/>
+                                <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 30px; padding-top: 25px; border-top: 2px solid #e9ecef;">
+                                    <h:commandButton value="❌ Cancel" actionListener="#{productMBean.cancelForm}" 
+                                                    styleClass="btn btn-secondary-modern"
+                                                    style="padding: 12px 30px; font-size: 15px; font-weight: 600; border-radius: 8px; border: 2px solid #6c757d; background: white; color: #6c757d; transition: all 0.3s; cursor: pointer;"
+                                                    onclick="closeModal('productFormModal');">
+                                        <f:ajax render="productFormModal productTable" 
+                                                onevent="function(data){if(data.status=='success'){closeModal('productFormModal');}}" />
+                                    </h:commandButton>
+                                    <h:commandButton value="💾 Save" actionListener="#{productMBean.save}" 
+                                                    styleClass="btn btn-primary-modern"
+                                                    style="padding: 12px 30px; font-size: 15px; font-weight: 600; border-radius: 8px; border: none; background: linear-gradient(135deg, #3f72af 0%, #2b517f 100%); color: white; box-shadow: 0 4px 15px rgba(63, 114, 175, 0.3); transition: all 0.3s; cursor: pointer;"
+                                                    onclick="syncUploadedFilesToForm();">
+                                        <f:ajax execute="@form uploadedImageFilesHidden" render="productFormModal productTable :messages imagePanel" 
+                                                onevent="function(data){if(data.status=='success'){hidePreview(); closeModal('productFormModal');}}" />
+                                    </h:commandButton>
+                                </div>
+                            </h:form>
+                        </div>
+                    </div>
+                </div>
+            </h:panelGroup>
+
+            <!-- ========== TÌM KIẾM - Design đẹp hơn ========== -->
+            <div class="search-section" style="margin: 20px 0; padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 16px;">
+                <h:form id="searchForm">
+                    <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+                        <div style="flex: 1; min-width: 280px; position: relative; background: white; border-radius: 12px; overflow: hidden;">
+                            <h:inputText id="searchInput" 
+                                       value="#{productMBean.searchKeyword}" 
+                                       styleClass="form-control search-input"
+                                       style="width: 100%; padding: 14px 50px 14px 14px; border: none; border-radius: 12px; font-size: 15px; outline: none; background: transparent;">
+                                <f:passThroughAttribute name="placeholder" value="Tìm kiếm theo tên, mô tả, thương hiệu, danh mục..." />
+                                <f:ajax event="keyup" delay="300" listener="#{productMBean.performSearch()}" render="productTable paginationInfo" />
+                            </h:inputText>
+                            <h:commandButton value="✕" 
+                                           actionListener="#{productMBean.clearSearch()}"
+                                           rendered="#{not empty productMBean.searchKeyword}"
+                                           styleClass="btn-clear-search"
+                                           style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); width: 32px; height: 32px; padding: 0; background: #f0f0f0; border: none; color: #999; font-size: 16px; cursor: pointer; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: all 0.3s; font-weight: bold;"
+                                           title="Xóa tìm kiếm">
+                                <f:ajax render="searchForm productTable paginationInfo" />
+                            </h:commandButton>
+                        </div>
+                        <h:commandButton value="🔍 Tìm kiếm" 
+                                       actionListener="#{productMBean.performSearch()}"
+                                       styleClass="btn-search-modern"
+                                       style="padding: 14px 28px; font-size: 15px; font-weight: 600; border-radius: 12px; border: none; background: white; color: #667eea; box-shadow: 0 4px 12px rgba(255,255,255,0.3); transition: all 0.3s; cursor: pointer; white-space: nowrap;">
+                            <f:ajax render="productTable paginationInfo" />
+                        </h:commandButton>
+                    </div>
+                    <h:outputText value="📊 Tìm thấy: #{productMBean.totalItems} sản phẩm" 
+                                rendered="#{not empty productMBean.searchKeyword}"
+                                style="display: block; margin-top: 12px; color: white; font-size: 14px; font-weight: 500; text-align: center; padding: 8px; background: rgba(255,255,255,0.2); border-radius: 8px;" />
+                </h:form>
+            </div>
+
+            <!-- ========== DANH SÁCH PRODUCT ========== -->
+            <h:form id="productTable">
+                <h:outputText value="Không có sản phẩm nào" 
+                             rendered="#{empty productMBean.pagedItems}" 
+                             style="display: block; text-align: center; padding: 20px; color: #999; font-style: italic; background: #f5f5f5; border-radius: 8px; margin: 20px 0;" />
+                <h:dataTable value="#{productMBean.pagedItems}" var="p" styleClass="table table-striped table-hover table-full-width table-margin-top"
+                             border="0"
+                             rendered="#{not empty productMBean.pagedItems}">
+                    <h:column>
+                        <f:facet name="header">ID</f:facet>
+                        #{p.productID}
+                    </h:column>
+                    <h:column>
+                        <f:facet name="header">Hình ảnh</f:facet>
+                        <div style="display: flex; gap: 5px; flex-wrap: wrap; align-items: center;">
+                            <ui:repeat value="#{productMBean.getImageUrlsForProduct(p)}" var="imgUrl" varStatus="status">
+                                <img src="#{imgUrl}"
+                                     alt="Product #{status.index + 1}"
+                                     class="product-thumbnail"
+                                     data-product-id="#{p.productID}"
+                                     data-image-index="#{status.index}"
+                                     style="width: 60px; height: 60px; border-radius: 8px; object-fit: cover; border: 2px solid #ddd; background-color: #f5f5f5; cursor: pointer; transition: transform 0.2s;"
+                                     onerror="this.style.display='none';"
+                                     onclick="openImageGallery(#{p.productID}, #{status.index});"
+                                     onmouseover="this.style.transform='scale(1.1)'; this.style.borderColor='#3f72af';"
+                                     onmouseout="this.style.transform='scale(1)'; this.style.borderColor='#ddd';"
+                                     title="Click để xem tất cả ảnh" />
+                            </ui:repeat>
+                            <h:outputText value="Chưa có ảnh" 
+                                         style="color: #999; font-style: italic; font-size: 12px;"
+                                         rendered="#{empty productMBean.getImageUrlsForProduct(p) or productMBean.getImageUrlsForProduct(p).isEmpty()}" />
+                        </div>
+                    </h:column>
+                    <h:column>
+                        <f:facet name="header">Tên sản phẩm</f:facet>
+                        #{p.name}
+                    </h:column>
+                    <h:column>
+                        <f:facet name="header">Giá nhập</f:facet>
+                        <h:outputText value="#{productMBean.formatCurrency(productMBean.getLatestImportPrice(p))}" 
+                                     style="color: #28a745; font-weight: 500;" />
+                        <h:outputText value="-" 
+                                     rendered="#{productMBean.getLatestImportPrice(p) == null}"
+                                     style="color: #999;" />
+                    </h:column>
+                    <h:column>
+                        <f:facet name="header">Giá bán</f:facet>
+                        <span style="font-weight: 600; color: #3f72af;">
+                            <h:outputText value="#{productMBean.formatCurrency(p.unitPrice)}" 
+                                         rendered="#{p.unitPrice > 0}" />
+                            <h:outputText value="-" 
+                                         rendered="#{p.unitPrice == 0}"
+                                         style="color: #999;" />
+                        </span>
+                    </h:column>
+                    <h:column>
+                        <f:facet name="header">Số lượng tồn</f:facet>
+                        <span style="font-weight: 700; color: #667eea; font-size: 16px;">
+                            #{productMBean.getStockQuantity(p)}
+                        </span>
+                    </h:column>
+                    <h:column>
+                        <f:facet name="header">Thương hiệu</f:facet>
+                        #{p.brandID != null ? p.brandID.brandName : '-'}
+                    </h:column>
+                    <h:column>
+                        <f:facet name="header">Danh mục</f:facet>
+                        #{p.categoryID != null ? p.categoryID.categoryName : '-'}
+                    </h:column>
+                    <h:column>
+                        <f:facet name="header">Hành động</f:facet>
+                        <h:commandButton value="✏️ Sửa" actionListener="#{productMBean.prepareEdit(p)}" 
+                                        styleClass="btn btn-soft-primary"
+                                        style="margin-right: 5px;"
+                                        onclick="showModal('productFormModal');">
+                            <f:ajax execute="@this" render="productFormModal imagePanel" 
+                                    onevent="function(data){if(data.status=='success'){showModal('productFormModal'); setTimeout(function(){refreshProductImages();}, 100);}}" />
+                        </h:commandButton>
+                        <h:commandButton value="🗑️ Xóa" actionListener="#{productMBean.delete(p)}"
+                                         styleClass="btn btn-soft-danger"
+                                         onclick="return confirm('Xóa sản phẩm này?');">
+                            <f:ajax render="productTable paginationInfo" />
+                        </h:commandButton>
+                    </h:column>
+                </h:dataTable>
+                
+                <!-- ===== PHÂN TRANG ===== -->
+                <div class="pagination-container" id="paginationInfo" style="margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px; display: block; width: 100%;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 15px;">
+                        <h:outputText value="Trang #{productMBean.currentPage} / #{productMBean.totalPages} (Tổng: #{productMBean.totalItems} sản phẩm)" 
+                                     styleClass="pagination-info" 
+                                     style="font-weight: 500; color: #333; font-size: 14px;" />
+                        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                            <h:commandButton value="⏮️ Trang đầu" actionListener="#{productMBean.firstPage()}" 
+                                           styleClass="btn btn-secondary" 
+                                           disabled="#{productMBean.currentPage == 1 or productMBean.totalPages le 1}"
+                                           style="min-width: 100px;">
+                                <f:ajax render="productTable paginationInfo" />
+                            </h:commandButton>
+                            <h:commandButton value="◀️ Trước" actionListener="#{productMBean.previousPage()}" 
+                                           styleClass="btn btn-secondary" 
+                                           disabled="#{productMBean.currentPage == 1 or productMBean.totalPages le 1}"
+                                           style="min-width: 80px;">
+                                <f:ajax render="productTable paginationInfo" />
+                            </h:commandButton>
+                            <h:commandButton value="Sau ▶️" actionListener="#{productMBean.nextPage()}" 
+                                           styleClass="btn btn-secondary" 
+                                           disabled="#{productMBean.currentPage == productMBean.totalPages or productMBean.totalPages le 1}"
+                                           style="min-width: 80px;">
+                                <f:ajax render="productTable paginationInfo" />
+                            </h:commandButton>
+                            <h:commandButton value="Trang cuối ⏭️" actionListener="#{productMBean.lastPage()}" 
+                                           styleClass="btn btn-secondary" 
+                                           disabled="#{productMBean.currentPage == productMBean.totalPages or productMBean.totalPages le 1}"
+                                           style="min-width: 100px;">
+                                <f:ajax render="productTable paginationInfo" />
+                            </h:commandButton>
+                        </div>
+                    </div>
+                </div>
+            </h:form>
+
+            <h:outputScript>
+                <![CDATA[
+                    function showModal(modalId) {
+                        var modal = document.getElementById(modalId.replace('FormModal', 'ModalOverlay'));
+                        if (modal) {
+                            modal.style.display = 'block';
+                            document.body.style.overflow = 'hidden';
+                            document.body.classList.add('modal-open');
+                        }
+                    }
+                    
+                    function closeModal(modalId) {
+                        var modal = document.getElementById(modalId.replace('FormModal', 'ModalOverlay'));
+                        if (modal) {
+                            modal.style.display = 'none';
+                            document.body.style.overflow = '';
+                            document.body.classList.remove('modal-open');
+                        }
+                    }
+                    
+                    // Image Gallery/Lightbox
+                    var currentProductImages = [];
+                    var currentImageIndex = 0;
+                    
+                    function openImageGallery(productId, startIndex) {
+                        // Get all images for this product from table thumbnails
+                        var images = [];
+                        var thumbnails = document.querySelectorAll('.product-thumbnail[data-product-id="' + productId + '"]');
+                        
+                        if (thumbnails.length > 0) {
+                            thumbnails.forEach(function(thumb) {
+                                images.push(thumb.src);
+                            });
+                        }
+                        
+                        if (images.length === 0) {
+                            console.log('No images found for product ' + productId);
+                            return;
+                        }
+                        
+                        currentProductImages = images;
+                        currentImageIndex = startIndex || 0;
+                        
+                        console.log('Opening gallery with ' + images.length + ' images, starting at index ' + currentImageIndex);
+                        showImageGallery();
+                    }
+                    
+                    function openImageGalleryFromForm(startIndex) {
+                        // Get all images from form (when editing)
+                        var images = [];
+                        var existingImages = document.querySelectorAll('.existing-product-image');
+                        
+                        existingImages.forEach(function(img) {
+                            images.push(img.src);
+                        });
+                        
+                        if (images.length === 0) {
+                            console.log('No images found in form');
+                            return;
+                        }
+                        
+                        currentProductImages = images;
+                        currentImageIndex = startIndex || 0;
+                        
+                        console.log('Opening gallery from form with ' + images.length + ' images, starting at index ' + currentImageIndex);
+                        showImageGallery();
+                    }
+                    
+                    function showImageGallery() {
+                        // Create or update gallery overlay
+                        var gallery = document.getElementById('imageGalleryOverlay');
+                        if (!gallery) {
+                            gallery = document.createElement('div');
+                            gallery.id = 'imageGalleryOverlay';
+                            gallery.style.cssText = 'display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 10000; overflow: hidden;';
+                            gallery.innerHTML = '<div style="position: relative; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;"><button id="galleryCloseBtn" style="position: absolute; top: 20px; right: 20px; background: rgba(255,255,255,0.2); border: none; color: white; width: 50px; height: 50px; border-radius: 50%; font-size: 24px; cursor: pointer; z-index: 10001;">✕</button><button id="galleryPrevBtn" style="position: absolute; left: 20px; background: rgba(255,255,255,0.2); border: none; color: white; width: 50px; height: 50px; border-radius: 50%; font-size: 24px; cursor: pointer; z-index: 10001;">◀</button><button id="galleryNextBtn" style="position: absolute; right: 20px; background: rgba(255,255,255,0.2); border: none; color: white; width: 50px; height: 50px; border-radius: 50%; font-size: 24px; cursor: pointer; z-index: 10001;">▶</button><img id="galleryMainImage" style="max-width: 90%; max-height: 90%; object-fit: contain; border-radius: 8px; box-shadow: 0 8px 32px rgba(0,0,0,0.5);" /><div id="galleryImageInfo" style="position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); color: white; background: rgba(0,0,0,0.6); padding: 10px 20px; border-radius: 20px; font-size: 14px;"></div></div>';
+                            document.body.appendChild(gallery);
+                            
+                            // Event listeners
+                            document.getElementById('galleryCloseBtn').onclick = closeImageGallery;
+                            document.getElementById('galleryPrevBtn').onclick = function() { navigateGallery(-1); };
+                            document.getElementById('galleryNextBtn').onclick = function() { navigateGallery(1); };
+                            
+                            // Close on ESC key
+                            document.addEventListener('keydown', function(e) {
+                                if (e.key === 'Escape' && gallery.style.display === 'block') {
+                                    closeImageGallery();
+                                }
+                                if (e.key === 'ArrowLeft' && gallery.style.display === 'block') {
+                                    navigateGallery(-1);
+                                }
+                                if (e.key === 'ArrowRight' && gallery.style.display === 'block') {
+                                    navigateGallery(1);
+                                }
+                            });
+                            
+                            // Close on click outside image
+                            gallery.onclick = function(e) {
+                                if (e.target === gallery || e.target.id === 'imageGalleryOverlay') {
+                                    closeImageGallery();
+                                }
+                            };
+                        }
+                        
+                        // Update image
+                        updateGalleryImage();
+                        gallery.style.display = 'block';
+                        document.body.style.overflow = 'hidden';
+                    }
+                    
+                    function updateGalleryImage() {
+                        var img = document.getElementById('galleryMainImage');
+                        var info = document.getElementById('galleryImageInfo');
+                        if (img && currentProductImages.length > 0) {
+                            img.src = currentProductImages[currentImageIndex];
+                            if (info) {
+                                info.textContent = (currentImageIndex + 1) + ' / ' + currentProductImages.length;
+                            }
+                        }
+                    }
+                    
+                    function navigateGallery(direction) {
+                        currentImageIndex += direction;
+                        if (currentImageIndex < 0) {
+                            currentImageIndex = currentProductImages.length - 1;
+                        } else if (currentImageIndex >= currentProductImages.length) {
+                            currentImageIndex = 0;
+                        }
+                        updateGalleryImage();
+                    }
+                    
+                    function closeImageGallery() {
+                        var gallery = document.getElementById('imageGalleryOverlay');
+                        if (gallery) {
+                            gallery.style.display = 'none';
+                            document.body.style.overflow = '';
+                        }
+                    }
+                    
+                    // Handle multiple file upload via servlet
+                    function handleMultipleFileUpload(input) {
+                        if (!input.files || input.files.length === 0) {
+                            return;
+                        }
+                        
+                        var files = Array.from(input.files);
+                        
+                        // Validate: 2-5 images
+                        if (files.length < 2) {
+                            alert('⚠️ Vui lòng chọn ít nhất 2 ảnh!');
+                            input.value = '';
+                            return;
+                        }
+                        
+                        if (files.length > 5) {
+                            alert('⚠️ Chỉ có thể chọn tối đa 5 ảnh! Chỉ upload 5 ảnh đầu tiên.');
+                            files = files.slice(0, 5);
+                        }
+                        
+                        // Get product name for file naming
+                        var productNameInput = document.querySelector('input[id*="name"]');
+                        var productName = productNameInput ? productNameInput.value : 'product';
+                        if (!productName || productName.trim() === '') {
+                            productName = 'product';
+                        }
+                        
+                        // Show preview first
+                        previewMultipleImages(input, files);
+                        
+                        // Upload files via servlet
+                        var formData = new FormData();
+                        formData.append('productName', productName);
+                        for (var i = 0; i < files.length; i++) {
+                            formData.append('files', files[i]);
+                        }
+                        
+                        // Show loading
+                        var previewContainer = document.getElementById('previewImagesContainer');
+                        if (previewContainer) {
+                            var loadingDiv = document.createElement('div');
+                            loadingDiv.id = 'uploadLoading';
+                            loadingDiv.style.cssText = 'text-align: center; padding: 10px; color: #3f72af; font-weight: bold;';
+                            loadingDiv.textContent = '⏳ Đang upload ' + files.length + ' ảnh...';
+                            previewContainer.appendChild(loadingDiv);
+                        }
+                        
+                        // Upload via AJAX
+                        fetch('/sundaymarket-war/upload/product-images', {
+                            method: 'POST',
+                            body: formData
+                        })
+                        .then(function(response) {
+                            if (!response.ok) {
+                                throw new Error('Upload failed: ' + response.status);
+                            }
+                            return response.json();
+                        })
+                        .then(function(response) {
+                            return response.text().then(function(text) {
+                                try {
+                                    return JSON.parse(text);
+                                } catch (e) {
+                                    console.error('Failed to parse JSON:', text);
+                                    throw new Error('Invalid JSON response');
+                                }
+                            });
+                        })
+                        .then(function(data) {
+                            // Remove loading
+                            var loadingDiv = document.getElementById('uploadLoading');
+                            if (loadingDiv) {
+                                loadingDiv.remove();
+                            }
+                            
+                            if (Array.isArray(data) && data.length > 0 && !data[0].startsWith('ERROR')) {
+                                // Store JSON array in hidden field
+                                var jsonString = JSON.stringify(data);
+                                var hiddenField = document.getElementById('uploadedImageFilesHidden');
+                                if (hiddenField) {
+                                    hiddenField.value = jsonString;
+                                }
+                                
+                                // Also update JSF hidden field if exists
+                                var jsfHiddenField = document.querySelector('input[id*="uploadedImageFiles"]');
+                                if (jsfHiddenField) {
+                                    jsfHiddenField.value = jsonString;
+                                }
+                                
+                                console.log('✅ Uploaded ' + data.length + ' files, JSON: ' + jsonString);
+                                
+                                // Show success message
+                                var successDiv = document.createElement('div');
+                                successDiv.style.cssText = 'text-align: center; padding: 10px; color: #28a745; font-weight: bold;';
+                                successDiv.textContent = '✅ Đã upload ' + data.length + ' ảnh thành công!';
+                                if (previewContainer) {
+                                    previewContainer.appendChild(successDiv);
+                                    setTimeout(function() {
+                                        successDiv.remove();
+                                    }, 3000);
+                                }
+                            } else {
+                                var errorMsg = Array.isArray(data) && data.length > 0 ? data[0] : 'Unknown error';
+                                alert('⚠️ Upload thất bại: ' + errorMsg);
+                            }
+                        })
+                        .catch(function(error) {
+                            console.error('Upload error:', error);
+                            alert('❌ Lỗi upload: ' + error.message);
+                            
+                            // Remove loading
+                            var loadingDiv = document.getElementById('uploadLoading');
+                            if (loadingDiv) {
+                                loadingDiv.remove();
+                            }
+                        });
+                    }
+                    
+                    function previewMultipleImages(input, files) {
+                        var previewContainer = document.getElementById('previewImagesContainer');
+                        if (!previewContainer) return;
+                        
+                        // Clear previous previews
+                        previewContainer.innerHTML = '';
+                        previewContainer.style.display = 'none';
+                        
+                        if (!files && input.files && input.files.length > 0) {
+                            files = Array.from(input.files).slice(0, 5);
+                        }
+                        
+                        if (files && files.length > 0) {
+                            previewContainer.style.display = 'flex';
+                            
+                            files.forEach(function(file, index) {
+                                if (file.type.startsWith('image/')) {
+                                    var reader = new FileReader();
+                                    reader.onload = function(e) {
+                                        var div = document.createElement('div');
+                                        div.style.cssText = 'position: relative; display: inline-block;';
+                                        var img = document.createElement('img');
+                                        img.src = e.target.result;
+                                        img.style.cssText = 'max-width: 150px; max-height: 150px; width: auto; height: auto; object-fit: contain; border-radius: 8px; border: 2px solid #28a745; box-shadow: 0 4px 12px rgba(0,0,0,0.15); background-color: #f5f5f5;';
+                                        img.title = 'Ảnh ' + (index + 1);
+                                        var span = document.createElement('span');
+                                        span.textContent = (index + 1);
+                                        span.style.cssText = 'position: absolute; top: 5px; right: 5px; background: rgba(40, 167, 69, 0.8); color: white; padding: 2px 6px; border-radius: 10px; font-size: 10px; font-weight: bold;';
+                                        div.appendChild(img);
+                                        div.appendChild(span);
+                                        previewContainer.appendChild(div);
+                                    };
+                                    reader.readAsDataURL(file);
+                                }
+                            });
+                        }
+                    }
+                    
+                    function hidePreview() {
+                        var previewContainer = document.getElementById('previewImagesContainer');
+                        if (previewContainer) {
+                            previewContainer.innerHTML = '';
+                            previewContainer.style.display = 'none';
+                        }
+                    }
+                    
+                    // Sync uploaded files from hidden field to JSF form before submit
+                    function syncUploadedFilesToForm() {
+                        var hiddenField = document.getElementById('uploadedImageFilesHidden');
+                        if (hiddenField && hiddenField.value) {
+                            // Find JSF hidden field and set value
+                            var jsfHiddenField = document.querySelector('input[id*="uploadedImageFiles"]');
+                            if (jsfHiddenField) {
+                                jsfHiddenField.value = hiddenField.value;
+                                console.log('✅ Synced uploaded files to JSF form: ' + hiddenField.value);
+                            }
+                        }
+                    }
+                    
+                    // Refresh product images after edit form loads
+                    function refreshProductImages() {
+                        // This will be called after AJAX update to ensure images are displayed
+                        var existingContainer = document.getElementById('existingImagesContainer');
+                        if (existingContainer) {
+                            // Trigger a re-render by checking if images exist
+                            var images = existingContainer.querySelectorAll('img');
+                            console.log('Product images refreshed, found ' + images.length + ' images');
+                        }
+                    }
+                    
+                    document.addEventListener('keydown', function(e) {
+                        if (e.key === 'Escape') {
+                            var gallery = document.getElementById('imageGalleryOverlay');
+                            if (gallery && gallery.style.display === 'block') {
+                                closeImageGallery();
+                            } else {
+                                var modals = document.querySelectorAll('[id$="ModalOverlay"]');
+                                modals.forEach(function(modal) {
+                                    if (modal.style.display === 'block') {
+                                        closeModal(modal.id.replace('ModalOverlay', 'FormModal'));
+                                    }
+                                });
+                            }
+                        }
+                    });
+                ]]>
+            </h:outputScript>
+            
+            <style>
+                @keyframes fadeIn {
+                    from { opacity: 0; }
+                    to { opacity: 1; }
+                }
+                
+                @keyframes slideUp {
+                    from {
+                        opacity: 0;
+                        transform: translateY(30px);
+                    }
+                    to {
+                        opacity: 1;
+                        transform: translateY(0);
+                    }
+                }
+                
+                .btn-close-modal:hover {
+                    background: rgba(255,255,255,0.3) !important;
+                    transform: rotate(90deg);
+                }
+                
+                body.modal-open {
+                    overflow: hidden;
+                }
+                
+                .btn-clear-search:hover {
+                    background: #e0e0e0 !important;
+                    color: #667eea !important;
+                    transform: translateY(-50%) rotate(90deg) !important;
+                }
+                
+                .btn-search-modern:hover {
+                    background: #f8f9fa !important;
+                    transform: translateY(-2px);
+                    box-shadow: 0 6px 16px rgba(255,255,255,0.4) !important;
+                }
+                
+                .search-input:focus {
+                    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+                }
+            </style>
+
+            <br/>
+        </ui:define>
+    </ui:composition>
+</html>
+

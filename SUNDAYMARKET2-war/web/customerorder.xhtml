@@ -1,0 +1,257 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:h="jakarta.faces.html"
+      xmlns:f="jakarta.faces.core"
+      xmlns:ui="jakarta.faces.facelets">
+
+    <ui:composition template="/template.xhtml">
+        <ui:define name="title">📋 My Orders</ui:define>
+
+        <ui:define name="content">
+            <h:messages globalOnly="true" />
+            
+            <div style="padding: 20px;">
+                <h1 style="color: #2f5061; margin-bottom: 20px;">📋 My Orders</h1>
+                
+                <h:panelGroup rendered="#{loginMBean.currentUser == null}">
+                    <div style="text-align: center; padding: 40px; background: #f8f9fa; border-radius: 8px;">
+                        <p style="font-size: 18px; color: #64748b; margin-bottom: 20px;">Please login to view your orders</p>
+                        <h:link outcome="login" value="🔓 Login" 
+                                style="display: inline-block; padding: 12px 24px; background-color: #3f72af; color: white; text-decoration: none; border-radius: 6px; font-weight: 500;" />
+                    </div>
+                </h:panelGroup>
+                
+                <h:panelGroup rendered="#{loginMBean.currentUser != null}">
+                    <h:form id="orderForm">
+                        <!-- Search and Filter -->
+                        <div style="margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px;">
+                            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                                <h:inputText value="#{customerOrderMBean.searchKeyword}" 
+                                           styleClass="form-control"
+                                           style="flex: 1; min-width: 250px;">
+                                    <f:passThroughAttribute name="placeholder" value="Search by Order ID or Username..." />
+                                    <f:ajax event="keyup" delay="300" listener="#{customerOrderMBean.performSearch()}" render="orderTable paginationInfo" />
+                                </h:inputText>
+                                
+                                <h:selectOneMenu value="#{customerOrderMBean.statusFilter}" styleClass="form-select" style="min-width: 150px;">
+                                    <f:selectItem itemValue="all" itemLabel="All Status" />
+                                    <f:selectItem itemValue="pending" itemLabel="Pending" />
+                                    <f:selectItem itemValue="processing" itemLabel="Processing" />
+                                    <f:selectItem itemValue="completed" itemLabel="Completed" />
+                                    <f:selectItem itemValue="cancelled" itemLabel="Cancelled" />
+                                    <f:ajax event="change" listener="#{customerOrderMBean.performSearch()}" render="orderTable paginationInfo" />
+                                </h:selectOneMenu>
+                                
+                                <h:commandButton value="🔍 Search" 
+                                               actionListener="#{customerOrderMBean.performSearch()}"
+                                               styleClass="btn btn-primary">
+                                    <f:ajax render="orderTable paginationInfo" />
+                                </h:commandButton>
+                                
+                                <h:commandButton value="✖ Clear" 
+                                               actionListener="#{customerOrderMBean.clearSearch()}"
+                                               rendered="#{not empty customerOrderMBean.searchKeyword or customerOrderMBean.statusFilter != 'all'}"
+                                               styleClass="btn btn-secondary">
+                                    <f:ajax render="orderForm" />
+                                </h:commandButton>
+                            </div>
+                        </div>
+                        
+                        <!-- Orders Table -->
+                        <div id="orderTable">
+                            <h:outputText value="No orders found" 
+                                         rendered="#{empty customerOrderMBean.pagedItems}" 
+                                         style="display: block; text-align: center; padding: 40px; color: #999; font-style: italic; background: #f5f5f5; border-radius: 8px; margin: 20px 0;" />
+                            
+                            <h:dataTable value="#{customerOrderMBean.pagedItems}" var="o" 
+                                       styleClass="table table-striped table-hover"
+                                       style="width: 100%;"
+                                       rendered="#{not empty customerOrderMBean.pagedItems}">
+                                <h:column>
+                                    <f:facet name="header">Order ID</f:facet>
+                                    ##{o.orderID}
+                                </h:column>
+                                
+                                <h:column>
+                                    <f:facet name="header">Order Date</f:facet>
+                                    #{customerOrderMBean.formatDate(o.orderDate)}
+                                </h:column>
+                                
+                                <h:column>
+                                    <f:facet name="header">Status</f:facet>
+                                    <span style="padding: 5px 10px; border-radius: 4px; font-weight: bold; color: white; background-color: #{customerOrderMBean.getStatusColor(o.status)};">
+                                        #{o.status}
+                                    </span>
+                                </h:column>
+                                
+                                <h:column>
+                                    <f:facet name="header">Total Amount</f:facet>
+                                    <strong>#{customerOrderMBean.formatAmount(o.totalAmount)}</strong>
+                                </h:column>
+                                
+                                <h:column>
+                                    <f:facet name="header">Action</f:facet>
+                                    <h:commandButton value="📋 Detail" 
+                                                   actionListener="#{customerOrderMBean.viewDetails(o)}"
+                                                   styleClass="btn btn-primary btn-sm">
+                                        <f:ajax render="orderDetailsSection" />
+                                    </h:commandButton>
+                                </h:column>
+                            </h:dataTable>
+                        </div>
+                        
+                        <!-- Pagination -->
+                        <div id="paginationInfo" style="margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
+                            <h:outputText value="Page #{customerOrderMBean.currentPage} / #{customerOrderMBean.totalPages} (Total: #{customerOrderMBean.totalItems} orders)" 
+                                         style="font-weight: 500; color: #333; font-size: 14px;" />
+                            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                                <h:commandButton value="⏮️ First" actionListener="#{customerOrderMBean.firstPage()}" 
+                                               styleClass="btn btn-secondary" 
+                                               disabled="#{customerOrderMBean.currentPage == 1 or customerOrderMBean.totalPages le 1}">
+                                    <f:ajax render="orderTable paginationInfo" />
+                                </h:commandButton>
+                                <h:commandButton value="◀️ Previous" actionListener="#{customerOrderMBean.previousPage()}" 
+                                               styleClass="btn btn-secondary" 
+                                               disabled="#{customerOrderMBean.currentPage == 1 or customerOrderMBean.totalPages le 1}">
+                                    <f:ajax render="orderTable paginationInfo" />
+                                </h:commandButton>
+                                <h:commandButton value="Next ▶️" actionListener="#{customerOrderMBean.nextPage()}" 
+                                               styleClass="btn btn-secondary" 
+                                               disabled="#{customerOrderMBean.currentPage == customerOrderMBean.totalPages or customerOrderMBean.totalPages le 1}">
+                                    <f:ajax render="orderTable paginationInfo" />
+                                </h:commandButton>
+                                <h:commandButton value="Last ⏭️" actionListener="#{customerOrderMBean.lastPage()}" 
+                                               styleClass="btn btn-secondary" 
+                                               disabled="#{customerOrderMBean.currentPage == customerOrderMBean.totalPages or customerOrderMBean.totalPages le 1}">
+                                    <f:ajax render="orderTable paginationInfo" />
+                                </h:commandButton>
+                            </div>
+                        </div>
+                        
+                        <!-- Order Details Section -->
+                        <ui:fragment id="orderDetailsSection" rendered="#{customerOrderMBean.showDetails and customerOrderMBean.selectedOrder != null}">
+                            <div style="margin-top: 30px; padding: 20px; background: #f8f9fa; border-radius: 8px; border: 2px solid #3f72af;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                                    <h2 style="margin: 0; color: #3f72af;">📋 Order Details ##{customerOrderMBean.selectedOrder.orderID}</h2>
+                                    <h:commandButton value="✖ Close" actionListener="#{customerOrderMBean.closeDetails}" styleClass="btn btn-secondary">
+                                        <f:ajax render="orderDetailsSection" />
+                                    </h:commandButton>
+                                </div>
+                                
+                                <div style="margin-bottom: 15px;">
+                                    <p><strong>Order Date:</strong> #{customerOrderMBean.formatDate(customerOrderMBean.selectedOrder.orderDate)}</p>
+                                    <p><strong>Status:</strong> 
+                                        <span style="padding: 5px 10px; border-radius: 4px; font-weight: bold; color: white; background-color: #{customerOrderMBean.getStatusColor(customerOrderMBean.selectedOrder.status)};">
+                                            #{customerOrderMBean.selectedOrder.status}
+                                        </span>
+                                    </p>
+                                    <p><strong>Total Amount:</strong> #{customerOrderMBean.formatAmount(customerOrderMBean.selectedOrder.totalAmount)}</p>
+                                </div>
+                                
+                                <h3 style="color: #2f5061; margin-bottom: 15px;">Products:</h3>
+                                <h:dataTable value="#{customerOrderMBean.getOrderDetails(customerOrderMBean.selectedOrder)}" var="detail" 
+                                           styleClass="table table-bordered"
+                                           style="width: 100%;">
+                                    <h:column>
+                                        <f:facet name="header">Product</f:facet>
+                                        <strong>#{detail.productID.name}</strong>
+                                    </h:column>
+                                    
+                                    <h:column>
+                                        <f:facet name="header">Quantity</f:facet>
+                                        #{detail.quantity}
+                                    </h:column>
+                                    
+                                    <h:column>
+                                        <f:facet name="header">Unit Price</f:facet>
+                                        #{customerOrderMBean.formatAmount(detail.unitPrice)}
+                                    </h:column>
+                                    
+                                    <h:column>
+                                        <f:facet name="header">Subtotal</f:facet>
+                                        <strong>#{customerOrderMBean.formatAmount(detail.unitPrice * detail.quantity)}</strong>
+                                    </h:column>
+                                    
+                                    <h:column>
+                                        <f:facet name="header">Shipping Address</f:facet>
+                                        #{detail.shipAddress}
+                                    </h:column>
+                                    
+                                    <h:column>
+                                        <f:facet name="header">Feedback</f:facet>
+                                        <h:commandButton value="💬 Add Feedback" 
+                                                       actionListener="#{feedbackMBean.prepareFeedback(detail.productID)}"
+                                                       styleClass="btn btn-sm btn-primary"
+                                                       rendered="#{customerOrderMBean.selectedOrder.status == 'completed'}">
+                                            <f:ajax render="feedbackModalSection" />
+                                        </h:commandButton>
+                                    </h:column>
+                                </h:dataTable>
+                                
+                                <h:outputText value="No details found" 
+                                             rendered="#{empty customerOrderMBean.getOrderDetails(customerOrderMBean.selectedOrder)}" 
+                                             style="display: block; text-align: center; padding: 20px; color: #999; font-style: italic;" />
+                            </div>
+                        </ui:fragment>
+                        
+                        <!-- Feedback Modal -->
+                        <ui:fragment id="feedbackModalSection" rendered="#{feedbackMBean.showFeedbackModal and feedbackMBean.productForFeedback != null}">
+                            <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; display: flex; align-items: center; justify-content: center;">
+                                <div style="background: white; padding: 30px; border-radius: 8px; max-width: 500px; width: 90%; max-height: 90vh; overflow-y: auto;">
+                                    <h2 style="color: #2f5061; margin-bottom: 20px;">💬 Add Feedback</h2>
+                                    <p><strong>Product:</strong> #{feedbackMBean.productForFeedback.name}</p>
+                                    
+                                    <h:form id="feedbackForm">
+                                        <div style="margin-bottom: 15px;">
+                                            <h:outputLabel value="Rating (1-5 stars):" for="rating" style="font-weight: bold; display: block; margin-bottom: 5px;" />
+                                            <h:selectOneMenu id="rating" value="#{feedbackMBean.rating}" required="true"
+                                                           requiredMessage="Please select rating"
+                                                           styleClass="form-select">
+                                                <f:selectItem itemLabel="-- Select Rating --" itemValue="" />
+                                                <f:selectItem itemValue="1" itemLabel="⭐ (1 star)" />
+                                                <f:selectItem itemValue="2" itemLabel="⭐⭐ (2 stars)" />
+                                                <f:selectItem itemValue="3" itemLabel="⭐⭐⭐ (3 stars)" />
+                                                <f:selectItem itemValue="4" itemLabel="⭐⭐⭐⭐ (4 stars)" />
+                                                <f:selectItem itemValue="5" itemLabel="⭐⭐⭐⭐⭐ (5 stars)" />
+                                            </h:selectOneMenu>
+                                            <h:message for="rating" styleClass="field-error" />
+                                        </div>
+                                        
+                                        <div style="margin-bottom: 15px;">
+                                            <h:outputLabel value="Comment:" for="content" style="font-weight: bold; display: block; margin-bottom: 5px;" />
+                                            <h:inputTextarea id="content" 
+                                                           value="#{feedbackMBean.content}" 
+                                                           required="true"
+                                                           requiredMessage="Please enter your feedback"
+                                                           styleClass="form-control"
+                                                           rows="5"
+                                                           style="width: 100%;">
+                                                <f:passThroughAttribute name="placeholder" value="Enter your feedback..." />
+                                            </h:inputTextarea>
+                                            <h:message for="content" styleClass="field-error" />
+                                        </div>
+                                        
+                                        <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px;">
+                                            <h:commandButton value="✖ Cancel" 
+                                                           actionListener="#{feedbackMBean.closeFeedbackModal()}"
+                                                           styleClass="btn btn-secondary">
+                                                <f:ajax render="feedbackModalSection orderDetailsSection" />
+                                            </h:commandButton>
+                                            <h:commandButton value="💬 Submit Feedback" 
+                                                           actionListener="#{feedbackMBean.submitFeedback()}"
+                                                           styleClass="btn btn-primary">
+                                                <f:ajax execute="@form" render="feedbackModalSection orderDetailsSection :messages" />
+                                            </h:commandButton>
+                                        </div>
+                                    </h:form>
+                                </div>
+                            </div>
+                        </ui:fragment>
+                    </h:form>
+                </h:panelGroup>
+            </div>
+        </ui:define>
+    </ui:composition>
+</html>
+

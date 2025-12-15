@@ -1,0 +1,466 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:h="jakarta.faces.html"
+      xmlns:f="jakarta.faces.core"
+      xmlns:pt="http://xmlns.jcp.org/jsf/passthrough"
+      xmlns:ui="jakarta.faces.facelets">
+
+    <ui:composition template="/template.xhtml">
+
+        <ui:define name="title">Quản lý Nhà cung cấp</ui:define>
+
+        <ui:define name="content">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
+                <h1 style="margin: 0;">🏢 Quản lý Nhà cung cấp</h1>
+                <h:form>
+                    <h:commandButton value="➕ Add New Supplier" actionListener="#{supplierMBean.prepareCreate}" 
+                                    styleClass="btn btn-success-modern"
+                                    style="padding: 12px 30px; font-size: 15px; font-weight: 600; border-radius: 8px; border: none; background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white; box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3); transition: all 0.3s; cursor: pointer;"
+                                    onclick="showModal('supplierFormModal');">
+                        <f:ajax render="supplierFormModal supplierTable" 
+                                onevent="function(data){if(data.status=='success'){showModal('supplierFormModal');}}" />
+                    </h:commandButton>
+                </h:form>
+            </div>
+
+            <h:messages globalOnly="true" />
+            
+            <!-- ========== MODAL OVERLAY ========== -->
+            <h:panelGroup id="supplierFormModal">
+                <div id="supplierModalOverlay" 
+                     style="display: #{supplierMBean.showForm ? 'block' : 'none'}; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; overflow-y: auto; animation: fadeIn 0.3s ease-out;"
+                     onclick="if(event.target === this) { closeModal('supplierFormModal'); }">
+                    <div class="form-section" style="background: #ffffff; border-radius: 16px; box-shadow: 0 8px 32px rgba(0,0,0,0.2); padding: 0; margin: 40px auto; max-width: 800px; width: 95%; max-height: 90vh; overflow-y: auto; position: relative; animation: slideUp 0.3s ease-out;">
+                        <div style="position: sticky; top: 0; background: linear-gradient(135deg, #3f72af 0%, #2b517f 100%); color: white; padding: 20px 30px; border-radius: 16px 16px 0 0; display: flex; justify-content: space-between; align-items: center; z-index: 10; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+                            <h2 style="margin: 0; font-size: 24px; font-weight: 600;">
+                                <h:outputText value="#{supplierMBean.editMode ? '✏️ Update Supplier Information' : '➕ Add New Supplier'}" />
+                            </h2>
+                            <h:form>
+                                <h:commandButton id="closeSupplierFormBtn" value="✕" actionListener="#{supplierMBean.cancelForm}" 
+                                                styleClass="btn-close-modal"
+                                                style="background: rgba(255,255,255,0.2); border: none; color: white; width: 40px; height: 40px; border-radius: 50%; font-size: 20px; cursor: pointer; transition: all 0.3s; display: flex; align-items: center; justify-content: center;"
+                                                title="Close"
+                                                onclick="closeModal('supplierFormModal');">
+                                    <f:ajax render="supplierFormModal supplierTable" 
+                                            onevent="function(data){if(data.status=='success'){closeModal('supplierFormModal');}}" />
+                                </h:commandButton>
+                            </h:form>
+                        </div>
+                        <div style="padding: 30px;">
+                            <h:form styleClass="fu-form">
+                                <h:panelGrid columns="2" columnClasses="label,value" cellpadding="6">
+                                    <h:outputLabel value="Tên nhà cung cấp:" for="supplierName" />
+                                    <h:inputText id="supplierName" value="#{supplierMBean.selected.supplierName}" required="true" styleClass="form-control">
+                                        <f:passThroughAttribute name="placeholder" value="Nhập tên nhà cung cấp" />
+                                    </h:inputText>
+
+                                    <h:outputLabel value="Số điện thoại:" for="phoneContact" />
+                                    <h:inputText id="phoneContact" value="#{supplierMBean.selected.phoneContact}" styleClass="form-control">
+                                        <f:passThroughAttribute name="placeholder" value="Nhập số điện thoại" />
+                                    </h:inputText>
+
+                                    <h:outputLabel value="Địa chỉ:" for="address" />
+                                    <h:inputText id="address" value="#{supplierMBean.selected.address}" styleClass="form-control">
+                                        <f:passThroughAttribute name="placeholder" value="Nhập địa chỉ" />
+                                    </h:inputText>
+                                </h:panelGrid>
+                                
+                                <!-- Hiển thị thông tin brands và products nếu đang edit -->
+                                <h:panelGroup rendered="#{supplierMBean.editMode and supplierMBean.selected.supplierID != null}">
+                                    <div style="margin-top: 20px; padding: 15px; background: #e8f5e9; border-radius: 8px; border-left: 4px solid #28a745;">
+                                        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                                            <span style="font-size: 20px;">🏷️</span>
+                                            <span style="font-weight: 600; color: #495057;">Thương hiệu của nhà cung cấp này</span>
+                                        </div>
+                                        <h:outputText value="Số lượng thương hiệu: #{supplierMBean.getBrandCount(supplierMBean.selected)}" 
+                                                     style="font-weight: 500; color: #333; display: block; margin-bottom: 8px;" />
+                                        <h:outputText value="Chưa có thương hiệu nào" 
+                                                     rendered="#{supplierMBean.getBrandCount(supplierMBean.selected) == 0}"
+                                                     style="color: #999; font-style: italic; font-size: 13px;" />
+                                    </div>
+                                    
+                                    <div style="margin-top: 15px; padding: 15px; background: #e3f2fd; border-radius: 8px; border-left: 4px solid #3f72af;">
+                                        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                                            <span style="font-size: 20px;">📦</span>
+                                            <span style="font-weight: 600; color: #495057;">Sản phẩm từ các thương hiệu</span>
+                                        </div>
+                                        <h:outputText value="Số lượng sản phẩm: #{supplierMBean.getProductCount(supplierMBean.selected)}" 
+                                                     style="font-weight: 500; color: #333; display: block; margin-bottom: 8px;" />
+                                        <h:outputText value="Chưa có sản phẩm nào" 
+                                                     rendered="#{supplierMBean.getProductCount(supplierMBean.selected) == 0}"
+                                                     style="color: #999; font-style: italic; font-size: 13px;" />
+                                    </div>
+                                </h:panelGroup>
+                                <br/>
+                                <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 30px; padding-top: 25px; border-top: 2px solid #e9ecef;">
+                                    <h:commandButton value="❌ Cancel" actionListener="#{supplierMBean.cancelForm}" 
+                                                    styleClass="btn btn-secondary-modern"
+                                                    style="padding: 12px 30px; font-size: 15px; font-weight: 600; border-radius: 8px; border: 2px solid #6c757d; background: white; color: #6c757d; transition: all 0.3s; cursor: pointer;"
+                                                    onclick="closeModal('supplierFormModal');">
+                                        <f:ajax render="supplierFormModal supplierTable" 
+                                                onevent="function(data){if(data.status=='success'){closeModal('supplierFormModal');}}" />
+                                    </h:commandButton>
+                                    <h:commandButton value="💾 Save" actionListener="#{supplierMBean.save}" 
+                                                    styleClass="btn btn-primary-modern"
+                                                    style="padding: 12px 30px; font-size: 15px; font-weight: 600; border-radius: 8px; border: none; background: linear-gradient(135deg, #3f72af 0%, #2b517f 100%); color: white; box-shadow: 0 4px 15px rgba(63, 114, 175, 0.3); transition: all 0.3s; cursor: pointer;">
+                                        <f:ajax execute="@form" render="supplierFormModal supplierTable :messages" 
+                                                onevent="function(data){if(data.status=='success'){closeModal('supplierFormModal');}}" />
+                                    </h:commandButton>
+                                </div>
+                            </h:form>
+                        </div>
+                    </div>
+                </div>
+            </h:panelGroup>
+
+            <!-- ========== TÌM KIẾM - Design đẹp hơn ========== -->
+            <div class="search-section" style="margin: 20px 0; padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 16px;">
+                <h:form id="searchForm">
+                    <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+                        <div style="flex: 1; min-width: 280px; position: relative; background: white; border-radius: 12px; overflow: hidden;">
+                            <h:inputText id="searchInput" 
+                                       value="#{supplierMBean.searchKeyword}" 
+                                       styleClass="form-control search-input"
+                                       style="width: 100%; padding: 14px 50px 14px 14px; border: none; border-radius: 12px; font-size: 15px; outline: none; background: transparent;">
+                                <f:passThroughAttribute name="placeholder" value="Tìm kiếm theo tên, số điện thoại, địa chỉ..." />
+                                <f:ajax event="keyup" delay="300" listener="#{supplierMBean.performSearch()}" render="supplierTable paginationInfo" />
+                            </h:inputText>
+                            <h:commandButton value="✕" 
+                                           actionListener="#{supplierMBean.clearSearch()}"
+                                           rendered="#{not empty supplierMBean.searchKeyword}"
+                                           styleClass="btn-clear-search"
+                                           style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); width: 32px; height: 32px; padding: 0; background: #f0f0f0; border: none; color: #999; font-size: 16px; cursor: pointer; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: all 0.3s; font-weight: bold;"
+                                           title="Xóa tìm kiếm">
+                                <f:ajax render="searchForm supplierTable paginationInfo" />
+                            </h:commandButton>
+                        </div>
+                        <h:commandButton value="🔍 Tìm kiếm" 
+                                       actionListener="#{supplierMBean.performSearch()}"
+                                       styleClass="btn-search-modern"
+                                       style="padding: 14px 28px; font-size: 15px; font-weight: 600; border-radius: 12px; border: none; background: white; color: #667eea; box-shadow: 0 4px 12px rgba(255,255,255,0.3); transition: all 0.3s; cursor: pointer; white-space: nowrap;">
+                            <f:ajax render="supplierTable paginationInfo" />
+                        </h:commandButton>
+                    </div>
+                    <h:outputText value="📊 Tìm thấy: #{supplierMBean.totalItems} nhà cung cấp" 
+                                rendered="#{not empty supplierMBean.searchKeyword}"
+                                style="display: block; margin-top: 12px; color: white; font-size: 14px; font-weight: 500; text-align: center; padding: 8px; background: rgba(255,255,255,0.2); border-radius: 8px;" />
+                </h:form>
+            </div>
+
+            <!-- ========== DANH SÁCH SUPPLIER ========== -->
+            <h:form id="supplierTable">
+                <h:outputText value="Không có nhà cung cấp nào" 
+                             rendered="#{empty supplierMBean.pagedItems}" 
+                             style="display: block; text-align: center; padding: 20px; color: #999; font-style: italic; background: #f5f5f5; border-radius: 8px; margin: 20px 0;" />
+                <h:dataTable value="#{supplierMBean.pagedItems}" var="s" styleClass="table table-striped table-hover table-full-width table-margin-top"
+                             border="0"
+                             rendered="#{not empty supplierMBean.pagedItems}">
+                    <h:column>
+                        <f:facet name="header">ID</f:facet>
+                        #{s.supplierID}
+                    </h:column>
+                    <h:column>
+                        <f:facet name="header">Tên nhà cung cấp</f:facet>
+                        #{s.supplierName}
+                    </h:column>
+                    <h:column>
+                        <f:facet name="header">Số điện thoại</f:facet>
+                        #{s.phoneContact != null ? s.phoneContact : '-'}
+                    </h:column>
+                    <h:column>
+                        <f:facet name="header">Địa chỉ</f:facet>
+                        #{s.address != null ? s.address : '-'}
+                    </h:column>
+                    <h:column>
+                        <f:facet name="header">Số lượng thương hiệu</f:facet>
+                        <span style="font-weight: 600; color: #28a745;">
+                            #{supplierMBean.getBrandCount(s)}
+                        </span>
+                    </h:column>
+                    <h:column>
+                        <f:facet name="header">Số lượng sản phẩm</f:facet>
+                        <span style="font-weight: 600; color: #3f72af;">
+                            #{supplierMBean.getProductCount(s)}
+                        </span>
+                    </h:column>
+                    <h:column>
+                        <f:facet name="header">Hành động</f:facet>
+                        <h:commandButton value="👁️ Chi tiết" actionListener="#{supplierMBean.viewSupplierDetails(s)}" 
+                                        styleClass="btn btn-soft-info"
+                                        style="margin-right: 5px;"
+                                        onclick="showModal('supplierDetailModal');">
+                            <f:ajax render="supplierDetailModal" 
+                                    onevent="function(data){if(data.status=='success'){showModal('supplierDetailModal');}}" />
+                        </h:commandButton>
+                        <h:commandButton value="✏️ Sửa" actionListener="#{supplierMBean.prepareEdit(s)}" 
+                                        styleClass="btn btn-soft-primary"
+                                        style="margin-right: 5px;"
+                                        onclick="showModal('supplierFormModal');">
+                            <f:ajax render="supplierFormModal supplierTable" 
+                                    onevent="function(data){if(data.status=='success'){showModal('supplierFormModal');}}" />
+                        </h:commandButton>
+                        <h:commandButton value="🗑️ Xóa" actionListener="#{supplierMBean.delete(s)}"
+                                         styleClass="btn btn-soft-danger"
+                                         onclick="return confirm('Xóa nhà cung cấp này?');">
+                            <f:ajax render="supplierTable paginationInfo" />
+                        </h:commandButton>
+                    </h:column>
+                </h:dataTable>
+                
+                <!-- ===== PHÂN TRANG ===== -->
+                <div class="pagination-container" id="paginationInfo" style="margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px; display: block; width: 100%;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 15px;">
+                        <h:outputText value="Trang #{supplierMBean.currentPage} / #{supplierMBean.totalPages} (Tổng: #{supplierMBean.totalItems} nhà cung cấp)" 
+                                     styleClass="pagination-info" 
+                                     style="font-weight: 500; color: #333; font-size: 14px;" />
+                        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                            <h:commandButton value="⏮️ Trang đầu" actionListener="#{supplierMBean.firstPage()}" 
+                                           styleClass="btn btn-secondary" 
+                                           disabled="#{supplierMBean.currentPage == 1 or supplierMBean.totalPages le 1}"
+                                           style="min-width: 100px;">
+                                <f:ajax render="supplierTable paginationInfo" />
+                            </h:commandButton>
+                            <h:commandButton value="◀️ Trước" actionListener="#{supplierMBean.previousPage()}" 
+                                           styleClass="btn btn-secondary" 
+                                           disabled="#{supplierMBean.currentPage == 1 or supplierMBean.totalPages le 1}"
+                                           style="min-width: 80px;">
+                                <f:ajax render="supplierTable paginationInfo" />
+                            </h:commandButton>
+                            <h:commandButton value="Sau ▶️" actionListener="#{supplierMBean.nextPage()}" 
+                                           styleClass="btn btn-secondary" 
+                                           disabled="#{supplierMBean.currentPage == supplierMBean.totalPages or supplierMBean.totalPages le 1}"
+                                           style="min-width: 80px;">
+                                <f:ajax render="supplierTable paginationInfo" />
+                            </h:commandButton>
+                            <h:commandButton value="Trang cuối ⏭️" actionListener="#{supplierMBean.lastPage()}" 
+                                           styleClass="btn btn-secondary" 
+                                           disabled="#{supplierMBean.currentPage == supplierMBean.totalPages or supplierMBean.totalPages le 1}"
+                                           style="min-width: 100px;">
+                                <f:ajax render="supplierTable paginationInfo" />
+                            </h:commandButton>
+                        </div>
+                    </div>
+                </div>
+            </h:form>
+
+            <!-- ========== MODAL CHI TIẾT SUPPLIER (Brands và Products) ========== -->
+            <h:panelGroup id="supplierDetailModal">
+                <div id="supplierDetailModalOverlay" 
+                     style="display: #{supplierMBean.showDetailModal ? 'block' : 'none'}; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; overflow-y: auto; animation: fadeIn 0.3s ease-out;"
+                     onclick="if(event.target === this) { closeModal('supplierDetailModal'); }">
+                    <div class="form-section" style="background: #ffffff; border-radius: 20px; box-shadow: 0 12px 48px rgba(0,0,0,0.25); padding: 0; margin: 30px auto; max-width: 1200px; width: 95%; max-height: 90vh; overflow-y: auto; position: relative; animation: slideUp 0.3s ease-out;">
+                        <div style="position: sticky; top: 0; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 25px 35px; border-radius: 20px 20px 0 0; display: flex; justify-content: space-between; align-items: center; z-index: 10; box-shadow: 0 4px 15px rgba(0,0,0,0.15);">
+                            <h2 style="margin: 0; font-size: 26px; font-weight: 700;">
+                                🏢 Chi tiết nhà cung cấp: #{supplierMBean.selectedSupplierForDetail != null ? supplierMBean.selectedSupplierForDetail.supplierName : ''}
+                            </h2>
+                            <h:form>
+                                <h:commandButton value="✕" actionListener="#{supplierMBean.closeDetailModal()}" 
+                                                styleClass="btn-close-modal"
+                                                style="background: rgba(255,255,255,0.25); border: none; color: white; width: 42px; height: 42px; border-radius: 50%; font-size: 22px; cursor: pointer; transition: all 0.3s; display: flex; align-items: center; justify-content: center; font-weight: bold;"
+                                                title="Đóng"
+                                                onclick="closeModal('supplierDetailModal');">
+                                    <f:ajax render="supplierDetailModal" 
+                                            onevent="function(data){if(data.status=='success'){closeModal('supplierDetailModal');}}" />
+                                </h:commandButton>
+                            </h:form>
+                        </div>
+                        <div style="padding: 35px;">
+                            <h:panelGroup rendered="#{supplierMBean.selectedSupplierForDetail != null}">
+                                <!-- Thông tin tổng quan -->
+                                <div style="margin-bottom: 25px; padding: 20px; background: #f8f9fa; border-radius: 12px; border-left: 4px solid #667eea;">
+                                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px;">
+                                        <div>
+                                            <span style="font-weight: 500; color: #666; font-size: 14px;">Số điện thoại:</span>
+                                            <div style="font-weight: 600; color: #333; font-size: 16px; margin-top: 5px;">
+                                                #{supplierMBean.selectedSupplierForDetail.phoneContact != null ? supplierMBean.selectedSupplierForDetail.phoneContact : '-'}
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <span style="font-weight: 500; color: #666; font-size: 14px;">Tổng số thương hiệu:</span>
+                                            <div style="font-weight: 700; color: #28a745; font-size: 20px; margin-top: 5px;">
+                                                #{supplierMBean.getBrandCount(supplierMBean.selectedSupplierForDetail)}
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <span style="font-weight: 500; color: #666; font-size: 14px;">Tổng số sản phẩm:</span>
+                                            <div style="font-weight: 700; color: #3f72af; font-size: 20px; margin-top: 5px;">
+                                                #{supplierMBean.getProductCount(supplierMBean.selectedSupplierForDetail)}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Danh sách thương hiệu -->
+                                <div style="margin-bottom: 30px;">
+                                    <h3 style="margin: 0 0 15px 0; font-size: 20px; font-weight: 600; color: #495057; display: flex; align-items: center; gap: 10px;">
+                                        <span style="font-size: 24px;">🏷️</span> Thương hiệu (#{supplierMBean.getBrandCount(supplierMBean.selectedSupplierForDetail)})
+                                    </h3>
+                                    <h:outputText value="Chưa có thương hiệu nào" 
+                                                 rendered="#{empty supplierMBean.getBrandsForSupplier(supplierMBean.selectedSupplierForDetail)}" 
+                                                 style="display: block; text-align: center; padding: 20px; color: #999; font-style: italic; background: #f5f5f5; border-radius: 8px;" />
+                                    <h:dataTable value="#{supplierMBean.getBrandsForSupplier(supplierMBean.selectedSupplierForDetail)}" var="brand" 
+                                                 styleClass="table table-striped table-hover"
+                                                 border="0"
+                                                 rendered="#{not empty supplierMBean.getBrandsForSupplier(supplierMBean.selectedSupplierForDetail)}"
+                                                 style="background: white; border-radius: 8px; overflow: hidden; margin-bottom: 20px;">
+                                        <h:column>
+                                            <f:facet name="header">ID</f:facet>
+                                            #{brand.brandID}
+                                        </h:column>
+                                        <h:column>
+                                            <f:facet name="header">Tên thương hiệu</f:facet>
+                                            <span style="font-weight: 600; color: #3f72af;">#{brand.brandName}</span>
+                                        </h:column>
+                                        <h:column>
+                                            <f:facet name="header">Số lượng sản phẩm</f:facet>
+                                            <span style="font-weight: 600; color: #667eea;">
+                                                #{brand.productCollection != null ? brand.productCollection.size() : 0}
+                                            </span>
+                                        </h:column>
+                                    </h:dataTable>
+                                </div>
+                                
+                                <!-- Danh sách sản phẩm -->
+                                <div>
+                                    <h3 style="margin: 0 0 15px 0; font-size: 20px; font-weight: 600; color: #495057; display: flex; align-items: center; gap: 10px;">
+                                        <span style="font-size: 24px;">📦</span> Sản phẩm (#{supplierMBean.getProductCount(supplierMBean.selectedSupplierForDetail)})
+                                    </h3>
+                                    <h:outputText value="Chưa có sản phẩm nào" 
+                                                 rendered="#{empty supplierMBean.getProductsForSupplier(supplierMBean.selectedSupplierForDetail)}" 
+                                                 style="display: block; text-align: center; padding: 20px; color: #999; font-style: italic; background: #f5f5f5; border-radius: 8px;" />
+                                    <h:dataTable value="#{supplierMBean.getProductsForSupplier(supplierMBean.selectedSupplierForDetail)}" var="p" 
+                                                 styleClass="table table-striped table-hover"
+                                                 border="0"
+                                                 rendered="#{not empty supplierMBean.getProductsForSupplier(supplierMBean.selectedSupplierForDetail)}"
+                                                 style="background: white; border-radius: 8px; overflow: hidden;">
+                                        <h:column>
+                                            <f:facet name="header">ID</f:facet>
+                                            #{p.productID}
+                                        </h:column>
+                                        <h:column>
+                                            <f:facet name="header">Tên sản phẩm</f:facet>
+                                            #{p.name}
+                                        </h:column>
+                                        <h:column>
+                                            <f:facet name="header">Thương hiệu</f:facet>
+                                            <span style="font-weight: 500; color: #3f72af;">
+                                                #{p.brandID != null ? p.brandID.brandName : '-'}
+                                            </span>
+                                        </h:column>
+                                        <h:column>
+                                            <f:facet name="header">Giá bán</f:facet>
+                                            <span style="font-weight: 600; color: #667eea;">
+                                                <h:outputText value="#{supplierMBean.formatCurrency(p.unitPrice)}" 
+                                                             rendered="#{p.unitPrice > 0}" />
+                                                <h:outputText value="-" 
+                                                             rendered="#{p.unitPrice == 0}"
+                                                             style="color: #999;" />
+                                            </span>
+                                        </h:column>
+                                        <h:column>
+                                            <f:facet name="header">Danh mục</f:facet>
+                                            #{p.categoryID != null ? p.categoryID.categoryName : '-'}
+                                        </h:column>
+                                    </h:dataTable>
+                                </div>
+                            </h:panelGroup>
+                        </div>
+                    </div>
+                </div>
+            </h:panelGroup>
+
+            <br/>
+        </ui:define>
+    </ui:composition>
+    
+    <h:outputScript>
+        <![CDATA[
+            function showModal(modalId) {
+                var overlayId;
+                if (modalId.includes('DetailModal')) {
+                    overlayId = modalId.replace('DetailModal', 'DetailModalOverlay');
+                } else {
+                    overlayId = modalId.replace('FormModal', 'ModalOverlay');
+                }
+                var modal = document.getElementById(overlayId);
+                if (modal) {
+                    modal.style.display = 'block';
+                    document.body.style.overflow = 'hidden';
+                    document.body.classList.add('modal-open');
+                }
+            }
+            
+            function closeModal(modalId) {
+                var overlayId;
+                if (modalId.includes('DetailModal')) {
+                    overlayId = modalId.replace('DetailModal', 'DetailModalOverlay');
+                } else {
+                    overlayId = modalId.replace('FormModal', 'ModalOverlay');
+                }
+                var modal = document.getElementById(overlayId);
+                if (modal) {
+                    modal.style.display = 'none';
+                    document.body.style.overflow = '';
+                    document.body.classList.remove('modal-open');
+                }
+            }
+            
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    var modals = document.querySelectorAll('[id$="ModalOverlay"]');
+                    modals.forEach(function(modal) {
+                        if (modal.style.display === 'block') {
+                            var modalId = modal.id.replace('ModalOverlay', 'FormModal').replace('DetailModalOverlay', 'DetailModal');
+                            closeModal(modalId);
+                        }
+                    });
+                }
+            });
+        ]]>
+    </h:outputScript>
+    
+    <style>
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .btn-close-modal:hover {
+            background: rgba(255,255,255,0.3) !important;
+            transform: rotate(90deg);
+        }
+        
+        body.modal-open {
+            overflow: hidden;
+        }
+        
+        .btn-clear-search:hover {
+            background: #e0e0e0 !important;
+            color: #667eea !important;
+            transform: translateY(-50%) rotate(90deg) !important;
+        }
+        
+        .btn-search-modern:hover {
+            background: #f8f9fa !important;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(255,255,255,0.4) !important;
+        }
+        
+        .search-input:focus {
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+    </style>
+</html>
+

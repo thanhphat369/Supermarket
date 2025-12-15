@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:h="jakarta.faces.html"
+      xmlns:f="jakarta.faces.core"
+      xmlns:ui="jakarta.faces.facelets">
+
+<ui:composition template="/template.xhtml">
+    <ui:define name="title">📝 Register Account</ui:define>
+
+    <ui:define name="content">
+        <h:outputScript>
+            // Hide messages in header and top right, but keep in form
+            (function() {
+                function hideHeaderMessages() {
+                    // Chỉ ẩn messages ở header và góc phải
+                    var selectors = [
+                        'header .ui-messages',
+                        'header .messages',
+                        '.header-bar .ui-messages',
+                        '.header-bar .messages',
+                        '#jakarta_faces_developmentstage_messages',
+                        'body > .ui-messages[style*="position: fixed"]',
+                        'body > .messages[style*="position: fixed"]',
+                        'body > .ui-messages[style*="position: absolute"]',
+                        'body > .messages[style*="position: absolute"]'
+                    ];
+                    
+                    selectors.forEach(function(selector) {
+                        try {
+                            var elements = document.querySelectorAll(selector);
+                            elements.forEach(function(el) {
+                                // Chỉ ẩn nếu không nằm trong form
+                                var isInForm = el.closest('#registerForm');
+                                var isInCard = el.closest('.register-card');
+                                if (!isInForm) {
+                                    if (!isInCard) {
+                                        el.style.display = 'none';
+                                        el.style.visibility = 'hidden';
+                                        el.style.opacity = '0';
+                                        el.style.height = '0';
+                                        el.style.width = '0';
+                                        el.style.overflow = 'hidden';
+                                        el.style.position = 'absolute';
+                                        el.style.left = '-9999px';
+                                        el.style.top = '-9999px';
+                                        el.style.pointerEvents = 'none';
+                                    }
+                                }
+                            });
+                        } catch(e) {}
+                    });
+                }
+                
+                // Chạy ngay
+                if (document.readyState === 'loading') {
+                    document.addEventListener('DOMContentLoaded', hideHeaderMessages);
+                } else {
+                    hideHeaderMessages();
+                }
+                
+                // Chạy liên tục để catch messages được render sau
+                setInterval(hideHeaderMessages, 50);
+                
+                // Chạy sau khi AJAX complete
+                if (window.jsf) {
+                    jsf.ajax.addOnEvent(function(data) {
+                        if (data.status === 'success') {
+                            setTimeout(hideHeaderMessages, 10);
+                        }
+                    });
+                }
+            })();
+        </h:outputScript>
+        
+        <div class="form-wrapper">
+            <div class="register-card">
+                <h2>📝 Register New Account</h2>
+
+                <h:form id="registerForm">
+                    <!-- Display global messages (success, system errors) -->
+                    <h:messages globalOnly="true" 
+                               styleClass="register-message" 
+                               infoClass="register-message-success"
+                               errorClass="register-message-error"
+                               warnClass="register-message-warn" />
+                    
+                    <div class="form-fields">
+                        <div class="form-field-group">
+                            <h:outputLabel for="username" value="Username:" />
+                            <h:inputText id="username" value="#{userBean.username}" required="true"
+                                         requiredMessage="Please enter username" styleClass="form-control">
+                            </h:inputText>
+                            <h:message for="username" styleClass="field-error" style="color: #dc3545 !important; background-color: #fee2e2 !important; padding: 8px 12px !important; border-left: 3px solid #dc3545 !important; border-radius: 4px !important; margin-top: 6px !important; display: block !important; font-weight: 500 !important;" />
+                        </div>
+
+                        <div class="form-field-group">
+                            <h:outputLabel for="fullName" value="Full Name:" />
+                            <h:inputText id="fullName" value="#{userBean.fullName}" required="true"
+                                         requiredMessage="Please enter full name" styleClass="form-control"/>
+                            <h:message for="fullName" styleClass="field-error" style="color: #dc3545 !important; background-color: #fee2e2 !important; padding: 8px 12px !important; border-left: 3px solid #dc3545 !important; border-radius: 4px !important; margin-top: 6px !important; display: block !important; font-weight: 500 !important;" />
+                        </div>
+
+                        <div class="form-field-group">
+                            <h:outputLabel for="email" value="Email:" />
+                            <h:inputText id="email" value="#{userBean.email}" required="true"
+                                         requiredMessage="Please enter email" 
+                                         validatorMessage="Invalid email. Example: user@example.com"
+                                         styleClass="form-control">
+                                <f:validateRegex pattern="^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$" />
+                            </h:inputText>
+                            <h:message for="email" styleClass="field-error" style="color: #dc3545 !important; background-color: #fee2e2 !important; padding: 8px 12px !important; border-left: 3px solid #dc3545 !important; border-radius: 4px !important; margin-top: 6px !important; display: block !important; font-weight: 500 !important;" />
+                        </div>
+
+                        <div class="form-field-group">
+                            <h:outputLabel for="phone" value="Phone:" />
+                            <h:inputText id="phone" value="#{userBean.phone}" required="true"
+                                         requiredMessage="Please enter phone number" 
+                                         validatorMessage="Phone number must contain only digits"
+                                         styleClass="form-control">
+                                <f:validateRegex pattern="^[0-9]+$" />
+                            </h:inputText>
+                            <h:message for="phone" styleClass="field-error" style="color: #dc3545 !important; background-color: #fee2e2 !important; padding: 8px 12px !important; border-left: 3px solid #dc3545 !important; border-radius: 4px !important; margin-top: 6px !important; display: block !important; font-weight: 500 !important;" />
+                        </div>
+
+                        <div class="form-field-group">
+                            <h:outputLabel for="address" value="Address:" />
+                            <h:inputText id="address" value="#{userBean.address}" 
+                                         styleClass="form-control">
+                                <f:passThroughAttribute name="placeholder" value="Enter address (optional)" />
+                            </h:inputText>
+                            <h:message for="address" styleClass="field-error" style="color: #dc3545 !important; background-color: #fee2e2 !important; padding: 8px 12px !important; border-left: 3px solid #dc3545 !important; border-radius: 4px !important; margin-top: 6px !important; display: block !important; font-weight: 500 !important;" />
+                        </div>
+
+                        <div class="form-field-group">
+                            <h:outputLabel for="password" value="Password:" />
+                            <h:inputSecret id="password" value="#{userBean.password}" required="true"
+                                           requiredMessage="Please enter password" 
+                                           validatorMessage="Password must be at least 6 characters"
+                                           styleClass="form-control">
+                                <f:validateLength minimum="6" />
+                            </h:inputSecret>
+                            <h:message for="password" styleClass="field-error" style="color: #dc3545 !important; background-color: #fee2e2 !important; padding: 8px 12px !important; border-left: 3px solid #dc3545 !important; border-radius: 4px !important; margin-top: 6px !important; display: block !important; font-weight: 500 !important;" />
+                        </div>
+
+                        <div class="form-field-group">
+                            <h:outputLabel for="confirmPassword" value="Confirm Password:" />
+                            <h:inputSecret id="confirmPassword" value="#{userBean.confirmPassword}" required="true"
+                                           requiredMessage="Please confirm password" styleClass="form-control"/>
+                            <h:message for="confirmPassword" styleClass="field-error" style="color: #dc3545 !important; background-color: #fee2e2 !important; padding: 8px 12px !important; border-left: 3px solid #dc3545 !important; border-radius: 4px !important; margin-top: 6px !important; display: block !important; font-weight: 500 !important;" />
+                        </div>
+
+                        <div class="form-field-group">
+                            <h:outputLabel for="role" value="Role:" />
+                            <h:selectOneMenu id="role" value="#{userBean.role}" required="true"
+                                             requiredMessage="Please select role" styleClass="form-control">
+                                <f:selectItem itemLabel="-- Select Role --" itemValue="" />
+                                <f:selectItem itemLabel="Customer" itemValue="customer" />
+                                <f:selectItem itemLabel="Shipper" itemValue="shipper" />
+                            </h:selectOneMenu>
+                            <h:message for="role" styleClass="field-error" style="color: #dc3545 !important; background-color: #fee2e2 !important; padding: 8px 12px !important; border-left: 3px solid #dc3545 !important; border-radius: 4px !important; margin-top: 6px !important; display: block !important; font-weight: 500 !important;" />
+                        </div>
+                    </div>
+
+                    <h:commandButton value="📝 Register" action="#{userBean.register}" styleClass="btn-register" />
+
+                    <div class="login-link">
+                        <span>Already have an account? </span>
+                        <h:link outcome="login" value="Login now" />
+                    </div>
+
+                    <h:outputText value="#{userBean.message}" 
+                                 rendered="#{not empty userBean.message}" 
+                                 styleClass="register-message" />
+                </h:form>
+            </div>
+        </div>
+
+    </ui:define>
+</ui:composition>
+</html>
+

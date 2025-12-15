@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:h="jakarta.faces.html"
+      xmlns:f="jakarta.faces.core"
+      xmlns:ui="jakarta.faces.facelets">
+
+<ui:composition template="/template.xhtml">
+    <ui:define name="title">🔐 System Login</ui:define>
+
+    <ui:define name="content">
+        <h:outputScript>
+            // Hide messages in header and top right, but keep in form
+            (function() {
+                function hideHeaderMessages() {
+                    var selectors = [
+                        'header .ui-messages',
+                        'header .messages',
+                        '.header-bar .ui-messages',
+                        '.header-bar .messages',
+                        '#jakarta_faces_developmentstage_messages',
+                        'body > .ui-messages[style*="position: fixed"]',
+                        'body > .messages[style*="position: fixed"]',
+                        'body > .ui-messages[style*="position: absolute"]',
+                        'body > .messages[style*="position: absolute"]'
+                    ];
+                    
+                    selectors.forEach(function(selector) {
+                        try {
+                            var elements = document.querySelectorAll(selector);
+                            elements.forEach(function(el) {
+                                var isInForm = el.closest('#loginForm');
+                                var isInCard = el.closest('.login-card');
+                                if (!isInForm) {
+                                    if (!isInCard) {
+                                        el.style.display = 'none';
+                                        el.style.visibility = 'hidden';
+                                        el.style.opacity = '0';
+                                        el.style.height = '0';
+                                        el.style.width = '0';
+                                        el.style.overflow = 'hidden';
+                                        el.style.position = 'absolute';
+                                        el.style.left = '-9999px';
+                                        el.style.top = '-9999px';
+                                        el.style.pointerEvents = 'none';
+                                    }
+                                }
+                            });
+                        } catch(e) {}
+                    });
+                }
+                
+                if (document.readyState === 'loading') {
+                    document.addEventListener('DOMContentLoaded', hideHeaderMessages);
+                } else {
+                    hideHeaderMessages();
+                }
+                
+                setInterval(hideHeaderMessages, 50);
+                
+                if (window.jsf) {
+                    jsf.ajax.addOnEvent(function(data) {
+                        if (data.status === 'success') {
+                            setTimeout(hideHeaderMessages, 10);
+                        }
+                    });
+                }
+            })();
+        </h:outputScript>
+        
+        <div class="form-wrapper">
+            <div class="login-card">
+                <h2>🔐 System Login</h2>
+                <p class="login-subtitle">Please enter your information to continue</p>
+
+                <h:form id="loginForm">
+                    <div class="form-fields">
+                        <div class="form-field-group">
+                            <h:outputLabel for="username" value="Username:" />
+                            <h:inputText id="username" value="#{loginMBean.username}" required="true"
+                                         requiredMessage="Please enter username" styleClass="form-control"/>
+                            <h:message for="username" styleClass="field-error" style="color: #dc3545 !important; background-color: #fee2e2 !important; padding: 8px 12px !important; border-left: 3px solid #dc3545 !important; border-radius: 4px !important; margin-top: 6px !important; display: block !important; font-weight: 500 !important;" />
+                        </div>
+
+                        <div class="form-field-group">
+                            <h:outputLabel for="password" value="Password:" />
+                            <h:inputSecret id="password" value="#{loginMBean.password}" required="true"
+                                           requiredMessage="Please enter password" styleClass="form-control"/>
+                            <h:message for="password" styleClass="field-error" style="color: #dc3545 !important; background-color: #fee2e2 !important; padding: 8px 12px !important; border-left: 3px solid #dc3545 !important; border-radius: 4px !important; margin-top: 6px !important; display: block !important; font-weight: 500 !important;" />
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-2" style="margin-top: 20px;">
+                        <h:commandButton value="🔓 Login" 
+                                         action="#{loginMBean.checkUser}" 
+                                         styleClass="btn-login" />
+                        <h:link value="📝 Register" outcome="register" 
+                                styleClass="btn-register-link" />
+                    </div>
+
+                    <div class="mt-2" style="margin-top: 15px;">
+                        <h:link value="❓ Forgot Password?" outcome="forgotpassword" styleClass="forgot-password-link" />
+                    </div>
+
+                    <h:outputText value="#{loginMBean.message}" 
+                                 rendered="#{not empty loginMBean.message}" 
+                                 styleClass="login-message #{loginMBean.message != null and loginMBean.message.contains('❌') ? 'login-message-error' : 'login-message-success'}"
+                                 id="loginMessage" />
+                    <h:outputScript>
+                        <![CDATA[
+                        // Auto clear message after 5 seconds or on F5
+                        (function() {
+                            var messageEl = document.getElementById('loginForm:loginMessage');
+                            if (messageEl && messageEl.textContent.trim() !== '') {
+                                // Auto hide message after 5 seconds
+                                setTimeout(function() {
+                                    messageEl.style.transition = 'opacity 0.5s';
+                                    messageEl.style.opacity = '0';
+                                    setTimeout(function() {
+                                        messageEl.style.display = 'none';
+                                    }, 500);
+                                }, 5000);
+                            }
+                        })();
+                        ]]>
+                    </h:outputScript>
+                </h:form>
+            </div>
+        </div>
+
+    </ui:define>
+</ui:composition>
+</html>

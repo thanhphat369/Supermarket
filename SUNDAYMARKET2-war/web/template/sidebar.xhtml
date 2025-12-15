@@ -1,0 +1,47 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:h="jakarta.faces.html"
+      xmlns:f="jakarta.faces.core"
+      xmlns:ui="jakarta.faces.facelets">
+    
+    <nav class="sidebar">
+            <!-- Menu chính -->
+            <div class="menu-section">
+<!--                <h3>📋 Menu</h3>-->
+                <ul>
+<!--                    <li><h:link outcome="/index" value="🏠 Trang chủ" /></li>-->
+                    
+                    <!-- Menu for not logged in users - Hide when on login/register page -->
+                    <ui:fragment rendered="#{loginMBean.currentUser == null and !loginMBean.isLoginOrRegisterPage()}">
+                        <li><h:link outcome="/login" value="🔐 Login" /></li>
+                        <li><h:link outcome="/register" value="📝 Register" /></li>
+                    </ui:fragment>
+                    
+                    <!-- Menu for Admin -->
+                    <ui:fragment rendered="#{loginMBean.isAdmin()}">
+                        <li><h:link outcome="/index" value="🏠 Home" /></li>
+                        <li><h:link outcome="/user" value="👤 User Management" /></li>
+                        <li><h:link outcome="/product" value="📦 Product Management" /></li>
+                        <li><h:link outcome="/supplier" value="🏢 Supplier Management" /></li>
+                        <li><h:link outcome="/brand" value="🏷️ Brand Management" /></li>
+                        <li><h:link outcome="/category" value="📂 Category Management" /></li>
+                        <li><h:link outcome="/inventory" value="📊 Inventory Management" /></li>
+                        <li><h:link outcome="/order" value="📋 Order Management" /></li>
+                    </ui:fragment>
+                    
+                    <!-- Menu for Customer -->
+                    <ui:fragment rendered="#{loginMBean.isCustomer()}">
+                        <li><h:link outcome="/index" value="🏠 Home" /></li>
+                        <li><h:link outcome="/shoppingcart" value="🛒 Shopping Cart" /></li>
+                        <li><h:link outcome="/customerorder" value="📋 My Orders" /></li>
+                        <li><h:link outcome="/profiledetail" value="👤 Profile" /></li>
+                    </ui:fragment>
+                    
+                    <!-- Menu for Shipper -->
+                    <ui:fragment rendered="#{loginMBean.isShipper()}">
+                        <li><h:link outcome="/index" value="🏠 Home" /></li>
+                        <li><h:link outcome="/profiledetail" value="👤 Profile" /></li>
+                    </ui:fragment>
+                </ul>
+            </div>
+        </nav>
+</ui:composition>

@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:h="jakarta.faces.html"
+      xmlns:f="jakarta.faces.core"
+      xmlns:ui="jakarta.faces.facelets">
+
+    <ui:composition template="/template.xhtml">
+        <ui:define name="title">💳 Payment</ui:define>
+
+        <ui:define name="content">
+            <h:messages globalOnly="true" />
+            
+            <div style="padding: 20px; max-width: 800px; margin: 0 auto;">
+                <h1 style="color: #2f5061; margin-bottom: 20px; text-align: center;">💳 Payment</h1>
+                
+                <h:panelGroup rendered="#{paymentMBean.pendingOrder == null}">
+                    <div style="text-align: center; padding: 40px; background: #f8f9fa; border-radius: 8px;">
+                        <p style="font-size: 18px; color: #64748b; margin-bottom: 20px;">No pending payment found</p>
+                        <h:link outcome="index" value="← Back to Home" 
+                                style="display: inline-block; padding: 12px 24px; background-color: #3f72af; color: white; text-decoration: none; border-radius: 6px; font-weight: 500;" />
+                    </div>
+                </h:panelGroup>
+                
+                <h:panelGroup rendered="#{paymentMBean.pendingOrder != null}">
+                    <h:form id="paymentForm">
+                        <!-- Order Summary -->
+                        <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+                            <h2 style="color: #2f5061; margin-bottom: 15px;">Order Summary</h2>
+                            <p><strong>Order ID:</strong> ##{paymentMBean.pendingOrder.orderID}</p>
+                            <p><strong>Total Amount:</strong> <span style="font-size: 24px; color: #3f72af; font-weight: bold;">#{paymentMBean.formatAmount(paymentMBean.totalAmount)}</span></p>
+                        </div>
+                        
+                        <!-- Payment Method Selection -->
+                        <div style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 2px solid #ddd;">
+                            <h3 style="color: #2f5061; margin-bottom: 15px;">Select Payment Method</h3>
+                            
+                            <div style="background: #fff3cd; padding: 10px; border-radius: 4px; margin-bottom: 15px; border-left: 4px solid #ffc107;">
+                                <p style="margin: 0; color: #856404; font-size: 14px;">
+                                    <strong>⚠️ Demo Mode:</strong> This is a demonstration for project purposes. No real payment will be processed.
+                                </p>
+                            </div>
+                            
+                            <h:selectOneRadio value="#{paymentMBean.paymentMethod}" layout="pageDirection" style="margin-bottom: 15px;">
+                                <f:selectItem itemValue="vnpay" itemLabel="💳 VNPay (QR Code / Online)" />
+                                <f:selectItem itemValue="momo" itemLabel="📱 MoMo (QR Code)" />
+                                <f:selectItem itemValue="bank_transfer" itemLabel="🏦 Bank Transfer (QR Code)" />
+                                <f:ajax event="change" listener="#{paymentMBean.updatePaymentInfo()}" render="paymentSection" />
+                            </h:selectOneRadio>
+                        </div>
+                        
+                        <!-- Payment Section -->
+                        <div id="paymentSection" style="background: white; padding: 20px; border-radius: 8px; text-align: center;">
+                            <div style="background: #e7f3ff; padding: 12px; border-radius: 6px; margin-bottom: 20px; border-left: 4px solid #2196F3;">
+                                <p style="margin: 0; color: #1976D2; font-size: 14px; font-weight: 500;">
+                                    📱 <strong>Virtual Invoice QR Code</strong> - Scan with your phone to pay
+                                </p>
+                            </div>
+                            
+                            <h3 style="color: #2f5061; margin-bottom: 20px;">
+                                <span rendered="#{paymentMBean.paymentMethod == 'bank_transfer'}">🏦 Bank Transfer QR Code</span>
+                                <span rendered="#{paymentMBean.paymentMethod != 'bank_transfer'}">💳 Payment QR Code</span>
+                            </h3>
+                            
+                            <!-- QR Code -->
+                            <ui:fragment rendered="#{not empty paymentMBean.qrCodeUrl}">
+                                <div style="margin-bottom: 20px;">
+                                    <div style="background: white; padding: 15px; border-radius: 8px; display: inline-block; border: 2px solid #3f72af; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+                                        <img src="#{paymentMBean.qrCodeUrl}" 
+                                             alt="Payment QR Code"
+                                             style="max-width: 300px; width: 100%; display: block;" />
+                                    </div>
+                                    <p style="color: #64748b; font-size: 14px; margin-top: 15px; font-weight: 500;">
+                                        📱 Scan this QR code with your banking app or payment app
+                                    </p>
+                                    <p style="color: #999; font-size: 12px; margin-top: 5px;">
+                                        Or click the payment link below
+                                    </p>
+                                </div>
+                            </ui:fragment>
+                            
+                            <!-- Payment URL Button (for VNPay/MoMo) -->
+                            <ui:fragment rendered="#{not empty paymentMBean.paymentUrl}">
+                                <div style="margin-bottom: 20px;">
+                                    <h:commandButton value="💳 Pay Online" 
+                                                   onclick="window.open('#{paymentMBean.paymentUrl}', '_blank'); return false;"
+                                                   styleClass="btn btn-primary"
+                                                   style="padding: 12px 24px; font-size: 16px; font-weight: 500;" />
+                                    <p style="color: #64748b; font-size: 14px; margin-top: 10px;">
+                                        Or click to open payment page in new tab
+                                    </p>
+                                </div>
+                            </ui:fragment>
+                            
+                            <!-- Bank Transfer Info -->
+                            <ui:fragment rendered="#{paymentMBean.paymentMethod == 'bank_transfer'}">
+                                <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px; text-align: left;">
+                                <h4 style="color: #2f5061; margin-bottom: 10px;">Bank Transfer Information:</h4>
+                                <p><strong>Bank:</strong> Vietcombank</p>
+                                <p><strong>Account Number:</strong> 1234567890</p>
+                                <p><strong>Account Name:</strong> SUNDAY MARKET</p>
+                                <p><strong>Amount:</strong> #{paymentMBean.formatAmount(paymentMBean.totalAmount)}</p>
+                                <p><strong>Content:</strong> Order ##{paymentMBean.pendingOrder.orderID}</p>
+                                    <p style="color: #dc3545; font-weight: bold; margin-top: 10px;">
+                                        ⚠️ Please transfer the exact amount and include order ID in transfer content
+                                    </p>
+                                </div>
+                            </ui:fragment>
+                            
+                            <!-- Virtual Payment Test (For Project Demo) -->
+                            <div style="margin-top: 30px; padding-top: 20px; border-top: 2px solid #ddd;">
+                                <div style="background: #e7f3ff; padding: 15px; border-radius: 8px; border-left: 4px solid #2196F3; margin-bottom: 20px;">
+                                    <h4 style="color: #1976D2; margin-bottom: 10px;">🧪 Virtual Payment Test (For Project Demo)</h4>
+                                    <p style="color: #1565C0; margin: 0; font-size: 14px;">
+                                        Click the button below to simulate a successful payment.
+                                        <br/>This will automatically process your order without real payment.
+                                    </p>
+                                </div>
+                                
+                                <h:commandButton value="💳 Pay Now (Virtual Payment)" 
+                                               action="#{paymentMBean.confirmPayment()}"
+                                               styleClass="btn btn-success"
+                                               style="padding: 15px 30px; font-size: 18px; font-weight: bold; background: linear-gradient(135deg, #28a745 0%, #20c997 100%); border: none; box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);">
+                                    <f:ajax render="@form :messages" />
+                                </h:commandButton>
+                                
+                                <p style="color: #64748b; font-size: 12px; margin-top: 10px;">
+                                    ⚠️ This is a virtual payment for testing purposes only
+                                </p>
+                            </div>
+                            
+                            <!-- Manual Payment Confirmation (Alternative) -->
+                            <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #ddd;">
+                                <h4 style="color: #2f5061; margin-bottom: 15px; font-size: 14px;">Or Manual Confirmation:</h4>
+                                <p style="color: #64748b; margin-bottom: 15px; font-size: 13px;">
+                                    If you have completed the payment via QR code or online, click below to confirm.
+                                </p>
+                                <h:commandButton value="✅ I have completed payment" 
+                                               action="#{paymentMBean.confirmPayment()}"
+                                               styleClass="btn btn-outline-success"
+                                               style="padding: 10px 20px; font-size: 14px;">
+                                    <f:ajax render="@form :messages" />
+                                </h:commandButton>
+                            </div>
+                            
+                            <!-- Cancel Payment -->
+                            <div style="margin-top: 20px;">
+                                <h:commandButton value="✖ Cancel Payment" 
+                                               action="#{paymentMBean.cancelPayment()}"
+                                               styleClass="btn btn-secondary">
+                                    <f:ajax render="@form :messages" />
+                                </h:commandButton>
+                            </div>
+                        </div>
+                    </h:form>
+                </h:panelGroup>
+            </div>
+        </ui:define>
+    </ui:composition>
+</html>
+
