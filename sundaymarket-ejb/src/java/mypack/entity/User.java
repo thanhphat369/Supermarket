@@ -26,10 +26,10 @@ import java.util.Collection;
 
 /**
  *
- * @author MC
+ * @author My PC
  */
 @Entity
-@Table(name = "[User]")
+@Table(name = "User")
 @XmlRootElement
 @NamedQueries({
     @NamedQuery(name = "User.findAll", query = "SELECT u FROM User u"),
@@ -87,11 +87,15 @@ public class User implements Serializable {
     @ManyToOne(optional = false)
     private Role roleID;
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "userID")
+    private Collection<NotificationTarget> notificationTargetCollection;
+    @OneToMany(cascade = CascadeType.ALL, mappedBy = "userID")
     private Collection<ShoppingCart> shoppingCartCollection;
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "userID")
     private Collection<Feedback> feedbackCollection;
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "userID")
     private Collection<Delivery> deliveryCollection;
+    @OneToMany(cascade = CascadeType.ALL, mappedBy = "createdBy")
+    private Collection<Notifications> notificationsCollection;
 
     public User() {
     }
@@ -197,6 +201,15 @@ public class User implements Serializable {
     }
 
     @XmlTransient
+    public Collection<NotificationTarget> getNotificationTargetCollection() {
+        return notificationTargetCollection;
+    }
+
+    public void setNotificationTargetCollection(Collection<NotificationTarget> notificationTargetCollection) {
+        this.notificationTargetCollection = notificationTargetCollection;
+    }
+
+    @XmlTransient
     public Collection<ShoppingCart> getShoppingCartCollection() {
         return shoppingCartCollection;
     }
@@ -221,6 +234,15 @@ public class User implements Serializable {
 
     public void setDeliveryCollection(Collection<Delivery> deliveryCollection) {
         this.deliveryCollection = deliveryCollection;
+    }
+
+    @XmlTransient
+    public Collection<Notifications> getNotificationsCollection() {
+        return notificationsCollection;
+    }
+
+    public void setNotificationsCollection(Collection<Notifications> notificationsCollection) {
+        this.notificationsCollection = notificationsCollection;
     }
 
     @Override

@@ -6,93 +6,149 @@
 
     <ui:define name="content">
 
-        <!-- ĐÃ XÓA BREADCRUMB - Chỉ giữ lại phần container chính -->
-        
         <div class="container-fluid fruite py-5">
             <div class="container py-5" style="padding-top: 0 !important;">
                 <div class="row g-4" style="margin-top: 0 !important;">
-                    <!-- Left Sidebar - STICKY -->
+                    <!-- =================== LEFT SIDEBAR - STICKY =================== -->
                     <div class="col-lg-3">
                         <div class="sticky-sidebar">
                             <div class="mb-3">
-                                <h4 class="mb-4">Danh mục sản phẩm</h4>
-                                <ul class="list-unstyled fruite-categorie category-menu">
-                                    <li>
-                                        <h:commandLink action="#{customerProductMBean.clearFilter()}" styleClass="category-link" style="display: block; padding: 10px; text-decoration: none; color: inherit;">
-                                            <span><i class="fas fa-th me-2"></i> Tất cả</span>
-                                        </h:commandLink>
-                                    </li>
-                                    <ui:repeat value="#{customerProductMBean.allCategories}" var="category">
-                                        <li>
-                                            <h:commandLink action="#{customerProductMBean.filterByCategory(category.categoryID)}" styleClass="category-link" style="display: block; padding: 10px; text-decoration: none; color: inherit;">
-                                                <span><i class="fas fa-tag me-2"></i> #{category.categoryName}</span>
-                                            </h:commandLink>
+                                <h:form id="categoryForm">
+                                    <h4 class="mb-4">Danh mục sản phẩm</h4>
+                                    <ul class="list-unstyled fruite-categorie category-menu">
+                                        <!-- TẤT CẢ --> 
+                                        <li class="mb-2"> 
+                                            <h:commandLink value="Tất cả sản phẩm" action="#{customerProductMBean.clearFilter}" styleClass="fw-bold text-success"/> 
                                         </li>
-                                    </ui:repeat>
-                                </ul>
+                                        <!-- LEVEL 1 -->
+                                        <ui:repeat value="#{customerProductMBean.level1Categories}" var="lv1">
+                                            <li>
+                                                <!-- LEVEL 1 CLICK -->
+                                                <h:commandLink
+                                                    action="#{customerProductMBean.selectLevel1(lv1.categoryID)}"
+                                                    styleClass="category-toggle d-flex justify-content-between align-items-center">
+                                                    <span>
+                                                        <i class="fas fa-folder me-2"></i>
+                                                        #{lv1.categoryName}
+                                                    </span>
+                                                    <i class="fas fa-chevron-right
+                                                    #{customerProductMBean.isLevel1Expanded(lv1) ? 'rotate' : ''}"/>
+                                                </h:commandLink>
+                                                <!-- LEVEL 2 (chỉ hiện khi sổ ra) -->
+                                                <ul class="category-sub #{customerProductMBean.isLevel1Expanded(lv1) ? 'open' : ''}">
+                                                    <ui:repeat value="#{customerProductMBean.getLevel2Categories(lv1)}" var="lv2">
+                                                        <li>
+                                                            <h:commandLink
+                                                                value="#{lv2.categoryName}"
+                                                                action="#{customerProductMBean.selectLevel2(lv2.categoryID)}"
+                                                                styleClass="sub-link #{customerProductMBean.isLevel2Selected(lv2) ? 'active' : ''}"/>
+                                                        </li>
+                                                    </ui:repeat>
+                                                </ul>
+                                            </li>
+                                        </ui:repeat>
+                                    </ul>
+                                </h:form>
                             </div>
                         </div>
                     </div>
-
-                    <!-- Main Content - SCROLLABLE -->
+                    <!-- =================== MAIN CONTENT - SCROLLABLE =================== -->
                     <div class="col-lg-9 ps-4">
-                        <!-- TOP CATEGORY LIKE BÁCH HÓA XANH -->
-                        <div class="bhx-top-category container-fluid bg-white p-3 border rounded">
-                            <div class="d-flex align-items-center overflow-auto gap-3">
-                                <h:commandLink action="#{customerProductMBean.clearFilter()}" styleClass="bhx-cat-item #{empty customerProductMBean.selectedCategoryId ? 'active' : ''}" style="text-decoration: none; color: inherit;">
-                                    <span>Tất cả</span>
-                                </h:commandLink>
-                                <ui:repeat value="#{customerProductMBean.allCategories}" var="category">
-                                    <h:commandLink action="#{customerProductMBean.filterByCategory(category.categoryID)}" styleClass="bhx-cat-item #{customerProductMBean.selectedCategoryId eq category.categoryID ? 'active' : ''}" style="text-decoration: none; color: inherit;">
-                                        <span>#{category.categoryName}</span>
-                                    </h:commandLink>
-                                </ui:repeat>
+                        <h:form id="topCategoryForm">
+                            <div class="bhx-top-category container-fluid bg-white p-3 border rounded"
+                                 rendered="#{not empty customerProductMBean.currentLevel3Categories}">
+                                <div class="d-flex align-items-center overflow-auto gap-3">
+                                    <!-- LEVEL 3 -->
+                                    <ui:repeat value="#{customerProductMBean.currentLevel3Categories}" var="lv3">
+                                        <h:commandLink
+                                            action="#{customerProductMBean.filterByCategory(lv3.categoryID)}"
+                                            styleClass="bhx-cat-item #{customerProductMBean.selectedCategoryId == lv3.categoryID ? 'active' : ''}">
+
+                                            <img src="#{facesContext.externalContext.requestContextPath}/resources/images/category.png"/>
+                                            <span>#{lv3.categoryName}</span>
+                                        </h:commandLink>
+                                    </ui:repeat>
+                                </div>
                             </div>
-                        </div>
-
-
-                        <!-- Products Grid - SCROLLABLE CONTENT -->
-                        <div class="row g-4 justify-content-center mt-3">
+                        </h:form> 
+                        <h:form>
+                        <!-- =================== PRODUCTS GRID =================== -->
+                        <div class="row g-4 justify-content-center mt-3">                           
+                            <!-- Product Cards - Dynamic -->
                             <ui:repeat value="#{customerProductMBean.products}" var="product">
                                 <div class="col-md-6 col-lg-4">
-                                    <div class="border rounded position-relative">
+                                    <div class="border rounded position-relative product-card">            
+                                        <!-- Badges -->
                                         <div class="position-absolute top-0 start-0 m-2">
+                                            <!-- Brand Badge -->
                                             <h:panelGroup rendered="#{product.brandID ne null}">
                                                 <span class="badge bg-info">#{product.brandID.brandName}</span>
                                             </h:panelGroup>
+  
+                                            <!-- Stock Warning -->
                                             <h:panelGroup rendered="#{customerProductMBean.getStock(product) gt 0 and customerProductMBean.getStock(product) lt 10}">
                                                 <span class="badge bg-danger">HOT</span>
                                             </h:panelGroup>
                                         </div>
+                                        
+                                        <!--Product Image -->
                                         <h:panelGroup rendered="#{customerProductMBean.getImageUrl(product) ne null}">
                                             <img src="#{customerProductMBean.getImageUrl(product)}" 
                                                  class="img-fluid w-100" 
                                                  alt="#{product.name}" 
                                                  style="height: 200px; object-fit: cover;"
-                                                 onerror="this.src='#{facesContext.externalContext.requestContextPath}/resources/Customer/img/no-image.jpg'"/>
+                                                 onerror="this.src='#{facesContext.externalContext.requestContextPath}/resources/Customer/img/vegetable-item-2.jpg'"/>
                                         </h:panelGroup>
                                         <h:panelGroup rendered="#{customerProductMBean.getImageUrl(product) eq null}">
-                                            <img src="#{facesContext.externalContext.requestContextPath}/resources/Customer/img/no-image.jpg" 
+                                            <img src="#{facesContext.externalContext.requestContextPath}/resources/Customer/img/vegetable-item-2.jpg" 
                                                  class="img-fluid w-100" 
                                                  alt="#{product.name}" 
                                                  style="height: 200px; object-fit: cover;"/>
                                         </h:panelGroup>
+                                        
+                                        <!-- Product Info -->
                                         <div class="p-3">
+                                            <!-- Product Name -->
                                             <h6 class="mb-2">#{product.name}</h6>
-                                            <div class="d-flex align-items-baseline mb-2">
-                                                <h5 class="text-danger fw-bold mb-0 me-2">#{customerProductMBean.formatPrice(product.unitPrice)}</h5>
+
+                                            <!-- Price -->
+                                            <div class="product-price-wrapper">
+                                                <span class="product-price">
+                                                    <h:outputText value="#{product.unitPrice}">
+                                                        <f:convertNumber
+                                                            groupingUsed="true"
+                                                            maxFractionDigits="2"/>
+                                                    </h:outputText>
+                                                    <span class="currency"> USD</span>
+                                                </span>
                                             </div>
+
+
+                                            <!-- Description -->
                                             <h:panelGroup rendered="#{product.description ne null and not empty product.description}">
-                                                <p class="text-muted small mb-2">#{product.description}</p>
+                                                <p class="text-muted small mb-2" style="
+                                                    display: -webkit-box;
+                                                    -webkit-line-clamp: 2;
+                                                    -webkit-box-orient: vertical;
+                                                    overflow: hidden;
+                                                ">#{product.description}</p>
                                             </h:panelGroup>
+                                            
+                                            <!-- Category -->
                                             <h:panelGroup rendered="#{product.categoryID ne null}">
                                                 <p class="text-muted small mb-2">
                                                     <i class="fas fa-tag"></i> #{product.categoryID.categoryName}
                                                 </p>
                                             </h:panelGroup>
+                                            
+                                            <!-- Stock Status -->
                                             <h:panelGroup rendered="#{customerProductMBean.isInStock(product)}">
                                                 <p class="text-success small mb-2">
-                                                    <i class="fas fa-check-circle"></i> Còn hàng (#{customerProductMBean.getStock(product)} sản phẩm)
+                                                    <i class="fas fa-check-circle"></i> 
+                                                    Còn hàng 
+                                                    <h:panelGroup rendered="#{customerProductMBean.getStock(product) lt 20}">
+                                                        (#{customerProductMBean.getStock(product)} sản phẩm)
+                                                    </h:panelGroup>
                                                 </p>
                                             </h:panelGroup>
                                             <h:panelGroup rendered="#{not customerProductMBean.isInStock(product)}">
@@ -100,26 +156,41 @@
                                                     <i class="fas fa-times-circle"></i> Hết hàng
                                                 </p>
                                             </h:panelGroup>
-                                            <h:commandButton value="MUA" 
-                                                           styleClass="btn btn-success w-100"
-                                                           action="#{shoppingCartMBean.addToCart(product)}"
-                                                           disabled="#{not customerProductMBean.isInStock(product)}"/>
+                                            
+                                            <!-- Buy Button -->
+                                            <h:commandButton 
+                                                value="MUA" 
+                                                styleClass="btn btn-success w-100"
+                                                action="#{shoppingCartMBean.addToCart(product)}"
+                                                disabled="#{not customerProductMBean.isInStock(product)}">
+                                                <f:ajax execute="@this" render="@none" />
+                                            </h:commandButton>
                                         </div>
+                                        
                                     </div>
                                 </div>
                             </ui:repeat>
                             
-                            <!-- Empty state -->
+                            <!-- Empty State -->
                             <h:panelGroup rendered="#{empty customerProductMBean.products}">
                                 <div class="col-12 text-center py-5">
-                                    <p class="text-muted">Không tìm thấy sản phẩm nào.</p>
+                                    <i class="fas fa-box-open fa-4x text-muted mb-3"></i>
+                                    <h5 class="text-muted">Không tìm thấy sản phẩm nào</h5>
+                                    <p class="text-muted">Vui lòng chọn danh mục khác hoặc thử lại sau.</p>
+                                    <h:commandButton 
+                                        value="Xem tất cả sản phẩm" 
+                                        action="#{customerProductMBean.clearFilter}"
+                                        styleClass="btn btn-outline-success mt-3">
+                                        <f:ajax execute="@form" render="@form" />
+                                    </h:commandButton>
                                 </div>
                             </h:panelGroup>
+          
                         </div>
+                        </h:form>
                     </div>
                 </div>
             </div>
         </div>
-
     </ui:define>
 </ui:composition>

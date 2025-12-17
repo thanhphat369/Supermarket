@@ -21,15 +21,16 @@ import mypack.sessionbean.ProductFacadeLocal;
 @Named(value = "productMBean")
 @SessionScoped
 public class ProductMBean implements Serializable {
-
+    @EJB(beanInterface = CategoryFacadeLocal.class)
+private CategoryFacadeLocal categoryFacade;
+    
     @EJB
     private ProductFacadeLocal productFacade;
     
     @EJB
     private BrandFacadeLocal brandFacade;
     
-    @EJB
-    private CategoryFacadeLocal categoryFacade;
+   
     
     private Part uploadedFile;
     private Product selected = new Product();
@@ -49,7 +50,7 @@ public class ProductMBean implements Serializable {
         }
     }
     
-    // Lấy danh sách category
+//     Lấy danh sách category
     public List<Category> getAllCategories() {
         try {
             return categoryFacade.findAll();
@@ -163,32 +164,6 @@ public class ProductMBean implements Serializable {
         selectedCategoryId = (p.getCategoryID() != null) ? p.getCategoryID().getCategoryID() : null;
         editMode = true;
         uploadedFile = null;
-    }
-    
-    // Xóa
-    public void delete(Product p) {
-        try {
-            // Check if product is being used
-            if (p.getOrderDetailsCollection() != null && !p.getOrderDetailsCollection().isEmpty()) {
-                addErr("⚠️ Cannot delete this product because there are related orders!");
-                return;
-            }
-            
-            if (p.getShoppingCartCollection() != null && !p.getShoppingCartCollection().isEmpty()) {
-                addErr("⚠️ Cannot delete this product because it is in shopping cart!");
-                return;
-            }
-            
-            productFacade.remove(p);
-            addInfo("✅ Product deleted!");
-            
-            if (selected != null && selected.getProductID() != null && selected.getProductID().equals(p.getProductID())) {
-                prepareCreate();
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-            addErr("❌ Delete failed: " + e.getMessage());
-        }
     }
     
     // Save

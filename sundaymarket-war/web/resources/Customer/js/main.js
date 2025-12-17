@@ -118,7 +118,7 @@
         $('.btn-play').click(function () {
             $videoSrc = $(this).data("src");
         });
-        console.log($videoSrc);
+        // Removed console.log($videoSrc) - $videoSrc is undefined until button is clicked
 
         $('#videoModal').on('shown.bs.modal', function (e) {
             $("#video").attr('src', $videoSrc + "?autoplay=1&amp;modestbranding=1&amp;showinfo=0");
@@ -215,14 +215,17 @@ document.addEventListener("DOMContentLoaded", function () {
     // Giả lập mã đơn (sau này backend đổ vô)
     const orderCode = "DH" + Math.floor(100000 + Math.random() * 900000);
 
-    // Gán nội dung chuyển khoản
-    document.getElementById("transferContent").innerText =
-        "THANH TOAN DON " + orderCode;
+    // Gán nội dung chuyển khoản - Kiểm tra element có tồn tại trước
+    const transferContent = document.getElementById("transferContent");
+    if (transferContent) {
+        transferContent.innerText = "THANH TOAN DON " + orderCode;
+    }
 });
 
 // chọn phương thức
 function selectPayment(type) {
     const qrBox = document.getElementById("qrBox");
+    if (!qrBox) return; // Kiểm tra element có tồn tại
 
     if (type === "BANK") {
         qrBox.style.display = "block";
@@ -237,8 +240,13 @@ function submitOrder() {
         'input[name="paymentMethod"]:not(:checked)'
     ) === null;
 
-    const qrVisible = document.getElementById("qrBox").style.display === "block";
-    const confirmed = document.getElementById("confirmTransferred").checked;
+    const qrBox = document.getElementById("qrBox");
+    const confirmCheckbox = document.getElementById("confirmTransferred");
+    
+    if (!qrBox || !confirmCheckbox) return; // Kiểm tra elements có tồn tại
+    
+    const qrVisible = qrBox.style.display === "block";
+    const confirmed = confirmCheckbox.checked;
 
     if (qrVisible && !confirmed) {
         alert("⚠ Vui lòng xác nhận đã chuyển khoản trước khi đặt hàng!");

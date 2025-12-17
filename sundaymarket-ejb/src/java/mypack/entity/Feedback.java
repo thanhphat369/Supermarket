@@ -24,7 +24,7 @@ import java.util.Date;
 
 /**
  *
- * @author MC
+ * @author My PC
  */
 @Entity
 @Table(name = "Feedback")

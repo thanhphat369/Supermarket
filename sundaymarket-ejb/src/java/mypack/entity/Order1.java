@@ -16,6 +16,7 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.NamedQueries;
 import jakarta.persistence.NamedQuery;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.Temporal;
 import jakarta.persistence.TemporalType;
@@ -29,10 +30,10 @@ import java.util.Date;
 
 /**
  *
- * @author MC
+ * @author My PC
  */
 @Entity
-@Table(name = "[Order]")
+@Table(name = "Order")
 @XmlRootElement
 @NamedQueries({
     @NamedQuery(name = "Order1.findAll", query = "SELECT o FROM Order1 o"),
@@ -65,6 +66,8 @@ public class Order1 implements Serializable {
     private User userID;
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "orderID")
     private Collection<OrderDetails> orderDetailsCollection;
+    @OneToOne(cascade = CascadeType.ALL, mappedBy = "order1")
+    private OrderPromotion orderPromotion;
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "orderID")
     private Collection<Delivery> deliveryCollection;
 
@@ -128,6 +131,14 @@ public class Order1 implements Serializable {
 
     public void setOrderDetailsCollection(Collection<OrderDetails> orderDetailsCollection) {
         this.orderDetailsCollection = orderDetailsCollection;
+    }
+
+    public OrderPromotion getOrderPromotion() {
+        return orderPromotion;
+    }
+
+    public void setOrderPromotion(OrderPromotion orderPromotion) {
+        this.orderPromotion = orderPromotion;
     }
 
     @XmlTransient

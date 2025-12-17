@@ -25,7 +25,7 @@ import java.util.Date;
 
 /**
  *
- * @author MC
+ * @author My PC
  */
 @Entity
 @Table(name = "Stock_Transactions")
@@ -36,7 +36,8 @@ import java.util.Date;
     @NamedQuery(name = "StockTransactions.findByType", query = "SELECT s FROM StockTransactions s WHERE s.type = :type"),
     @NamedQuery(name = "StockTransactions.findByQuantity", query = "SELECT s FROM StockTransactions s WHERE s.quantity = :quantity"),
     @NamedQuery(name = "StockTransactions.findByCreatedAt", query = "SELECT s FROM StockTransactions s WHERE s.createdAt = :createdAt"),
-    @NamedQuery(name = "StockTransactions.findByNote", query = "SELECT s FROM StockTransactions s WHERE s.note = :note")})
+    @NamedQuery(name = "StockTransactions.findByNote", query = "SELECT s FROM StockTransactions s WHERE s.note = :note"),
+    @NamedQuery(name = "StockTransactions.findByUnitCost", query = "SELECT s FROM StockTransactions s WHERE s.unitCost = :unitCost")})
 public class StockTransactions implements Serializable {
 
     private static final long serialVersionUID = 1L;
@@ -60,6 +61,8 @@ public class StockTransactions implements Serializable {
     @Size(max = 255)
     @Column(name = "Note")
     private String note;
+    @Column(name = "UnitCost")
+    private Integer unitCost;
     @JoinColumn(name = "Product_ID", referencedColumnName = "Product_ID")
     @ManyToOne(optional = false)
     private Product productID;
@@ -118,6 +121,14 @@ public class StockTransactions implements Serializable {
 
     public void setNote(String note) {
         this.note = note;
+    }
+
+    public Integer getUnitCost() {
+        return unitCost;
+    }
+
+    public void setUnitCost(Integer unitCost) {
+        this.unitCost = unitCost;
     }
 
     public Product getProductID() {

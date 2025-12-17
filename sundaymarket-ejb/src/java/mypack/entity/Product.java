@@ -18,16 +18,19 @@ import jakarta.persistence.NamedQuery;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.Temporal;
+import jakarta.persistence.TemporalType;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import jakarta.xml.bind.annotation.XmlRootElement;
 import jakarta.xml.bind.annotation.XmlTransient;
 import java.io.Serializable;
 import java.util.Collection;
+import java.util.Date;
 
 /**
  *
- * @author MC
+ * @author My PC
  */
 @Entity
 @Table(name = "Product")
@@ -37,8 +40,11 @@ import java.util.Collection;
     @NamedQuery(name = "Product.findByProductID", query = "SELECT p FROM Product p WHERE p.productID = :productID"),
     @NamedQuery(name = "Product.findByName", query = "SELECT p FROM Product p WHERE p.name = :name"),
     @NamedQuery(name = "Product.findByDescription", query = "SELECT p FROM Product p WHERE p.description = :description"),
-    @NamedQuery(name = "Product.findByUnitPrice", query = "SELECT p FROM Product p WHERE p.unitPrice = :unitPrice"),
-    @NamedQuery(name = "Product.findByImageURL", query = "SELECT p FROM Product p WHERE p.imageURL = :imageURL")})
+    @NamedQuery(name = "Product.findByImageURL", query = "SELECT p FROM Product p WHERE p.imageURL = :imageURL"),
+    @NamedQuery(name = "Product.findByStatus", query = "SELECT p FROM Product p WHERE p.status = :status"),
+    @NamedQuery(name = "Product.findByStock", query = "SELECT p FROM Product p WHERE p.stock = :stock"),
+    @NamedQuery(name = "Product.findByCreatedAt", query = "SELECT p FROM Product p WHERE p.createdAt = :createdAt"),
+    @NamedQuery(name = "Product.findByUpdatedAt", query = "SELECT p FROM Product p WHERE p.updatedAt = :updatedAt")})
 public class Product implements Serializable {
 
     private static final long serialVersionUID = 1L;
@@ -55,13 +61,20 @@ public class Product implements Serializable {
     @Size(max = 2147483647)
     @Column(name = "Description")
     private String description;
-    @Basic(optional = false)
-    @NotNull
-    @Column(name = "UnitPrice")
-    private int unitPrice;
     @Size(max = 255)
     @Column(name = "ImageURL")
     private String imageURL;
+    @Size(max = 20)
+    @Column(name = "Status")
+    private String status;
+    @Column(name = "Stock")
+    private Integer stock;
+    @Column(name = "CreatedAt")
+    @Temporal(TemporalType.TIMESTAMP)
+    private Date createdAt;
+    @Column(name = "UpdatedAt")
+    @Temporal(TemporalType.TIMESTAMP)
+    private Date updatedAt;
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "productID")
     private Collection<OrderDetails> orderDetailsCollection;
     @JoinColumn(name = "Brand_ID", referencedColumnName = "Brand_ID")
@@ -71,15 +84,17 @@ public class Product implements Serializable {
     @ManyToOne(optional = false)
     private Category categoryID;
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "productID")
-    private Collection<PurchaseOrderDetails> purchaseOrderDetailsCollection;
-    @OneToMany(cascade = CascadeType.ALL, mappedBy = "productID")
     private Collection<StockTransactions> stockTransactionsCollection;
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "productID")
     private Collection<ShoppingCart> shoppingCartCollection;
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "productID")
     private Collection<Feedback> feedbackCollection;
+    @OneToMany(cascade = CascadeType.ALL, mappedBy = "productID")
+    private Collection<ProductVariant> productVariantCollection;
     @OneToOne(cascade = CascadeType.ALL, mappedBy = "product")
     private Inventory inventory;
+    @OneToMany(cascade = CascadeType.ALL, mappedBy = "product")
+    private Collection<PromotionProduct> promotionProductCollection;
 
     public Product() {
     }
@@ -88,10 +103,9 @@ public class Product implements Serializable {
         this.productID = productID;
     }
 
-    public Product(Integer productID, String name, int unitPrice) {
+    public Product(Integer productID, String name) {
         this.productID = productID;
         this.name = name;
-        this.unitPrice = unitPrice;
     }
 
     public Integer getProductID() {
@@ -118,20 +132,44 @@ public class Product implements Serializable {
         this.description = description;
     }
 
-    public int getUnitPrice() {
-        return unitPrice;
-    }
-
-    public void setUnitPrice(int unitPrice) {
-        this.unitPrice = unitPrice;
-    }
-
     public String getImageURL() {
         return imageURL;
     }
 
     public void setImageURL(String imageURL) {
         this.imageURL = imageURL;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
+    public Integer getStock() {
+        return stock;
+    }
+
+    public void setStock(Integer stock) {
+        this.stock = stock;
+    }
+
+    public Date getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(Date createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public Date getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(Date updatedAt) {
+        this.updatedAt = updatedAt;
     }
 
     @XmlTransient
@@ -157,15 +195,6 @@ public class Product implements Serializable {
 
     public void setCategoryID(Category categoryID) {
         this.categoryID = categoryID;
-    }
-
-    @XmlTransient
-    public Collection<PurchaseOrderDetails> getPurchaseOrderDetailsCollection() {
-        return purchaseOrderDetailsCollection;
-    }
-
-    public void setPurchaseOrderDetailsCollection(Collection<PurchaseOrderDetails> purchaseOrderDetailsCollection) {
-        this.purchaseOrderDetailsCollection = purchaseOrderDetailsCollection;
     }
 
     @XmlTransient
@@ -195,12 +224,30 @@ public class Product implements Serializable {
         this.feedbackCollection = feedbackCollection;
     }
 
+    @XmlTransient
+    public Collection<ProductVariant> getProductVariantCollection() {
+        return productVariantCollection;
+    }
+
+    public void setProductVariantCollection(Collection<ProductVariant> productVariantCollection) {
+        this.productVariantCollection = productVariantCollection;
+    }
+
     public Inventory getInventory() {
         return inventory;
     }
 
     public void setInventory(Inventory inventory) {
         this.inventory = inventory;
+    }
+
+    @XmlTransient
+    public Collection<PromotionProduct> getPromotionProductCollection() {
+        return promotionProductCollection;
+    }
+
+    public void setPromotionProductCollection(Collection<PromotionProduct> promotionProductCollection) {
+        this.promotionProductCollection = promotionProductCollection;
     }
 
     @Override

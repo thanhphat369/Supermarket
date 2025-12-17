@@ -5,7 +5,6 @@
 package mypack.entity;
 
 import jakarta.persistence.Basic;
-import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -24,7 +23,7 @@ import java.util.Collection;
 
 /**
  *
- * @author MC
+ * @author My PC
  */
 @Entity
 @Table(name = "Supplier")
@@ -56,8 +55,8 @@ public class Supplier implements Serializable {
     private String address;
     @OneToMany(mappedBy = "supplierID")
     private Collection<StockTransactions> stockTransactionsCollection;
-    @OneToMany(cascade = CascadeType.ALL, mappedBy = "supplierID")
-    private Collection<PurchaseOrder> purchaseOrderCollection;
+    @OneToMany(mappedBy = "supplierID")
+    private Collection<Brand> brandCollection;
 
     public Supplier() {
     }
@@ -113,12 +112,12 @@ public class Supplier implements Serializable {
     }
 
     @XmlTransient
-    public Collection<PurchaseOrder> getPurchaseOrderCollection() {
-        return purchaseOrderCollection;
+    public Collection<Brand> getBrandCollection() {
+        return brandCollection;
     }
 
-    public void setPurchaseOrderCollection(Collection<PurchaseOrder> purchaseOrderCollection) {
-        this.purchaseOrderCollection = purchaseOrderCollection;
+    public void setBrandCollection(Collection<Brand> brandCollection) {
+        this.brandCollection = brandCollection;
     }
 
     @Override

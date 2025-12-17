@@ -22,7 +22,7 @@ import java.io.Serializable;
 
 /**
  *
- * @author MC
+ * @author My PC
  */
 @Entity
 @Table(name = "Order_Details")

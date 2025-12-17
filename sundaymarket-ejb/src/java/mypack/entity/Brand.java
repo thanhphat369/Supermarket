@@ -11,6 +11,8 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.NamedQueries;
 import jakarta.persistence.NamedQuery;
 import jakarta.persistence.OneToMany;
@@ -24,7 +26,7 @@ import java.util.Collection;
 
 /**
  *
- * @author MC
+ * @author My PC
  */
 @Entity
 @Table(name = "Brand")
@@ -32,7 +34,8 @@ import java.util.Collection;
 @NamedQueries({
     @NamedQuery(name = "Brand.findAll", query = "SELECT b FROM Brand b"),
     @NamedQuery(name = "Brand.findByBrandID", query = "SELECT b FROM Brand b WHERE b.brandID = :brandID"),
-    @NamedQuery(name = "Brand.findByBrandName", query = "SELECT b FROM Brand b WHERE b.brandName = :brandName")})
+    @NamedQuery(name = "Brand.findByBrandName", query = "SELECT b FROM Brand b WHERE b.brandName = :brandName"),
+    @NamedQuery(name = "Brand.findByDescription", query = "SELECT b FROM Brand b WHERE b.description = :description")})
 public class Brand implements Serializable {
 
     private static final long serialVersionUID = 1L;
@@ -46,8 +49,14 @@ public class Brand implements Serializable {
     @Size(min = 1, max = 100)
     @Column(name = "Brand_Name")
     private String brandName;
+    @Size(max = 2147483647)
+    @Column(name = "Description")
+    private String description;
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "brandID")
     private Collection<Product> productCollection;
+    @JoinColumn(name = "Supplier_ID", referencedColumnName = "Supplier_ID")
+    @ManyToOne
+    private Supplier supplierID;
 
     public Brand() {
     }
@@ -77,6 +86,14 @@ public class Brand implements Serializable {
         this.brandName = brandName;
     }
 
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
     @XmlTransient
     public Collection<Product> getProductCollection() {
         return productCollection;
@@ -84,6 +101,14 @@ public class Brand implements Serializable {
 
     public void setProductCollection(Collection<Product> productCollection) {
         this.productCollection = productCollection;
+    }
+
+    public Supplier getSupplierID() {
+        return supplierID;
+    }
+
+    public void setSupplierID(Supplier supplierID) {
+        this.supplierID = supplierID;
     }
 
     @Override
