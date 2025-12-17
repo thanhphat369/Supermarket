@@ -1,0 +1,23 @@
+# NetBeans
+nbproject/private/
+**/nbproject/private/
+
+# Build / Dist
+**/build/
+**/dist/
+**/target/
+
+# GlassFish
+glassfish*/
+GlassFish_Server*/
+
+# Logs
+*.log
+
+# OS
+Thumbs.db
+.DS_Store
+
+# IDE
+.idea/
+.vscode/
