@@ -1,0 +1,85 @@
+<ui:composition template="/templates/layoutCustomer.xhtml"
+                xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
+                xmlns:h="jakarta.faces.html">
+    <ui:define name="content">
+        <div class="sticky-sidebar">
+            <h2>TEST KẾT NỐI DATABASE - BRAND</h2>
+
+            <p>Total Brand: #{brandMBean.currentPage}</p>
+
+    <ul>
+        <ui:repeat value="#{brandMBean.items}" var="b">
+            <li>
+                #{b.brandID} - #{b.brandName}
+            </li>
+        </ui:repeat>
+    </ul>
+                            <div class="mb-3">
+                                <h4 class="mb-4">Danh mục sản phẩm</h4>
+                                <h:outputText value="Total Category: #{categoryMBean.level1Categories.size()}" />
+                                <ul class="list-unstyled fruite-categorie category-menu">
+
+                                    <!-- TẤT CẢ -->
+                                    <li>
+                                        <h:commandLink action="#{customerProductMBean.clearFilter}"
+                                                       styleClass="category-link d-block p-2 fw-bold">
+                                            <i class="fas fa-th me-2"></i> Tất cả
+                                        </h:commandLink>
+                                    </li>
+
+                                    <!-- LEVEL 1: Chỉ hiển thị tiêu đề (KHÔNG CLICK) -->
+                                    <ui:repeat value="#{categoryMBean.level1Categories}" var="lv1">
+                                        <li class="mt-2">
+
+                                            <!-- Level 1 title - KHÔNG CLICK -->
+                                            <div class="fw-bold text-uppercase small text-success ps-2" style="cursor: default;">
+                                                <i class="fas fa-folder-open me-1"></i>
+                                                #{lv1.categoryName}
+                                            </div>
+
+                                            <!-- LEVEL 2: Có thể click (tùy chọn) để expand/collapse -->
+                                            <ul class="list-unstyled ps-3 mt-1">
+                                                <ui:repeat value="#{categoryMBean.getChildren(lv1)}" var="lv2">
+                                                    <li>
+                                                        <!-- Level 2 - Có thể click để expand/collapse -->
+                                                        <h:commandLink 
+                                                            action="#{customerProductMBean.toggleCategory(lv2.categoryID)}"
+                                                            styleClass="fw-semibold small text-dark d-block py-1 text-decoration-none"
+                                                            style="cursor: pointer;">
+                                                            <i class="fas #{customerProductMBean.isCategoryExpanded(lv2.categoryID) ? 'fa-chevron-down' : 'fa-angle-right'} me-1"></i>
+                                                            #{lv2.categoryName}
+                                                        </h:commandLink>
+
+                                                        <!-- LEVEL 3: Click để lọc sản phẩm -->
+                                                        <h:panelGroup rendered="#{customerProductMBean.isCategoryExpanded(lv2.categoryID)}">
+                                                            <ul class="list-unstyled ps-3">
+                                                                <ui:repeat value="#{categoryMBean.getChildren(lv2)}" var="lv3">
+                                                                    <li>
+                                                                        <h:commandLink
+                                                                            action="#{customerProductMBean.filterByCategory(lv3.categoryID)}"
+                                                                            styleClass="category-link d-block py-1 text-decoration-none
+                                                                            #{customerProductMBean.selectedCategoryId eq lv3.categoryID ? 'fw-bold text-success' : 'text-dark'}">
+                                                                            <i class="fas fa-tag me-1"></i>
+                                                                            #{lv3.categoryName}
+                                                                        </h:commandLink>
+                                                                    </li>
+                                                                </ui:repeat>
+                                                            </ul>
+                                                        </h:panelGroup>
+
+                                                    </li>
+                                                </ui:repeat>
+                                            </ul>
+
+                                        </li>
+                                    </ui:repeat>
+
+                                </ul>
+
+                            </div>
+                        </div>
+        
+    
+    </ui:define>
+</ui:composition>

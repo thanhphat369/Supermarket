@@ -1,0 +1,86 @@
+<ui:composition template="/templates/layoutCustomer.xhtml"
+    xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
+    xmlns:h="jakarta.faces.html">
+
+<ui:define name="content">
+
+<div class="container py-5">
+
+    <h3 class="mb-4">📜 Lịch sử đơn hàng</h3>
+
+    <!-- ================= FILTER ================= -->
+    <div class="d-flex gap-2 mb-4 flex-wrap">
+        <button class="btn btn-outline-success active">Tất cả</button>
+        <button class="btn btn-outline-warning">Đang giao</button>
+        <button class="btn btn-outline-success">Hoàn thành</button>
+        <button class="btn btn-outline-danger">Đã hủy</button>
+    </div>
+
+    <!-- ================= ORDER ITEM ================= -->
+    <div class="order-history-item border rounded p-4 mb-3 bg-white">
+
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <div>
+                <strong>Mã đơn:</strong> #DH123456
+                <span class="ms-3 text-muted">12/12/2025</span>
+            </div>
+            <span class="badge bg-warning">Đang giao</span>
+        </div>
+
+        <div class="d-flex align-items-center mb-3">
+            <img src="img/chicken-wing.jpg" class="history-img"/>
+            <div class="ms-3">
+                <div>Cánh gà</div>
+                <small class="text-muted">+2 sản phẩm khác</small>
+            </div>
+        </div>
+
+        <div class="d-flex justify-content-between align-items-center">
+            <strong class="text-danger">124.275đ</strong>
+
+            <h:link outcome="/pages/Customer/HomePage"
+                styleClass="btn btn-outline-primary btn-sm">
+                Xem chi tiết
+            </h:link>
+        </div>
+
+    </div>
+
+    <!-- ================= ORDER COMPLETED ================= -->
+    <div class="order-history-item border rounded p-4 mb-3 bg-white">
+
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <div>
+                <strong>Mã đơn:</strong> #DH123120
+                <span class="ms-3 text-muted">05/12/2025</span>
+            </div>
+            <span class="badge bg-success">Hoàn thành</span>
+        </div>
+
+        <div class="d-flex align-items-center mb-3">
+            <img src="img/chicken-drumstick.jpg" class="history-img"/>
+            <div class="ms-3">
+                <div>Đùi gà góc tư</div>
+                <small class="text-muted">+1 sản phẩm khác</small>
+            </div>
+        </div>
+
+        <div class="d-flex justify-content-between align-items-center">
+            <strong class="text-danger">82.500đ</strong>
+
+            <div class="d-flex gap-2">
+                <h:link outcome="/pages/Customer/HomePage"
+                    styleClass="btn btn-outline-primary btn-sm">
+                    Xem Chi tiết 
+                </h:link>
+                <button class="btn btn-outline-success btn-sm">Mua lại</button>
+            </div>
+        </div>
+
+    </div>
+
+</div>
+
+</ui:define>
+</ui:composition>

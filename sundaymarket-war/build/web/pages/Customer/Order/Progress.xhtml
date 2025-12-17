@@ -1,0 +1,99 @@
+<ui:composition template="/templates/layoutCustomer.xhtml"
+                xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
+                xmlns:h="jakarta.faces.html">
+    <ui:define name="content">
+
+        <div class="container py-5 mb-5 main-cart">
+
+            <h3 class="mb-4">📦 Theo dõi đơn hàng</h3>
+
+            <!-- ================= ORDER INFO ================= -->
+            <div class="border rounded p-4 mb-4 bg-white">
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>Mã đơn hàng:</strong> #DH123456</p>
+                        <p><strong>Ngày đặt:</strong> 12/12/2025</p>
+                    </div>
+                    <div class="col-md-6 text-md-end">
+                        <p><strong>Trạng thái:</strong>
+                            <span class="badge bg-warning">Đang giao</span>
+                        </p>
+                        <p><strong>Tổng tiền:</strong>
+                            <span class="text-danger fw-bold">124.275đ</span>
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ================= ORDER STATUS TIMELINE ================= -->
+            <div class="border rounded p-4 mb-4 bg-white">
+                <h5 class="mb-4">🚚 Tiến độ đơn hàng</h5>
+
+                <div class="order-timeline">
+
+                    <div class="timeline-step completed">
+                        <div class="circle">✓</div>
+                        <div class="content">
+                            <h6>Đã đặt hàng</h6>
+                            <small>12/12/2025 - 09:15</small>
+                        </div>
+                    </div>
+
+                    <div class="timeline-step completed">
+                        <div class="circle">✓</div>
+                        <div class="content">
+                            <h6>Đã xác nhận</h6>
+                            <small>12/12/2025 - 09:30</small>
+                        </div>
+                    </div>
+
+                    <div class="timeline-step active">
+                        <div class="circle">🚚</div>
+                        <div class="content">
+                            <h6>Đang giao hàng</h6>
+                            <small>Dự kiến: 13/12/2025</small>
+                        </div>
+                    </div>
+
+                    <div class="timeline-step">
+                        <div class="circle">📦</div>
+                        <div class="content">
+                            <h6>Đã giao</h6>
+                            <small>Chưa hoàn tất</small>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- ================= PRODUCT LIST ================= -->
+            <div class="border rounded p-4 bg-white">
+                <h5 class="mb-4">🛒 Sản phẩm đã mua</h5>
+
+                <div class="order-item d-flex align-items-center mb-3">
+                    <img src="img/chicken-wing.jpg" class="order-img"/>
+
+                    <div class="flex-grow-1 ms-3">
+                        <h6 class="mb-1">Cánh gà</h6>
+                        <small class="text-muted">500g × 1</small>
+                    </div>
+
+                    <div class="fw-bold text-danger">52.275đ</div>
+                </div>
+
+                <div class="order-item d-flex align-items-center">
+                    <img src="img/chicken-drumstick.jpg" class="order-img"/>
+
+                    <div class="flex-grow-1 ms-3">
+                        <h6 class="mb-1">Đùi gà góc tư</h6>
+                        <small class="text-muted">300g × 2</small>
+                    </div>
+
+                    <div class="fw-bold text-danger">57.000đ</div>
+                </div>
+            </div>
+
+        </div>
+    </ui:define>
+</ui:composition>

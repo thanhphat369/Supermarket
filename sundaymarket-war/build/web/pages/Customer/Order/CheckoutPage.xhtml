@@ -1,0 +1,131 @@
+<ui:composition template="/templates/layoutCustomer.xhtml"
+                xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
+                xmlns:h="jakarta.faces.html">
+    <ui:define name="content">
+
+        <div class="container py-5 mb-5 main-cart">
+
+            <h3 class="checkout-title">Thanh toán</h3>
+
+            <div class="row g-4">
+
+                <!-- LEFT -->
+                <div class="col-lg-7">
+                    <div class="card-box">
+                        <h5><i class="fa-solid fa-location-dot"></i> Thông tin giao hàng</h5>
+                        <input class="form-control" placeholder="Họ tên người nhận"/>
+                        <input class="form-control" placeholder="Số điện thoại"/>
+                        <textarea class="form-control" rows="3"
+                                  placeholder="Địa chỉ giao hàng"></textarea>
+                    </div>
+
+                    <div class="card-box">
+                        <h5>Phương thức thanh toán</h5>
+
+                        <!-- COD -->
+                        <label class="radio-item">
+                            <input type="radio"
+                                   name="paymentMethod"
+                                   checked="checked"
+                                   onclick="selectPayment('COD')" />
+                            COD (Thanh toán khi nhận hàng)
+                        </label>
+
+                        <!-- BANK -->
+                        <label class="radio-item">
+                            <input type="radio"
+                                   name="paymentMethod"
+                                   onclick="selectPayment('BANK')" />
+                            Chuyển khoản ngân hàng
+                        </label>
+
+                        <!-- QR + BANK INFO -->
+                        <div id="qrBox" style="display:none; margin-top:15px;" class="bank-box">
+
+                            <!-- LOGO BANK -->
+                            <div class="bank-header">
+                                <img src="#{request.contextPath}/resources/img/bank/vcb.png"
+                                     alt="Vietcombank"
+                                     class="bank-logo" />
+                                <strong>Ngân hàng Vietcombank</strong>
+                            </div>
+
+                            <!-- INFO -->
+                            <p><b>Số tài khoản:</b> 0123 456 789</p>
+                            <p><b>Chủ tài khoản:</b> NGUYEN VAN A</p>
+                            <p>
+                                <b>Nội dung chuyển khoản:</b><br/>
+                                <span id="transferContent" class="transfer-text"></span>
+                            </p>
+
+                            <!-- QR -->
+                            <img src="#{request.contextPath}/resources/img/qr-bank.png"
+                                 class="qr-img" />
+
+                            <!-- CONFIRM -->
+                            <label class="checkbox-item">
+                                <input type="checkbox" id="confirmTransferred" />
+                                Tôi đã hoàn tất chuyển khoản
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- RIGHT -->
+                <div class="col-lg-5">
+                    <div class="order-summary">
+
+                        <h5><i class="fa-solid fa-cart-shopping"></i> Đơn hàng</h5>
+
+                        <div class="order-row">
+                            <span>Cánh gà (x2)</span>
+                            <span>104.550đ</span>
+                        </div>
+
+                        <div class="order-row">
+                            <span>Đùi gà (x1)</span>
+                            <span>28.500đ</span>
+                        </div>
+
+                        <hr/>
+
+                        <h6>Mã giảm giá</h6>
+                        <div class="voucher-box">
+                            <input placeholder="Nhập mã voucher"/>
+                            <button>Áp dụng</button>
+                        </div>
+
+                        <hr/>
+
+                        <div class="order-row">
+                            <span>Tạm tính</span>
+                            <span>133.050đ</span>
+                        </div>
+
+                        <div class="order-row discount">
+                            <span>Giảm giá</span>
+                            <span>-10.000đ</span>
+                        </div>
+
+                        <div class="order-row">
+                            <span>Phí ship</span>
+                            <span>15.000đ</span>
+                        </div>
+
+                        <hr/>
+
+                        <div class="order-total">
+                            <span>Tổng cộng</span>
+                            <span>138.050đ</span>
+                        </div>
+
+                        <button class="btn-checkout">
+                            <i class="fa-solid fa-bag-shopping"></i> ĐẶT HÀNG
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </ui:define>
+</ui:composition>

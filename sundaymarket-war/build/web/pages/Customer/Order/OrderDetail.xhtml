@@ -1,0 +1,100 @@
+<ui:composition template="/templates/layoutCustomer.xhtml"
+    xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
+    xmlns:h="jakarta.faces.html">
+
+<ui:define name="content">
+
+<div class="container py-5 mb-5 main-cart">
+
+    <!-- HEADER -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h3>📦 Chi tiết đơn hàng</h3>
+        <span class="badge bg-warning fs-6">Đang giao</span>
+    </div>
+
+    <!-- ================= ORDER INFO ================= -->
+    <div class="border rounded p-4 bg-white mb-4">
+        <div class="row">
+            <div class="col-md-6">
+                <p><strong>Mã đơn:</strong> #DH123456</p>
+                <p><strong>Ngày đặt:</strong> 12/12/2025</p>
+                <p><strong>Thanh toán:</strong> COD</p>
+            </div>
+            <div class="col-md-6">
+                <p><strong>Người nhận:</strong> Nguyễn Văn A</p>
+                <p><strong>SĐT:</strong> 0909 999 999</p>
+                <p><strong>Địa chỉ:</strong> 01 Lý Tự Trọng, Ninh Kiều, Cần Thơ</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= PRODUCT LIST ================= -->
+    <div class="border rounded bg-white mb-4">
+
+        <div class="p-3 border-bottom fw-bold">Sản phẩm</div>
+
+        <!-- ITEM -->
+        <div class="d-flex align-items-center p-3 border-bottom">
+            <img src="img/chicken-wing.jpg" class="order-detail-img"/>
+            <div class="flex-grow-1 ms-3">
+                <div>Cánh gà</div>
+                <small class="text-muted">500g</small>
+            </div>
+            <div class="text-center" style="width: 80px;">x2</div>
+            <div class="text-end text-danger fw-bold" style="width: 120px;">104.550đ</div>
+        </div>
+
+        <!-- ITEM -->
+        <div class="d-flex align-items-center p-3">
+            <img src="img/chicken-drumstick.jpg" class="order-detail-img"/>
+            <div class="flex-grow-1 ms-3">
+                <div>Đùi gà góc tư</div>
+                <small class="text-muted">300g</small>
+            </div>
+            <div class="text-center" style="width: 80px;">x1</div>
+            <div class="text-end text-danger fw-bold" style="width: 120px;">28.500đ</div>
+        </div>
+
+    </div>
+
+    <!-- ================= SUMMARY ================= -->
+    <div class="border rounded bg-white p-4">
+
+        <div class="d-flex justify-content-between mb-2">
+            <span>Tạm tính</span>
+            <span>133.050đ</span>
+        </div>
+
+        <div class="d-flex justify-content-between mb-2">
+            <span>Phí vận chuyển</span>
+            <span>15.000đ</span>
+        </div>
+
+        <div class="d-flex justify-content-between mb-3">
+            <span>Giảm giá</span>
+            <span class="text-success">-10.000đ</span>
+        </div>
+
+        <hr/>
+
+        <div class="d-flex justify-content-between fs-5 fw-bold text-danger mb-3">
+            <span>Tổng cộng</span>
+            <span>138.050đ</span>
+        </div>
+
+        <div class="d-flex justify-content-end gap-2">
+            <h:link outcome="/pages/Customer/HomePage"
+                styleClass="btn btn-outline-primary">
+                Theo dõi đơn hàng
+            </h:link>
+
+            <button class="btn btn-outline-success">Mua lại</button>
+        </div>
+
+    </div>
+
+</div>
+
+</ui:define>
+</ui:composition>
