@@ -1,0 +1,268 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:h="jakarta.faces.html"
+      xmlns:f="jakarta.faces.core"
+      xmlns:ui="jakarta.faces.facelets">
+
+    <ui:composition template="/template.xhtml">
+        <ui:define name="title">📜 Lịch sử giao hàng</ui:define>
+
+        <ui:define name="content">
+            <h:outputStylesheet library="css" name="shipper-style.css" />
+            <h:messages globalOnly="true" id="messages" />
+            
+            <div class="shipper-page">
+                    
+                    <!-- Check login -->
+                    <h:panelGroup rendered="#{loginMBean.currentUser == null or !loginMBean.isShipper()}">
+                        <div class="empty-state" style="padding: 80px 20px;">
+                            <div class="empty-state-icon">🔐</div>
+                            <h2 class="empty-state-title">Truy cập bị từ chối</h2>
+                            <p class="empty-state-desc">Vui lòng đăng nhập với tài khoản Shipper để truy cập</p>
+                            <h:link outcome="login" styleClass="btn btn-primary btn-lg" style="margin-top: 24px;">
+                                🔓 Đăng nhập
+                            </h:link>
+                        </div>
+                    </h:panelGroup>
+                    
+                    <!-- History Content -->
+                    <h:panelGroup rendered="#{loginMBean.currentUser != null and loginMBean.isShipper()}">
+                        <h:form id="historyForm">
+                            
+                            <!-- Page Header -->
+                            <div class="shipper-header">
+                                <div>
+                                    <h1 class="shipper-title">
+                                        <span class="shipper-title-icon">📜</span>
+                                        Lịch sử giao hàng
+                                    </h1>
+                                    <p class="shipper-subtitle">Xem lại các đơn hàng đã giao</p>
+                                </div>
+                                <h:link outcome="shipper-dashboard" styleClass="btn btn-secondary">
+                                    ← Quay lại Dashboard
+                                </h:link>
+                            </div>
+                            
+                            <!-- Filter Section -->
+                            <div class="filter-section">
+                                <div class="filter-row">
+                                    <!-- Lọc theo trạng thái giao hàng -->
+                                    <div class="filter-group">
+                                        <span class="filter-label">Status</span>
+                                        <h:selectOneMenu value="#{shipperDashboardMBean.historyStatusFilter}" styleClass="form-control form-select" style="min-width: 160px;">
+                                            <f:selectItem itemValue="all" itemLabel="📋 All" />
+                                            <f:selectItem itemValue="delivered" itemLabel="✅ Delivered" />
+                                            <f:selectItem itemValue="failed" itemLabel="❌ Failed" />
+                                            <f:selectItem itemValue="shipping" itemLabel="🚚 Shipping" />
+                                            <f:selectItem itemValue="picked_up" itemLabel="📦 Picked Up" />
+                                            <f:ajax event="change" listener="#{shipperDashboardMBean.filterHistory()}" render="historyTable paginationInfo" />
+                                        </h:selectOneMenu>
+                                    </div>
+                                    
+                                    <div class="filter-group">
+                                        <span class="filter-label">Month</span>
+                                        <h:selectOneMenu value="#{shipperDashboardMBean.historyMonthFilter}" styleClass="form-control form-select" style="min-width: 120px;">
+                                            <f:selectItem itemValue="1" itemLabel="January" />
+                                            <f:selectItem itemValue="2" itemLabel="February" />
+                                            <f:selectItem itemValue="3" itemLabel="March" />
+                                            <f:selectItem itemValue="4" itemLabel="April" />
+                                            <f:selectItem itemValue="5" itemLabel="May" />
+                                            <f:selectItem itemValue="6" itemLabel="June" />
+                                            <f:selectItem itemValue="7" itemLabel="July" />
+                                            <f:selectItem itemValue="8" itemLabel="August" />
+                                            <f:selectItem itemValue="9" itemLabel="September" />
+                                            <f:selectItem itemValue="10" itemLabel="October" />
+                                            <f:selectItem itemValue="11" itemLabel="November" />
+                                            <f:selectItem itemValue="12" itemLabel="December" />
+                                            <f:ajax event="change" listener="#{shipperDashboardMBean.filterHistory()}" render="historyTable paginationInfo" />
+                                        </h:selectOneMenu>
+                                    </div>
+                                    
+                                    <div class="filter-group">
+                                        <span class="filter-label">Năm</span>
+                                        <h:inputText value="#{shipperDashboardMBean.historyYearFilter}" 
+                                                   styleClass="form-control" 
+                                                   style="min-width: 100px;"
+                                                   type="number">
+                                            <f:ajax event="blur" listener="#{shipperDashboardMBean.filterHistory()}" render="historyTable paginationInfo" />
+                                        </h:inputText>
+                                    </div>
+                                    
+                                    <div class="filter-group" style="margin-top: 24px;">
+                                        <h:commandButton value="🔍 Lọc" 
+                                                       actionListener="#{shipperDashboardMBean.filterHistory()}"
+                                                       styleClass="btn btn-primary">
+                                            <f:ajax render="historyTable paginationInfo" />
+                                        </h:commandButton>
+                                    </div>
+                                    
+                                    <div class="filter-group" style="margin-top: 24px;">
+                                        <h:commandButton value="✖ Xóa lọc" 
+                                                       actionListener="#{shipperDashboardMBean.clearHistoryFilter()}"
+                                                       styleClass="btn btn-secondary">
+                                            <f:ajax render="historyForm" />
+                                        </h:commandButton>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- History Table -->
+                            <div class="orders-container" id="historyTable">
+                                <div class="orders-header">
+                                    <h3 style="margin: 0; font-weight: 700;">📜 Lịch sử giao hàng</h3>
+                                    <span style="font-size: 14px; color: var(--shipper-gray-600);">
+                                        Tổng: #{shipperDashboardMBean.historyTotalItems} đơn
+                                    </span>
+                                </div>
+                                
+                                <h:panelGroup rendered="#{empty shipperDashboardMBean.pagedHistory}">
+                                    <div class="empty-state">
+                                        <div class="empty-state-icon">📭</div>
+                                        <h3 class="empty-state-title">Chưa có lịch sử giao hàng</h3>
+                                        <p class="empty-state-desc">Các đơn hàng đã giao sẽ xuất hiện tại đây</p>
+                                    </div>
+                                </h:panelGroup>
+                                
+                                <h:dataTable value="#{shipperDashboardMBean.pagedHistory}" var="d" 
+                                           styleClass="shipper-table"
+                                           rendered="#{not empty shipperDashboardMBean.pagedHistory}">
+                                    <h:column>
+                                        <f:facet name="header">📋 Delivery</f:facet>
+                                        <strong style="font-family: 'JetBrains Mono', monospace;">##{d.deliveryID}</strong>
+                                    </h:column>
+                                    
+                                    <h:column>
+                                        <f:facet name="header">🛒 Đơn hàng</f:facet>
+                                        <span style="color: var(--shipper-primary); font-weight: 600;">
+                                            ##{d.orderID != null ? d.orderID.orderID : '-'}
+                                        </span>
+                                    </h:column>
+                                    
+                                    <h:column>
+                                        <f:facet name="header">👤 Khách hàng</f:facet>
+                                        <div>
+                                            <strong>#{d.orderID != null and d.orderID.userID != null ? (d.orderID.userID.fullName != null ? d.orderID.userID.fullName : d.orderID.userID.userName) : '-'}</strong>
+                                            <div style="font-size: 12px; color: var(--shipper-gray-500);">
+                                                📞 #{d.orderID != null and d.orderID.userID != null and d.orderID.userID.phone != null ? d.orderID.userID.phone : 'N/A'}
+                                            </div>
+                                        </div>
+                                    </h:column>
+                                    
+                                    <h:column>
+                                        <f:facet name="header">💰 Tổng tiền</f:facet>
+                                        <strong style="color: var(--shipper-success); font-size: 15px;">
+                                            #{d.orderID != null ? shipperDashboardMBean.formatAmount(d.orderID.totalAmount) : '-'}
+                                        </strong>
+                                    </h:column>
+                                    
+                                    <h:column>
+                                        <f:facet name="header">📊 Trạng thái</f:facet>
+                                        <span class="badge" style="background: #{shipperDashboardMBean.getStatusColor(d.status)}20; color: #{shipperDashboardMBean.getStatusColor(d.status)};">
+                                            #{shipperDashboardMBean.getStatusText(d.status)}
+                                        </span>
+                                    </h:column>
+                                    
+                                    <h:column>
+                                        <f:facet name="header">📅 Ngày giao</f:facet>
+                                        <div>
+                                            #{shipperDashboardMBean.formatDate(d.deliveredAt != null ? d.deliveredAt : d.updatedAt)}
+                                        </div>
+                                    </h:column>
+                                    
+                                    <h:column>
+                                        <f:facet name="header">⚡ Thao tác</f:facet>
+                                        <div style="display: flex; gap: 6px;">
+                                            <h:commandButton value="📋" 
+                                                           title="Xem chi tiết"
+                                                           actionListener="#{shipperDashboardMBean.openLogModal(d)}"
+                                                           styleClass="btn btn-primary btn-sm btn-icon">
+                                                <f:ajax render="logModal" />
+                                            </h:commandButton>
+                                        </div>
+                                    </h:column>
+                                </h:dataTable>
+                            </div>
+                            
+                            <!-- Pagination -->
+                            <div class="pagination" id="paginationInfo">
+                                <span class="pagination-info">
+                                    Trang #{shipperDashboardMBean.historyCurrentPage} / #{shipperDashboardMBean.historyTotalPages} 
+                                    (#{shipperDashboardMBean.historyTotalItems} đơn)
+                                </span>
+                                <div class="pagination-buttons">
+                                    <h:commandButton value="⏮" actionListener="#{shipperDashboardMBean.historyFirstPage()}" 
+                                                   styleClass="pagination-btn" 
+                                                   disabled="#{shipperDashboardMBean.historyCurrentPage == 1 or shipperDashboardMBean.historyTotalPages le 1}">
+                                        <f:ajax render="historyTable paginationInfo" />
+                                    </h:commandButton>
+                                    <h:commandButton value="◀" actionListener="#{shipperDashboardMBean.historyPreviousPage()}" 
+                                                   styleClass="pagination-btn" 
+                                                   disabled="#{shipperDashboardMBean.historyCurrentPage == 1 or shipperDashboardMBean.historyTotalPages le 1}">
+                                        <f:ajax render="historyTable paginationInfo" />
+                                    </h:commandButton>
+                                    <h:commandButton value="▶" actionListener="#{shipperDashboardMBean.historyNextPage()}" 
+                                                   styleClass="pagination-btn" 
+                                                   disabled="#{shipperDashboardMBean.historyCurrentPage == shipperDashboardMBean.historyTotalPages or shipperDashboardMBean.historyTotalPages le 1}">
+                                        <f:ajax render="historyTable paginationInfo" />
+                                    </h:commandButton>
+                                    <h:commandButton value="⏭" actionListener="#{shipperDashboardMBean.historyLastPage()}" 
+                                                   styleClass="pagination-btn" 
+                                                   disabled="#{shipperDashboardMBean.historyCurrentPage == shipperDashboardMBean.historyTotalPages or shipperDashboardMBean.historyTotalPages le 1}">
+                                        <f:ajax render="historyTable paginationInfo" />
+                                    </h:commandButton>
+                                </div>
+                            </div>
+                            
+                            <!-- Log Modal -->
+                            <h:panelGroup id="logModal">
+                                <ui:fragment rendered="#{shipperDashboardMBean.showLogModal and shipperDashboardMBean.selectedDelivery != null}">
+                                    <div class="modal-overlay">
+                                        <div class="modal-content animate-slide-up" style="max-width: 800px;">
+                                            <div class="modal-header" style="background: var(--gradient-primary); color: white;">
+                                                <h3 class="modal-title" style="color: white;">📋 Chi tiết giao hàng</h3>
+                                                <h:commandButton value="✕" actionListener="#{shipperDashboardMBean.closeLogModal()}"
+                                                               style="background: rgba(255,255,255,0.2); border: none; color: white; width: 36px; height: 36px; border-radius: 8px; cursor: pointer;">
+                                                    <f:ajax render="logModal" />
+                                                </h:commandButton>
+                                            </div>
+                                            <div class="modal-body">
+                                                <h4>Delivery ##{shipperDashboardMBean.selectedDelivery.deliveryID}</h4>
+                                                <p><strong>Đơn hàng:</strong> ##{shipperDashboardMBean.selectedDelivery.orderID.orderID}</p>
+                                                <p><strong>Trạng thái:</strong> #{shipperDashboardMBean.getStatusText(shipperDashboardMBean.selectedDelivery.status)}</p>
+                                                
+                                                <h5 style="margin-top: 20px;">📜 Lịch sử hoạt động</h5>
+                                                <h:dataTable value="#{shipperDashboardMBean.selectedDeliveryLogs}" var="log" 
+                                                           styleClass="shipper-table"
+                                                           rendered="#{not empty shipperDashboardMBean.selectedDeliveryLogs}">
+                                                    <h:column>
+                                                        <f:facet name="header">Thời gian</f:facet>
+                                                        #{shipperDashboardMBean.formatDate(log.createdAt)}
+                                                    </h:column>
+                                                    <h:column>
+                                                        <f:facet name="header">Sự kiện</f:facet>
+                                                        #{log.getEventTypeDisplay()}
+                                                    </h:column>
+                                                    <h:column>
+                                                        <f:facet name="header">Mô tả</f:facet>
+                                                        #{log.description}
+                                                    </h:column>
+                                                </h:dataTable>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <h:commandButton value="Đóng" actionListener="#{shipperDashboardMBean.closeLogModal()}"
+                                                               styleClass="btn btn-secondary">
+                                                    <f:ajax render="logModal" />
+                                                </h:commandButton>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </ui:fragment>
+                            </h:panelGroup>
+                            
+                        </h:form>
+                    </h:panelGroup>
+            </div>
+        </ui:define>
+    </ui:composition>
+</html>

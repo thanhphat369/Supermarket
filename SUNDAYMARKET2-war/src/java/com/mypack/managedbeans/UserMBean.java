@@ -341,25 +341,23 @@ public class UserMBean implements Serializable {
     }
 
     /**
-     * Lấy đường dẫn upload vào thư mục SOURCE CODE (không mất khi build)
-     * Dùng đường dẫn tuyệt đối cố định
+     * Lấy đường dẫn upload vào thư mục bên ngoài source code
      * 
-     * @return Đường dẫn tuyệt đối đến thư mục resources/avatars trong SOURCE CODE
+     * @return Đường dẫn tuyệt đối đến thư mục upload avatar
      */
     private String getUploadDirectory() {
-        // ✅ Dùng đường dẫn tuyệt đối cố định (giống code cũ)
-        String uploadDir = "D:\\Netbean\\DO_AN_4\\sundaymarket\\sundaymarket-war\\web\\resources\\avatars";
-        
-        File dir = new File(uploadDir);
+        String path = System.getProperty("user.home")
+                + File.separator + "sundaymarket"
+                + File.separator + "uploads"
+                + File.separator + "avatar";
+
+        File dir = new File(path);
         if (!dir.exists()) {
-            boolean created = dir.mkdirs();
-            System.out.println("UserMBean.getUploadDirectory() - Created directory: " + created + " at: " + uploadDir);
-        } else {
-            System.out.println("UserMBean.getUploadDirectory() - Directory already exists: " + uploadDir);
+            dir.mkdirs();
         }
-        
-        System.out.println("UserMBean.getUploadDirectory() - ✅ Using absolute path: " + uploadDir);
-        return uploadDir;
+
+        System.out.println("✅ Avatar upload dir: " + dir.getAbsolutePath());
+        return dir.getAbsolutePath();
     }
     
     // Upload avatar file (returns filename)
@@ -646,11 +644,11 @@ public class UserMBean implements Serializable {
             return null;
         }
         
-        // ✅ Dùng static resource
+        // ✅ Dùng servlet để hiển thị avatar
         FacesContext facesContext = FacesContext.getCurrentInstance();
         if (facesContext != null) {
             String contextPath = facesContext.getExternalContext().getRequestContextPath();
-            String url = contextPath + "/resources/avatars/" + fileName + "?v=" + getAvatarCacheBuster();
+            String url = contextPath + "/images/avatar/" + fileName + "?v=" + getAvatarCacheBuster();
             System.out.println("UserMBean.getAvatarUrl() - Generated URL: " + url);
             return url;
         }
@@ -689,16 +687,15 @@ public class UserMBean implements Serializable {
             return null;
         }
 
-        // ✅ Dùng static resource từ resources/avatars (đơn giản và chắc chắn hơn servlet)
+        // ✅ Dùng servlet để hiển thị avatar
         FacesContext facesContext = FacesContext.getCurrentInstance();
         String url;
         if (facesContext != null) {
             String contextPath = facesContext.getExternalContext().getRequestContextPath();
-            // Dùng resources/avatars thay vì servlet
-            url = contextPath + "/resources/avatars/" + fileName;
+            url = contextPath + "/images/avatar/" + fileName;
             System.out.println("UserMBean.getAvatarUrlForUser() - Generated URL: " + url + " for user: " + user.getUserName());
         } else {
-            url = "/resources/avatars/" + fileName;
+            url = "/images/avatar/" + fileName;
             System.out.println("UserMBean.getAvatarUrlForUser() - FacesContext is null, using: " + url);
         }
         // Thêm cache buster để tránh browser cache (dùng timestamp để force reload)

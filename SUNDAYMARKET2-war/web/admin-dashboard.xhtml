@@ -1,0 +1,339 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:h="jakarta.faces.html"
+      xmlns:f="jakarta.faces.core"
+      xmlns:ui="jakarta.faces.facelets">
+
+    <ui:composition template="/template.xhtml">
+        <ui:define name="title">📊 Admin Dashboard</ui:define>
+
+        <ui:define name="content">
+            <h:outputStylesheet library="css" name="shipper-style.css" />
+            <h:messages globalOnly="true" id="messages" />
+            
+            <div class="shipper-page">
+                    
+                    <!-- Check login and admin role -->
+                    <h:panelGroup rendered="#{loginMBean.currentUser == null or !loginMBean.isAdmin()}">
+                        <div class="empty-state" style="padding: 80px 20px;">
+                            <div class="empty-state-icon">🔐</div>
+                            <h2 class="empty-state-title">Truy cập bị từ chối</h2>
+                            <p class="empty-state-desc">Vui lòng đăng nhập với tài khoản Admin để truy cập</p>
+                            <h:link outcome="login" styleClass="btn btn-primary btn-lg" style="margin-top: 24px;">
+                                🔓 Đăng nhập
+                            </h:link>
+                        </div>
+                    </h:panelGroup>
+                    
+                    <!-- Dashboard Content -->
+                    <h:panelGroup rendered="#{loginMBean.currentUser != null and loginMBean.isAdmin()}">
+                        <h:form id="dashboardForm">
+                            
+                            <!-- Page Header -->
+                            <div class="shipper-header">
+                                <div>
+                                    <h1 class="shipper-title">
+                                        <span class="shipper-title-icon">📊</span>
+                                        Admin Dashboard
+                                    </h1>
+                                    <p class="shipper-subtitle">
+                                        Xin chào, <strong>#{loginMBean.currentUser.fullName != null ? loginMBean.currentUser.fullName : loginMBean.currentUser.userName}</strong>! 
+                                        Thống kê hệ thống
+                                    </p>
+                                </div>
+                                <div style="display: flex; gap: 12px;">
+                                    <h:commandButton value="🔄 Làm mới" 
+                                                   actionListener="#{adminDashboardMBean.refreshStatistics()}"
+                                                   styleClass="btn btn-secondary">
+                                        <f:ajax render="dashboardForm" />
+                                    </h:commandButton>
+                                </div>
+                            </div>
+                            
+                            <!-- Filter Section -->
+                            <div class="filter-section" style="background: white; padding: 20px; border-radius: 12px; margin-bottom: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                                <div class="filter-row">
+                                    <div class="filter-group">
+                                        <span class="filter-label" style="font-weight: 600; margin-bottom: 8px; display: block;">📅 Filter by Month/Year</span>
+                                        <div style="display: flex; gap: 12px; align-items: center;">
+                                            <h:selectOneMenu value="#{adminDashboardMBean.selectedMonth}" styleClass="form-control form-select" style="min-width: 140px;">
+                                                <f:selectItem itemValue="1" itemLabel="January" />
+                                                <f:selectItem itemValue="2" itemLabel="February" />
+                                                <f:selectItem itemValue="3" itemLabel="March" />
+                                                <f:selectItem itemValue="4" itemLabel="April" />
+                                                <f:selectItem itemValue="5" itemLabel="May" />
+                                                <f:selectItem itemValue="6" itemLabel="June" />
+                                                <f:selectItem itemValue="7" itemLabel="July" />
+                                                <f:selectItem itemValue="8" itemLabel="August" />
+                                                <f:selectItem itemValue="9" itemLabel="September" />
+                                                <f:selectItem itemValue="10" itemLabel="October" />
+                                                <f:selectItem itemValue="11" itemLabel="November" />
+                                                <f:selectItem itemValue="12" itemLabel="December" />
+                                                <f:ajax event="change" listener="#{adminDashboardMBean.applyFilter()}" render="dashboardForm" />
+                                            </h:selectOneMenu>
+                                            
+                                            <h:inputText value="#{adminDashboardMBean.selectedYear}" 
+                                                       styleClass="form-control" 
+                                                       style="min-width: 100px;">
+                                                <f:passThroughAttribute name="type" value="number" />
+                                                <f:passThroughAttribute name="placeholder" value="Year" />
+                                                <f:ajax event="blur" listener="#{adminDashboardMBean.applyFilter()}" render="dashboardForm" />
+                                            </h:inputText>
+                                            
+                                            <h:commandButton value="🔍 Apply" 
+                                                           actionListener="#{adminDashboardMBean.applyFilter()}"
+                                                           styleClass="btn btn-primary">
+                                                <f:ajax render="dashboardForm" />
+                                            </h:commandButton>
+                                            
+                                            <h:commandButton value="🔄 Reset" 
+                                                           actionListener="#{adminDashboardMBean.resetFilter()}"
+                                                           styleClass="btn btn-secondary">
+                                                <f:ajax render="dashboardForm" />
+                                            </h:commandButton>
+                                        </div>
+                                        <!-- Đang xem tháng/năm đã chọn -->
+                                        <small style="color: #666; margin-top: 8px; display: block;">
+                                            📊 Viewing: #{adminDashboardMBean.getMonthName(adminDashboardMBean.selectedMonth)} #{adminDashboardMBean.selectedYear}
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Product & Category Statistics - MOVED TO TOP -->
+                            <div class="section-header" style="margin-top: 0;">
+                                <h2 class="section-title">
+                                    <span class="section-title-icon">📦</span>
+                                    Product &amp; Category Statistics
+                                </h2>
+                            </div>
+                            <div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); margin-bottom: 32px;">
+                                <div class="stat-card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                                    <div class="stat-card-header">
+                                        <div class="stat-icon">📦</div>
+                                    </div>
+                                    <div class="stat-content">
+                                        <div class="stat-label">Total Products</div>
+                                        <div class="stat-value" style="color: white;">#{adminDashboardMBean.totalProducts}</div>
+                                        <div style="font-size: 12px; opacity: 0.9; margin-top: 4px;">All time</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="stat-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white;">
+                                    <div class="stat-card-header">
+                                        <div class="stat-icon">📂</div>
+                                    </div>
+                                    <div class="stat-content">
+                                        <div class="stat-label">Total Categories</div>
+                                        <div class="stat-value" style="color: white;">#{adminDashboardMBean.totalCategories}</div>
+                                        <div style="font-size: 12px; opacity: 0.9; margin-top: 4px;">All time</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="stat-card" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white;">
+                                    <div class="stat-card-header">
+                                        <div class="stat-icon">🏢</div>
+                                    </div>
+                                    <div class="stat-content">
+                                        <div class="stat-label">Total Suppliers</div>
+                                        <div class="stat-value" style="color: white;">#{adminDashboardMBean.totalSuppliers}</div>
+                                        <div style="font-size: 12px; opacity: 0.9; margin-top: 4px;">All time</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="stat-card" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); color: white;">
+                                    <div class="stat-card-header">
+                                        <div class="stat-icon">🏷️</div>
+                                    </div>
+                                    <div class="stat-content">
+                                        <div class="stat-label">Total Brands</div>
+                                        <div class="stat-value" style="color: white;">#{adminDashboardMBean.totalBrands}</div>
+                                        <div style="font-size: 12px; opacity: 0.9; margin-top: 4px;">All time</div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Main Statistics Cards -->
+                            <div class="stats-grid">
+                                <!-- Total Orders -->
+                                <div class="stat-card pending animate-slide-up" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                                    <div class="stat-card-header">
+                                        <div class="stat-icon">📋</div>
+                                    </div>
+                                    <div class="stat-content">
+                                        <div class="stat-label">Total Orders</div>
+                                        <div class="stat-value" style="color: white;">#{adminDashboardMBean.totalOrders}</div>
+                                        <div style="font-size: 12px; opacity: 0.9; margin-top: 4px;">In selected month</div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Total Revenue -->
+                                <div class="stat-card picked animate-slide-up" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); animation-delay: 0.1s;">
+                                    <div class="stat-card-header">
+                                        <div class="stat-icon">💰</div>
+                                    </div>
+                                    <div class="stat-content">
+                                        <div class="stat-label">Revenue</div>
+                                        <div class="stat-value" style="color: white; font-size: 28px;">#{adminDashboardMBean.formatAmount(adminDashboardMBean.totalRevenue)}</div>
+                                        <div style="font-size: 12px; opacity: 0.9; margin-top: 4px;">In selected month</div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Total Customers -->
+                                <div class="stat-card shipping animate-slide-up" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); animation-delay: 0.2s;">
+                                    <div class="stat-card-header">
+                                        <div class="stat-icon">👥</div>
+                                    </div>
+                                    <div class="stat-content">
+                                        <div class="stat-label">Total Customers</div>
+                                        <div class="stat-value" style="color: white;">#{adminDashboardMBean.totalCustomers}</div>
+                                        <div style="font-size: 12px; opacity: 0.9; margin-top: 4px;">All time</div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Total Shippers -->
+                                <div class="stat-card delivered animate-slide-up" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); animation-delay: 0.3s;">
+                                    <div class="stat-card-header">
+                                        <div class="stat-icon">🚚</div>
+                                    </div>
+                                    <div class="stat-content">
+                                        <div class="stat-label">Total Shippers</div>
+                                        <div class="stat-value" style="color: white;">#{adminDashboardMBean.totalShippers}</div>
+                                        <div style="font-size: 12px; opacity: 0.9; margin-top: 4px;">All time</div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Order Status Statistics -->
+                            <div class="section-header" style="margin-top: 32px;">
+                                <h2 class="section-title">
+                                    <span class="section-title-icon">📊</span>
+                                    Order Status Statistics
+                                </h2>
+                            </div>
+                            <div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
+                                <div class="stat-card" style="background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%); color: white;">
+                                    <div class="stat-content">
+                                        <div class="stat-label" style="color: white;">⏳ Pending</div>
+                                        <div class="stat-value" style="color: white;">#{adminDashboardMBean.pendingOrders}</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="stat-card" style="background: linear-gradient(135deg, #0d6efd 0%, #0056b3 100%); color: white;">
+                                    <div class="stat-content">
+                                        <div class="stat-label" style="color: white;">⚙️ Processing</div>
+                                        <div class="stat-value" style="color: white;">#{adminDashboardMBean.processingOrders}</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="stat-card" style="background: linear-gradient(135deg, #0dcaf0 0%, #0aa2c0 100%); color: white;">
+                                    <div class="stat-content">
+                                        <div class="stat-label" style="color: white;">🚚 Shipping</div>
+                                        <div class="stat-value" style="color: white;">#{adminDashboardMBean.shippingOrders}</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="stat-card" style="background: linear-gradient(135deg, #198754 0%, #146c43 100%); color: white;">
+                                    <div class="stat-content">
+                                        <div class="stat-label" style="color: white;">✅ Completed</div>
+                                        <div class="stat-value" style="color: white;">#{adminDashboardMBean.completedOrders}</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="stat-card" style="background: linear-gradient(135deg, #dc3545 0%, #bb2d3b 100%); color: white;">
+                                    <div class="stat-content">
+                                        <div class="stat-label" style="color: white;">❌ Cancelled</div>
+                                        <div class="stat-value" style="color: white;">#{adminDashboardMBean.cancelledOrders}</div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Delivery Status Statistics -->
+                            <div class="section-header" style="margin-top: 32px;">
+                                <h2 class="section-title">
+                                    <span class="section-title-icon">🚚</span>
+                                    Delivery Status Statistics
+                                </h2>
+                            </div>
+                            <div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
+                                <div class="stat-card" style="background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%); color: white;">
+                                    <div class="stat-content">
+                                        <div class="stat-label" style="color: white;">⏳ Pending</div>
+                                        <div class="stat-value" style="color: white;">#{adminDashboardMBean.pendingDeliveries}</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="stat-card" style="background: linear-gradient(135deg, #0dcaf0 0%, #0aa2c0 100%); color: white;">
+                                    <div class="stat-content">
+                                        <div class="stat-label" style="color: white;">🚚 Shipping</div>
+                                        <div class="stat-value" style="color: white;">#{adminDashboardMBean.shippingDeliveries}</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="stat-card" style="background: linear-gradient(135deg, #198754 0%, #146c43 100%); color: white;">
+                                    <div class="stat-content">
+                                        <div class="stat-label" style="color: white;">✅ Delivered</div>
+                                        <div class="stat-value" style="color: white;">#{adminDashboardMBean.deliveredDeliveries}</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="stat-card" style="background: linear-gradient(135deg, #dc3545 0%, #bb2d3b 100%); color: white;">
+                                    <div class="stat-content">
+                                        <div class="stat-label" style="color: white;">❌ Failed</div>
+                                        <div class="stat-value" style="color: white;">#{adminDashboardMBean.failedDeliveries}</div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Top Products -->
+                            <div class="section-header" style="margin-top: 32px;">
+                                <h2 class="section-title">
+                                    <span class="section-title-icon">🏆</span>
+                                    Top 10 Best Selling Products
+                                </h2>
+                            </div>
+                            <div class="orders-container">
+                                <h:dataTable value="#{adminDashboardMBean.topProducts}" var="product" 
+                                           styleClass="shipper-table"
+                                           rendered="#{not empty adminDashboardMBean.topProducts}">
+                                    <h:column>
+                                        <f:facet name="header">#</f:facet>
+                                        <strong>#{adminDashboardMBean.topProducts.indexOf(product) + 1}</strong>
+                                    </h:column>
+                                    
+                                    <h:column>
+                                        <f:facet name="header">Sản phẩm</f:facet>
+                                        <strong>#{product.product.name}</strong>
+                                    </h:column>
+                                    
+                                    <h:column>
+                                        <f:facet name="header">Số lượng bán</f:facet>
+                                        <span class="badge" style="background: var(--shipper-primary); color: white; padding: 6px 12px;">
+                                            #{product.quantity}
+                                        </span>
+                                    </h:column>
+                                    
+                                    <h:column>
+                                        <f:facet name="header">Doanh thu</f:facet>
+                                        <strong style="color: var(--shipper-success);">
+                                            #{adminDashboardMBean.formatAmount(product.revenue)}
+                                        </strong>
+                                    </h:column>
+                                </h:dataTable>
+                                
+                                <h:panelGroup rendered="#{empty adminDashboardMBean.topProducts}">
+                                    <div class="empty-state">
+                                        <div class="empty-state-icon">📦</div>
+                                        <h3 class="empty-state-title">Chưa có dữ liệu</h3>
+                                        <p class="empty-state-desc">Chưa có sản phẩm nào được bán trong tháng này</p>
+                                    </div>
+                                </h:panelGroup>
+                            </div>
+                            
+                        </h:form>
+                    </h:panelGroup>
+            </div>
+        </ui:define>
+    </ui:composition>
+</html>

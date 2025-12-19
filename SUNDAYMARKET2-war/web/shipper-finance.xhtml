@@ -1,0 +1,323 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:h="jakarta.faces.html"
+      xmlns:f="jakarta.faces.core"
+      xmlns:ui="jakarta.faces.facelets">
+
+    <ui:composition template="/template.xhtml">
+        <ui:define name="title">💰 Tài chính - COD</ui:define>
+
+        <ui:define name="content">
+            <h:outputStylesheet library="css" name="shipper-style.css" />
+            <h:messages globalOnly="true" id="messages" />
+            
+            <div class="shipper-page">
+                    
+                    <!-- Check login -->
+                    <h:panelGroup rendered="#{loginMBean.currentUser == null or !loginMBean.isShipper()}">
+                        <div class="empty-state">
+                            <div class="empty-state-icon">🔐</div>
+                            <h2 class="empty-state-title">Truy cập bị từ chối</h2>
+                            <p class="empty-state-desc">Vui lòng đăng nhập với tài khoản Shipper</p>
+                            <h:link outcome="login" styleClass="btn btn-primary" style="margin-top: 20px;">
+                                🔓 Đăng nhập
+                            </h:link>
+                        </div>
+                    </h:panelGroup>
+                    
+                    <h:panelGroup rendered="#{loginMBean.currentUser != null and loginMBean.isShipper()}">
+                        <h:form id="financeForm">
+                            
+                            <!-- Page Header -->
+                            <div class="shipper-header">
+                                <div>
+                                    <h1 class="shipper-title">
+                                        <span class="shipper-title-icon">💰</span>
+                                        Tài chính &amp; COD
+                                    </h1>
+                                    <p class="shipper-subtitle">Quản lý thu tiền và thanh toán</p>
+                                </div>
+                                <h:link outcome="shipper-dashboard" styleClass="btn btn-secondary">
+                                    ← Quay lại Dashboard
+                                </h:link>
+                            </div>
+                            
+                            <!-- Finance Overview Cards -->
+                            <div class="finance-overview">
+                                <!-- Total Pending COD -->
+                                <div class="finance-card total">
+                                    <div class="finance-card-header">
+                                        <div class="finance-card-icon">💰</div>
+                                        <h:commandButton value="📤 Nộp tiền" 
+                                                       actionListener="#{shipperFinanceMBean.openSubmitModal()}"
+                                                       styleClass="btn btn-primary btn-sm"
+                                                       rendered="#{shipperFinanceMBean.totalPendingCOD > 0}">
+                                            <f:ajax render="submitModal" />
+                                        </h:commandButton>
+                                    </div>
+                                    <div class="finance-card-label">COD to Submit</div>
+                                    <div class="finance-card-value">
+                                        #{shipperFinanceMBean.formatAmount(shipperFinanceMBean.totalPendingCOD)}
+                                    </div>
+                                    <div class="finance-card-change up" style="background: rgba(245, 158, 11, 0.1); color: #f59e0b;">
+                                        ⏳ Holding
+                                    </div>
+                                </div>
+                                
+                                <!-- Today's Collection -->
+                                <div class="finance-card collected">
+                                    <div class="finance-card-header">
+                                        <div class="finance-card-icon">📅</div>
+                                    </div>
+                                    <div class="finance-card-label">Collected Today</div>
+                                    <div class="finance-card-value">
+                                        #{shipperFinanceMBean.formatAmount(shipperFinanceMBean.totalCollectedToday)}
+                                    </div>
+                                    <div class="finance-card-change up">
+                                        ↗ Collected
+                                    </div>
+                                </div>
+                                
+                                <!-- Month's Collection -->
+                                <div class="finance-card pending">
+                                    <div class="finance-card-header">
+                                        <div class="finance-card-icon">📆</div>
+                                    </div>
+                                    <div class="finance-card-label">Collected This Month</div>
+                                    <div class="finance-card-value">
+                                        #{shipperFinanceMBean.formatAmount(shipperFinanceMBean.totalCollectedMonth)}
+                                    </div>
+                                </div>
+                                
+                                <!-- Total Earnings -->
+                                <div class="finance-card" style="border-left: 4px solid #8b5cf6;">
+                                    <div class="finance-card-header">
+                                        <div class="finance-card-icon" style="background: rgba(139, 92, 246, 0.1);">💵</div>
+                                    </div>
+                                    <div class="finance-card-label">Total Earnings</div>
+                                    <div class="finance-card-value" style="color: #8b5cf6;">
+                                        #{shipperFinanceMBean.formatAmount(shipperFinanceMBean.totalEarnings)}
+                                    </div>
+                                    <div class="finance-card-change up">
+                                        This month: #{shipperFinanceMBean.formatAmount(shipperFinanceMBean.monthlyEarnings)}
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Filter Section -->
+                            <div class="filter-section">
+                                <div class="filter-row">
+                                    <!-- Lọc theo loại giao dịch -->
+                                    <div class="filter-group">
+                                        <span class="filter-label">Transaction Type</span>
+                                        <h:selectOneMenu value="#{shipperFinanceMBean.typeFilter}" styleClass="form-control form-select" style="min-width: 180px;">
+                                            <f:selectItem itemValue="all" itemLabel="📋 All" />
+                                            <f:selectItem itemValue="COD_COLLECTED" itemLabel="💰 COD Collected" />
+                                            <f:selectItem itemValue="COD_SUBMITTED" itemLabel="📤 COD Submitted" />
+                                            <f:selectItem itemValue="COMMISSION" itemLabel="💵 Commission" />
+                                            <f:selectItem itemValue="BONUS" itemLabel="🎁 Bonus" />
+                                            <f:selectItem itemValue="DEDUCTION" itemLabel="➖ Deduction" />
+                                        </h:selectOneMenu>
+                                    </div>
+                                    
+                                    <div class="filter-group">
+                                        <span class="filter-label">Month</span>
+                                        <h:selectOneMenu value="#{shipperFinanceMBean.monthFilter}" styleClass="form-control form-select" style="min-width: 130px;">
+                                            <f:selectItem itemValue="1" itemLabel="January" />
+                                            <f:selectItem itemValue="2" itemLabel="February" />
+                                            <f:selectItem itemValue="3" itemLabel="March" />
+                                            <f:selectItem itemValue="4" itemLabel="April" />
+                                            <f:selectItem itemValue="5" itemLabel="May" />
+                                            <f:selectItem itemValue="6" itemLabel="June" />
+                                            <f:selectItem itemValue="7" itemLabel="July" />
+                                            <f:selectItem itemValue="8" itemLabel="August" />
+                                            <f:selectItem itemValue="9" itemLabel="September" />
+                                            <f:selectItem itemValue="10" itemLabel="October" />
+                                            <f:selectItem itemValue="11" itemLabel="November" />
+                                            <f:selectItem itemValue="12" itemLabel="December" />
+                                        </h:selectOneMenu>
+                                    </div>
+                                    
+                                    <div class="filter-group">
+                                        <span class="filter-label">Year</span>
+                                        <h:selectOneMenu value="#{shipperFinanceMBean.yearFilter}" styleClass="form-control form-select" style="min-width: 100px;">
+                                            <f:selectItem itemValue="2024" itemLabel="2024" />
+                                            <f:selectItem itemValue="2025" itemLabel="2025" />
+                                            <f:selectItem itemValue="2026" itemLabel="2026" />
+                                        </h:selectOneMenu>
+                                    </div>
+                                    
+                                    <div class="filter-group" style="margin-top: 24px;">
+                                        <h:commandButton value="🔍 Filter" actionListener="#{shipperFinanceMBean.filterHistory()}"
+                                                       styleClass="btn btn-primary">
+                                            <f:ajax render="historyTable paginationSection" />
+                                        </h:commandButton>
+                                    </div>
+                                    
+                                    <div class="filter-group" style="margin-top: 24px;">
+                                        <h:commandButton value="✖ Clear Filter" actionListener="#{shipperFinanceMBean.clearFilter()}"
+                                                       styleClass="btn btn-secondary">
+                                            <f:ajax render="financeForm" />
+                                        </h:commandButton>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Transaction History -->
+                            <div class="orders-container" id="historyTable">
+                                <!-- Bảng lịch sử giao dịch -->
+                                <div class="orders-header">
+                                    <h3 style="margin: 0; font-weight: 700; color: var(--shipper-dark);">
+                                        📜 Transaction History
+                                    </h3>
+                                    <span style="font-size: 14px; color: var(--shipper-gray-600);">
+                                        Total: #{shipperFinanceMBean.totalItems} transactions
+                                    </span>
+                                </div>
+                                
+                                <h:panelGroup rendered="#{empty shipperFinanceMBean.pagedHistory}">
+                                    <div class="empty-state">
+                                        <div class="empty-state-icon">📭</div>
+                                        <h3 class="empty-state-title">No transactions yet</h3>
+                                        <p class="empty-state-desc">Transactions will appear when you collect/submit COD</p>
+                                    </div>
+                                </h:panelGroup>
+                                
+                                <h:dataTable value="#{shipperFinanceMBean.pagedHistory}" var="p"
+                                           rendered="#{not empty shipperFinanceMBean.pagedHistory}"
+                                           styleClass="shipper-table">
+                                    <h:column>
+                                        <f:facet name="header">Trans ID</f:facet>
+                                        <strong style="font-family: 'JetBrains Mono', monospace;">##{p.paymentID}</strong>
+                                    </h:column>
+                                    
+                                    <h:column>
+                                        <f:facet name="header">Type</f:facet>
+                                        <span>#{p.paymentTypeDisplay}</span>
+                                    </h:column>
+                                    
+                                    <h:column>
+                                        <f:facet name="header">Amount</f:facet>
+                                        <strong style="color: #{shipperFinanceMBean.getAmountColor(p)}; font-size: 15px;">
+                                            #{shipperFinanceMBean.getAmountPrefix(p)}#{shipperFinanceMBean.formatAmount(p.amount)}
+                                        </strong>
+                                    </h:column>
+                                    
+                                    <h:column>
+                                        <f:facet name="header">Description</f:facet>
+                                        <span style="color: var(--shipper-gray-600); max-width: 250px; display: inline-block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                            #{p.description}
+                                        </span>
+                                    </h:column>
+                                    
+                                    <h:column>
+                                        <f:facet name="header">Status</f:facet>
+                                        <span class="badge" style="background: #{shipperFinanceMBean.getStatusColor(p.status)}20; color: #{shipperFinanceMBean.getStatusColor(p.status)};">
+                                            #{p.statusDisplay}
+                                        </span>
+                                    </h:column>
+                                    
+                                    <h:column>
+                                        <f:facet name="header">Date</f:facet>
+                                        <span style="font-size: 13px; color: var(--shipper-gray-500);">
+                                            #{shipperFinanceMBean.formatDate(p.createdAt)}
+                                        </span>
+                                    </h:column>
+                                    
+                                    <h:column>
+                                        <f:facet name="header">Reference</f:facet>
+                                        <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--shipper-gray-600);">
+                                            #{p.referenceCode != null ? p.referenceCode : '-'}
+                                        </span>
+                                    </h:column>
+                                </h:dataTable>
+                            </div>
+                            
+                            <!-- Pagination -->
+                            <div class="pagination" id="paginationSection">
+                                <span class="pagination-info">
+                                    Page #{shipperFinanceMBean.currentPage} / #{shipperFinanceMBean.totalPages} 
+                                    (#{shipperFinanceMBean.totalItems} transactions)
+                                </span>
+                                <div class="pagination-buttons">
+                                    <h:commandButton value="⏮" actionListener="#{shipperFinanceMBean.firstPage()}"
+                                                   styleClass="pagination-btn" disabled="#{shipperFinanceMBean.currentPage == 1}">
+                                        <f:ajax render="historyTable paginationSection" />
+                                    </h:commandButton>
+                                    <h:commandButton value="◀" actionListener="#{shipperFinanceMBean.previousPage()}"
+                                                   styleClass="pagination-btn" disabled="#{shipperFinanceMBean.currentPage == 1}">
+                                        <f:ajax render="historyTable paginationSection" />
+                                    </h:commandButton>
+                                    <h:commandButton value="▶" actionListener="#{shipperFinanceMBean.nextPage()}"
+                                                   styleClass="pagination-btn" disabled="#{shipperFinanceMBean.currentPage == shipperFinanceMBean.totalPages}">
+                                        <f:ajax render="historyTable paginationSection" />
+                                    </h:commandButton>
+                                    <h:commandButton value="⏭" actionListener="#{shipperFinanceMBean.lastPage()}"
+                                                   styleClass="pagination-btn" disabled="#{shipperFinanceMBean.currentPage == shipperFinanceMBean.totalPages}">
+                                        <f:ajax render="historyTable paginationSection" />
+                                    </h:commandButton>
+                                </div>
+                            </div>
+                            
+                            <!-- Submit COD Modal -->
+                            <h:panelGroup id="submitModal">
+                                <ui:fragment rendered="#{shipperFinanceMBean.showSubmitModal}">
+                                    <div class="modal-overlay">
+                                        <div class="modal-content animate-slide-up">
+                                            <div class="modal-header">
+                                                <h3 class="modal-title">📤 Submit COD</h3>
+                                                <h:commandButton value="✕" actionListener="#{shipperFinanceMBean.closeSubmitModal()}"
+                                                               styleClass="modal-close">
+                                                    <f:ajax render="submitModal" />
+                                                </h:commandButton>
+                                            </div>
+                                            <div class="modal-body">
+                                                <div style="background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(14, 165, 233, 0.1)); padding: 20px; border-radius: var(--radius-lg); margin-bottom: 24px; text-align: center;">
+                                                    <div style="font-size: 14px; color: var(--shipper-gray-600); margin-bottom: 8px;">Amount to Submit</div>
+                                                    <div style="font-size: 32px; font-weight: 800; color: #8b5cf6;">
+                                                        #{shipperFinanceMBean.formatAmount(shipperFinanceMBean.submitAmount)}
+                                                    </div>
+                                                </div>
+                                                
+                                                <div class="form-group">
+                                                    <label class="form-label">💳 Transaction Code / Receipt</label>
+                                                    <h:inputText value="#{shipperFinanceMBean.submitReferenceCode}" 
+                                                               styleClass="form-control"
+                                                               style="font-family: 'JetBrains Mono', monospace;">
+                                                        <f:passThroughAttribute name="placeholder" value="E.g: COD20251216143022" />
+                                                    </h:inputText>
+                                                    <p style="font-size: 12px; color: var(--shipper-gray-500); margin-top: 8px;">
+                                                        💡 Enter transaction code from receipt or bank transfer
+                                                    </p>
+                                                </div>
+                                                
+                                                <div style="background: #fef3c7; padding: 16px; border-radius: var(--radius-md); border-left: 4px solid #f59e0b;">
+                                                    <strong style="color: #92400e;">⚠️ Note:</strong>
+                                                    <p style="margin: 8px 0 0 0; font-size: 13px; color: #92400e;">
+                                                        After submitting, all pending COD orders will be marked as completed.
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <h:commandButton value="Cancel" actionListener="#{shipperFinanceMBean.closeSubmitModal()}"
+                                                               styleClass="btn btn-secondary">
+                                                    <f:ajax render="submitModal" />
+                                                </h:commandButton>
+                                                <h:commandButton value="✅ Confirm Submit" action="#{shipperFinanceMBean.submitCOD()}"
+                                                               styleClass="btn btn-success" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </ui:fragment>
+                            </h:panelGroup>
+                            
+                        </h:form>
+                    </h:panelGroup>
+                    
+            </div>
+        </ui:define>
+    </ui:composition>
+</html>
+
+

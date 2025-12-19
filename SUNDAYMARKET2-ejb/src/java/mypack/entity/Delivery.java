@@ -17,6 +17,7 @@ import jakarta.persistence.NamedQuery;
 import jakarta.persistence.Table;
 import jakarta.persistence.Temporal;
 import jakarta.persistence.TemporalType;
+import jakarta.persistence.Transient;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import jakarta.xml.bind.annotation.XmlRootElement;
@@ -51,6 +52,19 @@ public class Delivery implements Serializable {
     @Column(name = "UpdatedAt")
     @Temporal(TemporalType.TIMESTAMP)
     private Date updatedAt;
+    // Các cột này không tồn tại trong database - chỉ dùng trong memory
+    @Transient
+    private Date pickedUpAt;
+    @Transient
+    private Date deliveredAt;
+    @Transient
+    private String proofImage;
+    @Transient
+    private String failureImage;
+    @Transient
+    private String failureReason;
+    @Transient
+    private String notes;
     @JoinColumn(name = "Order_ID", referencedColumnName = "Order_ID")
     @ManyToOne(optional = false)
     private Order1 orderID;
@@ -94,6 +108,54 @@ public class Delivery implements Serializable {
         this.updatedAt = updatedAt;
     }
 
+    public Date getPickedUpAt() {
+        return pickedUpAt;
+    }
+
+    public void setPickedUpAt(Date pickedUpAt) {
+        this.pickedUpAt = pickedUpAt;
+    }
+
+    public Date getDeliveredAt() {
+        return deliveredAt;
+    }
+
+    public void setDeliveredAt(Date deliveredAt) {
+        this.deliveredAt = deliveredAt;
+    }
+
+    public String getProofImage() {
+        return proofImage;
+    }
+
+    public void setProofImage(String proofImage) {
+        this.proofImage = proofImage;
+    }
+
+    public String getFailureImage() {
+        return failureImage;
+    }
+
+    public void setFailureImage(String failureImage) {
+        this.failureImage = failureImage;
+    }
+
+    public String getFailureReason() {
+        return failureReason;
+    }
+
+    public void setFailureReason(String failureReason) {
+        this.failureReason = failureReason;
+    }
+
+    public String getNotes() {
+        return notes;
+    }
+
+    public void setNotes(String notes) {
+        this.notes = notes;
+    }
+
     public Order1 getOrderID() {
         return orderID;
     }
@@ -119,6 +181,7 @@ public class Delivery implements Serializable {
 
     @Override
     public boolean equals(Object object) {
+       
         if (!(object instanceof Delivery)) {
             return false;
         }

@@ -7,6 +7,8 @@ package mypack.sessionbean;
 import jakarta.ejb.Local;
 import java.util.List;
 import mypack.entity.Delivery;
+import mypack.entity.Order1;
+import mypack.entity.User;
 
 /**
  *
@@ -28,5 +30,14 @@ public interface DeliveryFacadeLocal {
     List<Delivery> findRange(int[] range);
 
     int count();
+    
+    // Find deliveries by shipper (User)
+    List<Delivery> findByShipper(User shipper);
+    
+    // Find deliveries by order
+    List<Delivery> findByOrder(Order1 order);
+    
+    // Find delivery by order and shipper
+    Delivery findByOrderAndShipper(Order1 order, User shipper);
     
 }

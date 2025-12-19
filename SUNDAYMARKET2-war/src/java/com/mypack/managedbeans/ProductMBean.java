@@ -14,12 +14,10 @@ import java.util.Collection;
 import java.util.List;
 import mypack.entity.Brand;
 import mypack.entity.Category;
-import mypack.entity.Inventory;
 import mypack.entity.Product;
 import mypack.entity.StockTransactions;
 import mypack.sessionbean.BrandFacadeLocal;
 import mypack.sessionbean.CategoryFacadeLocal;
-import mypack.sessionbean.InventoryFacadeLocal;
 import mypack.sessionbean.ProductFacadeLocal;
 import mypack.sessionbean.StockTransactionsFacadeLocal;
 
@@ -35,9 +33,6 @@ public class ProductMBean implements Serializable {
     
     @EJB
     private CategoryFacadeLocal categoryFacade;
-    
-    @EJB
-    private InventoryFacadeLocal inventoryFacade;
     
     @EJB
     private StockTransactionsFacadeLocal stockTransactionsFacade;
@@ -673,20 +668,24 @@ public class ProductMBean implements Serializable {
         return fileNames;
     }
     
+    /**
+     * Lấy đường dẫn upload vào thư mục bên ngoài source code
+     * 
+     * @return Đường dẫn tuyệt đối đến thư mục upload product
+     */
     private String getUploadDirectory() {
-        // ✅ Dùng đường dẫn tuyệt đối cố định - lưu vào resources/product
-        String uploadDir = "D:\\Netbean\\DO_AN_4\\sundaymarket\\sundaymarket-war\\web\\resources\\product";
-        
-        File dir = new File(uploadDir);
+        String path = System.getProperty("user.home")
+                + File.separator + "sundaymarket"
+                + File.separator + "uploads"
+                + File.separator + "product";
+
+        File dir = new File(path);
         if (!dir.exists()) {
-            boolean created = dir.mkdirs();
-            System.out.println("ProductMBean.getUploadDirectory() - Created directory: " + created + " at: " + uploadDir);
-        } else {
-            System.out.println("ProductMBean.getUploadDirectory() - Directory already exists: " + uploadDir);
+            dir.mkdirs();
         }
-        
-        System.out.println("ProductMBean.getUploadDirectory() - ✅ Using absolute path: " + uploadDir);
-        return uploadDir;
+
+        System.out.println("✅ Product upload dir: " + dir.getAbsolutePath());
+        return dir.getAbsolutePath();
     }
     
     // Get first image URL for display (backward compatibility)
@@ -723,7 +722,7 @@ public class ProductMBean implements Serializable {
             }
             
             if (fileName != null && !fileName.isEmpty()) {
-                String url = contextPath + "/resources/product/" + fileName + "?v=" + cacheBuster;
+                String url = contextPath + "/images/product/" + fileName + "?v=" + cacheBuster;
                 imageUrls.add(url);
             }
         }
@@ -851,21 +850,12 @@ public class ProductMBean implements Serializable {
         }
     }
     
-    // Lấy số lượng tồn từ Inventory
+    // Lấy số lượng tồn từ Product
     public Integer getStockQuantity(Product product) {
-        if (product == null || product.getProductID() == null) {
+        if (product == null) {
             return 0;
         }
-        try {
-            Inventory inventory = inventoryFacade.findByProductId(product.getProductID());
-            if (inventory != null) {
-                return inventory.getStock();
-            }
-            return 0;
-        } catch (Exception e) {
-            System.err.println("ProductMBean.getStockQuantity() - Error: " + e.getMessage());
-            return 0;
-        }
+        return product.getQuantity() != null ? product.getQuantity() : 0;
     }
     
     // Format currency - hỗ trợ cả int và Integer

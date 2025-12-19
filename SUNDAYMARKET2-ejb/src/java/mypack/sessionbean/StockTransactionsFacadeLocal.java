@@ -29,4 +29,7 @@ public interface StockTransactionsFacadeLocal {
 
     int count();
     
+    // Lấy giao dịch IMPORT gần nhất theo sản phẩm
+    StockTransactions findLastImportByProduct(int productId);
+    
 }

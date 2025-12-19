@@ -86,25 +86,23 @@ public class ProfileDetailMBean implements Serializable {
     //             UPLOAD AVATAR
     // ============================================
     /**
-     * Lấy đường dẫn upload vào thư mục SOURCE CODE (không mất khi build)
-     * Dùng đường dẫn tuyệt đối cố định như code cũ
+     * Lấy đường dẫn upload vào thư mục bên ngoài source code
      * 
-     * @return Đường dẫn tuyệt đối đến thư mục resources/avatars trong SOURCE CODE
+     * @return Đường dẫn tuyệt đối đến thư mục upload avatar
      */
     private String getUploadDir() {
-        // ✅ Dùng đường dẫn tuyệt đối cố định (giống code cũ)
-        String uploadDir = "D:\\Netbean\\DO_AN_4\\sundaymarket\\sundaymarket-war\\web\\resources\\avatars";
-        
-        File dir = new File(uploadDir);
+        String path = System.getProperty("user.home")
+                + File.separator + "sundaymarket"
+                + File.separator + "uploads"
+                + File.separator + "avatar";
+
+        File dir = new File(path);
         if (!dir.exists()) {
-            boolean created = dir.mkdirs();
-            System.out.println("ProfileDetailMBean.getUploadDir() - Created directory: " + created + " at: " + uploadDir);
-        } else {
-            System.out.println("ProfileDetailMBean.getUploadDir() - Directory already exists: " + uploadDir);
+            dir.mkdirs();
         }
-        
-        System.out.println("ProfileDetailMBean.getUploadDir() - ✅ Using absolute path: " + uploadDir);
-        return uploadDir;
+
+        System.out.println("✅ Avatar upload dir: " + dir.getAbsolutePath());
+        return dir.getAbsolutePath();
     }
     
     public void uploadAvatarFile() {
@@ -353,10 +351,10 @@ public void cancelEdit() {
         FacesContext ctx = FacesContext.getCurrentInstance();
         if (ctx != null) {
             String base = ctx.getExternalContext().getRequestContextPath();
-            return base + "/resources/avatars/" + fileName + "?v=" + (System.currentTimeMillis() % 1000000);
+            return base + "/images/avatar/" + fileName + "?v=" + (System.currentTimeMillis() % 1000000);
         }
 
-        return "/resources/avatars/" + fileName;
+        return "/images/avatar/" + fileName;
     }
 
 }

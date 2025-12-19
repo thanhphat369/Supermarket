@@ -10,21 +10,28 @@
                 <ul>
 <!--                    <li><h:link outcome="/index" value="🏠 Trang chủ" /></li>-->
                     
-                    <!-- Menu for not logged in users - Hide when on login/register page -->
+                    <!-- Menu for not logged in users - Show welcome message only -->
                     <ui:fragment rendered="#{loginMBean.currentUser == null and !loginMBean.isLoginOrRegisterPage()}">
-                        <li><h:link outcome="/login" value="🔐 Login" /></li>
-                        <li><h:link outcome="/register" value="📝 Register" /></li>
+                        <li style="padding: 15px 10px; color: #666; font-size: 13px; border-bottom: 1px solid #eee;">
+                            <div style="text-align: center;">
+                                <div style="font-size: 32px; margin-bottom: 8px;">🛒</div>
+                                <div style="font-weight: 600; color: #3f72af;">Sunday Market</div>
+                                <div style="font-size: 11px; margin-top: 4px;">Please login to continue</div>
+                            </div>
+                        </li>
                     </ui:fragment>
                     
                     <!-- Menu for Admin -->
                     <ui:fragment rendered="#{loginMBean.isAdmin()}">
-                        <li><h:link outcome="/index" value="🏠 Home" /></li>
+                        <li><h:link outcome="/admin-dashboard" value="📊 Dashboard" /></li>
                         <li><h:link outcome="/user" value="👤 User Management" /></li>
                         <li><h:link outcome="/product" value="📦 Product Management" /></li>
+                        <li><h:link outcome="/feedback" value="⭐ Feedback Management" /></li>
                         <li><h:link outcome="/supplier" value="🏢 Supplier Management" /></li>
                         <li><h:link outcome="/brand" value="🏷️ Brand Management" /></li>
                         <li><h:link outcome="/category" value="📂 Category Management" /></li>
-                        <li><h:link outcome="/inventory" value="📊 Inventory Management" /></li>
+                        <li><h:link outcome="/promotion" value="🎁 Promotion Management" /></li>
+                        <li><h:link outcome="/stocktransactions" value="📦 Stock Management" /></li>
                         <li><h:link outcome="/order" value="📋 Order Management" /></li>
                     </ui:fragment>
                     
@@ -39,6 +46,9 @@
                     <!-- Menu for Shipper -->
                     <ui:fragment rendered="#{loginMBean.isShipper()}">
                         <li><h:link outcome="/index" value="🏠 Home" /></li>
+                        <li><h:link outcome="/shipper-dashboard" value="🚚 Dashboard" /></li>
+                        <li><h:link outcome="/shipperdelivery" value="📋 Quản lý đơn hàng" /></li>
+                        <li><h:link outcome="/shipper-finance" value="💰 Tài chính &amp; COD" /></li>
                         <li><h:link outcome="/profiledetail" value="👤 Profile" /></li>
                     </ui:fragment>
                 </ul>

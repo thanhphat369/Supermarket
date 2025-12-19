@@ -1,0 +1,687 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:h="jakarta.faces.html"
+      xmlns:f="jakarta.faces.core"
+      xmlns:ui="jakarta.faces.facelets">
+
+    <ui:composition template="/template.xhtml">
+        <ui:define name="title">🚚 Quản lý đơn hàng</ui:define>
+
+        <ui:define name="content">
+            <h:outputStylesheet library="css" name="shipper-style.css" />
+            <h:messages globalOnly="true" id="messages" />
+            
+            <!-- DEBUG: User info -->
+            <div style="background: #fff3cd; padding: 10px; margin-bottom: 10px; border-radius: 5px;">
+                <strong>DEBUG:</strong>
+                User: #{loginMBean.currentUser != null ? loginMBean.currentUser.userName : 'NULL'} |
+                Role: #{loginMBean.currentUser != null and loginMBean.currentUser.roleID != null ? loginMBean.currentUser.roleID.roleName : 'NULL'} |
+                isShipper: #{loginMBean.isShipper()}
+            </div>
+            
+            <div class="shipper-page">
+                    
+                    <!-- Check login status -->
+                    <h:panelGroup rendered="#{loginMBean.currentUser == null}">
+                        <div class="empty-state">
+                            <div class="empty-state-icon">🔐</div>
+                            <h2 class="empty-state-title">Vui lòng đăng nhập</h2>
+                            <p class="empty-state-desc">Bạn cần đăng nhập để xem danh sách giao hàng</p>
+                            <h:link outcome="login" styleClass="btn btn-primary" style="margin-top: 20px;">
+                                🔓 Đăng nhập
+                            </h:link>
+                        </div>
+                    </h:panelGroup>
+                    
+                    <!-- Check shipper role -->
+                    <h:panelGroup rendered="#{loginMBean.currentUser != null and !loginMBean.isShipper()}">
+                        <div class="empty-state" style="background: var(--shipper-danger-bg);">
+                            <div class="empty-state-icon">⚠️</div>
+                            <h2 class="empty-state-title">Truy cập bị từ chối</h2>
+                            <p class="empty-state-desc">Tài khoản này không có quyền Shipper</p>
+                            <h:link outcome="index" styleClass="btn btn-secondary" style="margin-top: 20px;">
+                                🏠 Về trang chủ
+                            </h:link>
+                        </div>
+                    </h:panelGroup>
+                    
+                    <!-- Shipper content -->
+                    <h:panelGroup rendered="#{loginMBean.currentUser != null and loginMBean.isShipper()}">
+                        <h:form id="deliveryForm" enctype="multipart/form-data">
+                            
+                            <!-- Page Header -->
+                            <div class="shipper-header">
+                                <div>
+                                    <h1 class="shipper-title">
+                                        <span class="shipper-title-icon">🚚</span>
+                                        Quản lý đơn hàng
+                                    </h1>
+                                    <p class="shipper-subtitle">Xem và xử lý các đơn hàng được giao</p>
+                                </div>
+                                <div style="display: flex; gap: 12px; align-items: center;">
+                                    <h:commandButton value="#{shipperDeliveryMBean.showAvailableOrders ? '📋 Đơn đã nhận' : '📦 Đơn chưa gán'}" 
+                                                   actionListener="#{shipperDeliveryMBean.toggleAvailableOrders()}"
+                                                   styleClass="btn #{shipperDeliveryMBean.showAvailableOrders ? 'btn-secondary' : 'btn-primary'}"
+                                                   style="font-weight: 600;">
+                                        <f:ajax render="deliveryForm" />
+                                    </h:commandButton>
+                                    <h:link outcome="shipper-dashboard" styleClass="btn btn-secondary">
+                                        ← Quay lại Dashboard
+                                    </h:link>
+                                </div>
+                            </div>
+                            
+                            <!-- Filter Section -->
+                            <div class="filter-section">
+                                <div class="filter-row">
+                                    <div class="filter-group" style="flex: 1; min-width: 250px;">
+                                        <span class="filter-label">Tìm kiếm</span>
+                                        <h:inputText value="#{shipperDeliveryMBean.searchKeyword}" 
+                                                   styleClass="form-control">
+                                            <f:passThroughAttribute name="placeholder" value="🔍 Tìm theo Order ID, tên khách hàng..." />
+                                            <f:ajax event="keyup" delay="300" listener="#{shipperDeliveryMBean.performSearch()}" render="deliveryTable paginationInfo" />
+                                        </h:inputText>
+                                    </div>
+                                    
+                                    <div class="filter-group">
+                                        <!-- Lọc theo trạng thái -->
+                                        <span class="filter-label">Status</span>
+                                        <h:selectOneMenu value="#{shipperDeliveryMBean.statusFilter}" styleClass="form-control form-select" style="min-width: 160px;">
+                                            <f:selectItem itemValue="all" itemLabel="📋 All" />
+                                            <f:selectItem itemValue="assigned" itemLabel="📋 Assigned" />
+                                            <f:selectItem itemValue="picked_up" itemLabel="📦 Picked Up" />
+                                            <f:selectItem itemValue="shipping" itemLabel="🚚 Shipping" />
+                                            <f:selectItem itemValue="delivered" itemLabel="✅ Delivered" />
+                                            <f:selectItem itemValue="failed" itemLabel="❌ Failed" />
+                                            <f:ajax event="change" listener="#{shipperDeliveryMBean.performSearch()}" render="deliveryTable paginationInfo" />
+                                        </h:selectOneMenu>
+                                    </div>
+                                    
+                                    <div class="filter-group" style="margin-top: 24px;">
+                                        <h:commandButton value="🔍 Search" 
+                                                       actionListener="#{shipperDeliveryMBean.performSearch()}"
+                                                       styleClass="btn btn-primary">
+                                            <f:ajax render="deliveryTable paginationInfo" />
+                                        </h:commandButton>
+                                    </div>
+                                    
+                                    <h:panelGroup rendered="#{not empty shipperDeliveryMBean.searchKeyword or shipperDeliveryMBean.statusFilter != 'all'}">
+                                        <div class="filter-group" style="margin-top: 24px;">
+                                            <h:commandButton value="✖ Clear Filter" 
+                                                           actionListener="#{shipperDeliveryMBean.clearSearch()}"
+                                                           styleClass="btn btn-secondary">
+                                                <f:ajax render="deliveryForm" />
+                                            </h:commandButton>
+                                        </div>
+                                    </h:panelGroup>
+                                </div>
+                            </div>
+                            
+                            <!-- Available Orders Section (Orders without shipper) -->
+                            <h:panelGroup rendered="#{shipperDeliveryMBean.showAvailableOrders}">
+                                <div class="orders-container" id="availableOrdersTable">
+                                    <div class="orders-header" style="background: linear-gradient(135deg, #10b981, #059669); color: white; padding: 20px; border-radius: 12px 12px 0 0;">
+                                        <h3 style="margin: 0; font-weight: 700; color: white;">📦 Đơn hàng chưa được gán</h3>
+                                        <span style="font-size: 14px; color: rgba(255,255,255,0.9);">
+                                            Tổng: #{shipperDeliveryMBean.totalAvailableOrders} đơn
+                                        </span>
+                                    </div>
+                                    
+                                    <h:panelGroup rendered="#{empty shipperDeliveryMBean.pagedAvailableOrders}">
+                                        <div class="empty-state" style="padding: 40px;">
+                                            <div class="empty-state-icon">✅</div>
+                                            <h3 class="empty-state-title">Không có đơn hàng nào</h3>
+                                            <p class="empty-state-desc">Tất cả đơn hàng đã được gán cho shipper</p>
+                                        </div>
+                                    </h:panelGroup>
+                                    
+                                    <h:dataTable value="#{shipperDeliveryMBean.pagedAvailableOrders}" var="order" 
+                                               styleClass="shipper-table"
+                                               rendered="#{not empty shipperDeliveryMBean.pagedAvailableOrders}">
+                                        <h:column>
+                                            <f:facet name="header">🛒 Order ID</f:facet>
+                                            <span style="color: var(--shipper-primary); font-weight: 600; font-family: 'JetBrains Mono', monospace;">
+                                                ##{order.orderID}
+                                            </span>
+                                        </h:column>
+                                        
+                                        <h:column>
+                                            <f:facet name="header">👤 Customer</f:facet>
+                                            <div>
+                                                <strong>#{order.userID != null ? (order.userID.fullName != null ? order.userID.fullName : order.userID.userName) : '-'}</strong>
+                                                <div style="font-size: 12px; color: var(--shipper-gray-500);">
+                                                    📞 #{order.userID != null and order.userID.phone != null ? order.userID.phone : 'N/A'}
+                                                </div>
+                                            </div>
+                                        </h:column>
+                                        
+                                        <h:column>
+                                            <f:facet name="header">📍 Address</f:facet>
+                                            <span style="max-width: 200px; display: inline-block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px;">
+                                                #{order.userID != null ? order.userID.address : '-'}
+                                            </span>
+                                        </h:column>
+                                        
+                                        <h:column>
+                                            <f:facet name="header">💰 Total</f:facet>
+                                            <strong style="color: var(--shipper-success); font-size: 15px;">
+                                                #{shipperDeliveryMBean.formatAmount(order.totalAmount)}
+                                            </strong>
+                                        </h:column>
+                                        
+                                        <h:column>
+                                            <f:facet name="header">📅 Order Date</f:facet>
+                                            <span style="font-size: 13px;">
+                                                #{shipperDeliveryMBean.formatDate(order.orderDate)}
+                                            </span>
+                                        </h:column>
+                                        
+                                        <h:column>
+                                            <f:facet name="header">📊 Status</f:facet>
+                                            <span class="badge" style="background: #{shipperDeliveryMBean.getStatusColor(order.status)}20; color: #{shipperDeliveryMBean.getStatusColor(order.status)};">
+                                                #{order.status}
+                                            </span>
+                                        </h:column>
+                                        
+                                        <h:column>
+                                            <f:facet name="header">⚡ Actions</f:facet>
+                                            <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                                                <h:commandButton value="✅ Nhận đơn" 
+                                                               actionListener="#{shipperDeliveryMBean.acceptOrder(order)}"
+                                                               styleClass="btn btn-success btn-sm"
+                                                               style="font-weight: 600; padding: 8px 16px;">
+                                                    <f:ajax render="deliveryForm :messages" />
+                                                </h:commandButton>
+                                                <h:commandButton value="📋" 
+                                                               title="View Details"
+                                                               actionListener="#{shipperDeliveryMBean.viewOrderDetails(order)}"
+                                                               styleClass="btn btn-primary btn-sm btn-icon">
+                                                    <f:ajax render="deliveryDetailsSection" />
+                                                </h:commandButton>
+                                            </div>
+                                        </h:column>
+                                    </h:dataTable>
+                                    
+                                    <!-- Pagination for Available Orders -->
+                                    <div class="pagination" style="margin-top: 20px;">
+                                        <span class="pagination-info">
+                                            Trang #{shipperDeliveryMBean.currentPageAvailable} / #{shipperDeliveryMBean.getTotalPagesForAvailableOrders()} 
+                                            (#{shipperDeliveryMBean.totalAvailableOrders} đơn)
+                                        </span>
+                                        <div class="pagination-buttons">
+                                            <h:commandButton value="⏮" actionListener="#{shipperDeliveryMBean.firstPageAvailable()}" 
+                                                           styleClass="pagination-btn" 
+                                                           disabled="#{shipperDeliveryMBean.currentPageAvailable == 1 or shipperDeliveryMBean.getTotalPagesForAvailableOrders() le 1}">
+                                                <f:ajax render="availableOrdersTable" />
+                                            </h:commandButton>
+                                            <h:commandButton value="◀" actionListener="#{shipperDeliveryMBean.previousPageAvailable()}" 
+                                                           styleClass="pagination-btn" 
+                                                           disabled="#{shipperDeliveryMBean.currentPageAvailable == 1 or shipperDeliveryMBean.getTotalPagesForAvailableOrders() le 1}">
+                                                <f:ajax render="availableOrdersTable" />
+                                            </h:commandButton>
+                                            <h:commandButton value="▶" actionListener="#{shipperDeliveryMBean.nextPageAvailable()}" 
+                                                           styleClass="pagination-btn" 
+                                                           disabled="#{shipperDeliveryMBean.currentPageAvailable == shipperDeliveryMBean.getTotalPagesForAvailableOrders() or shipperDeliveryMBean.getTotalPagesForAvailableOrders() le 1}">
+                                                <f:ajax render="availableOrdersTable" />
+                                            </h:commandButton>
+                                            <h:commandButton value="⏭" actionListener="#{shipperDeliveryMBean.lastPageAvailable()}" 
+                                                           styleClass="pagination-btn" 
+                                                           disabled="#{shipperDeliveryMBean.currentPageAvailable == shipperDeliveryMBean.getTotalPagesForAvailableOrders() or shipperDeliveryMBean.getTotalPagesForAvailableOrders() le 1}">
+                                                <f:ajax render="availableOrdersTable" />
+                                            </h:commandButton>
+                                        </div>
+                                    </div>
+                                </div>
+                            </h:panelGroup>
+                            
+                            <!-- Deliveries Table (Assigned Orders) -->
+                            <h:panelGroup rendered="#{!shipperDeliveryMBean.showAvailableOrders}">
+                                <div class="orders-container" id="deliveryTable">
+                                    <div class="orders-header">
+                                        <h3 style="margin: 0; font-weight: 700;">📋 Đơn hàng đã nhận</h3>
+                                        <span style="font-size: 14px; color: var(--shipper-gray-600);">
+                                            Tổng: #{shipperDeliveryMBean.totalItems} đơn
+                                        </span>
+                                    </div>
+                                    
+                                    <h:panelGroup rendered="#{empty shipperDeliveryMBean.pagedItems}">
+                                        <div class="empty-state">
+                                            <div class="empty-state-icon">📭</div>
+                                            <h3 class="empty-state-title">Chưa có đơn hàng nào</h3>
+                                            <p class="empty-state-desc">Các đơn hàng được gán sẽ hiển thị ở đây</p>
+                                        </div>
+                                    </h:panelGroup>
+                                
+                                <h:dataTable value="#{shipperDeliveryMBean.pagedItems}" var="d" 
+                                           styleClass="shipper-table"
+                                           rendered="#{not empty shipperDeliveryMBean.pagedItems}">
+                                    <h:column>
+                                        <f:facet name="header">📋 Delivery</f:facet>
+                                        <strong style="font-family: 'JetBrains Mono', monospace;">##{d.deliveryID}</strong>
+                                    </h:column>
+                                    
+                                    <h:column>
+                                        <f:facet name="header">🛒 Order</f:facet>
+                                        <span style="color: var(--shipper-primary); font-weight: 600;">
+                                            ##{d.orderID != null ? d.orderID.orderID : '-'}
+                                        </span>
+                                    </h:column>
+                                    
+                                    <h:column>
+                                        <f:facet name="header">👤 Customer</f:facet>
+                                        <div>
+                                            <strong>#{d.orderID != null and d.orderID.userID != null ? (d.orderID.userID.fullName != null ? d.orderID.userID.fullName : d.orderID.userID.userName) : '-'}</strong>
+                                            <div style="font-size: 12px; color: var(--shipper-gray-500);">
+                                                📞 #{d.orderID != null and d.orderID.userID != null and d.orderID.userID.phone != null ? d.orderID.userID.phone : 'N/A'}
+                                            </div>
+                                        </div>
+                                    </h:column>
+                                    
+                                    <h:column>
+                                        <f:facet name="header">📍 Address</f:facet>
+                                        <span style="max-width: 200px; display: inline-block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px;">
+                                            #{d.orderID != null and d.orderID.userID != null ? d.orderID.userID.address : '-'}
+                                        </span>
+                                    </h:column>
+                                    
+                                    <h:column>
+                                        <f:facet name="header">💰 Total</f:facet>
+                                        <strong style="color: var(--shipper-success); font-size: 15px;">
+                                            #{d.orderID != null ? shipperDeliveryMBean.formatAmount(d.orderID.totalAmount) : '-'}
+                                        </strong>
+                                    </h:column>
+                                    
+                                    <h:column>
+                                        <f:facet name="header">📊 Status</f:facet>
+                                        <span class="badge" style="background: #{shipperDeliveryMBean.getStatusColor(d.status)}20; color: #{shipperDeliveryMBean.getStatusColor(d.status)};">
+                                            #{shipperDeliveryMBean.getStatusText(d.status)}
+                                        </span>
+                                    </h:column>
+                                    
+                                    <h:column>
+                                        <f:facet name="header">⚡ Actions</f:facet>
+                                        <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                                            <h:commandButton value="📋" 
+                                                           title="View Details"
+                                                           actionListener="#{shipperDeliveryMBean.viewDetails(d)}"
+                                                           styleClass="btn btn-primary btn-sm btn-icon">
+                                                <f:ajax render="deliveryDetailsSection" />
+                                            </h:commandButton>
+                                        </div>
+                                    </h:column>
+                                </h:dataTable>
+                                
+                                <!-- Pagination -->
+                                <div class="pagination" id="paginationInfo">
+                                    <span class="pagination-info">
+                                        Page #{shipperDeliveryMBean.currentPage} / #{shipperDeliveryMBean.totalPages} 
+                                        (#{shipperDeliveryMBean.totalItems} orders)
+                                    </span>
+                                    <div class="pagination-buttons">
+                                        <h:commandButton value="⏮" actionListener="#{shipperDeliveryMBean.firstPage()}" 
+                                                       styleClass="pagination-btn" 
+                                                       disabled="#{shipperDeliveryMBean.currentPage == 1 or shipperDeliveryMBean.totalPages le 1}">
+                                            <f:ajax render="deliveryTable paginationInfo" />
+                                        </h:commandButton>
+                                        <h:commandButton value="◀" actionListener="#{shipperDeliveryMBean.previousPage()}" 
+                                                       styleClass="pagination-btn" 
+                                                       disabled="#{shipperDeliveryMBean.currentPage == 1 or shipperDeliveryMBean.totalPages le 1}">
+                                            <f:ajax render="deliveryTable paginationInfo" />
+                                        </h:commandButton>
+                                        <h:commandButton value="▶" actionListener="#{shipperDeliveryMBean.nextPage()}" 
+                                                       styleClass="pagination-btn" 
+                                                       disabled="#{shipperDeliveryMBean.currentPage == shipperDeliveryMBean.totalPages or shipperDeliveryMBean.totalPages le 1}">
+                                            <f:ajax render="deliveryTable paginationInfo" />
+                                        </h:commandButton>
+                                        <h:commandButton value="⏭" actionListener="#{shipperDeliveryMBean.lastPage()}" 
+                                                       styleClass="pagination-btn" 
+                                                       disabled="#{shipperDeliveryMBean.currentPage == shipperDeliveryMBean.totalPages or shipperDeliveryMBean.totalPages le 1}">
+                                            <f:ajax render="deliveryTable paginationInfo" />
+                                        </h:commandButton>
+                                    </div>
+                                </div>
+                                </div>
+                            </h:panelGroup>
+                            
+                            <!-- Delivery Details Section -->
+                            <h:panelGroup id="deliveryDetailsSection">
+                                <!-- Show details for delivery (assigned order) -->
+                                <ui:fragment rendered="#{shipperDeliveryMBean.showDetails and shipperDeliveryMBean.selectedDelivery != null}">
+                                    <div style="margin-top: 32px; background: var(--shipper-white); border-radius: var(--radius-xl); box-shadow: var(--shadow-card); overflow: hidden;">
+                                        <!-- Detail Header -->
+                                        <div style="padding: 24px; background: var(--gradient-primary); color: white;">
+                                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                                <div>
+                                                    <h2 style="margin: 0; font-size: 22px;">
+                                                        🚚 Delivery ##{shipperDeliveryMBean.selectedDelivery.deliveryID}
+                                                    </h2>
+                                                    <p style="margin: 8px 0 0 0; opacity: 0.9;">
+                                                        Order ##{shipperDeliveryMBean.selectedOrder.orderID}
+                                                    </p>
+                                                </div>
+                                                <h:commandButton value="✕" actionListener="#{shipperDeliveryMBean.closeDetails}" 
+                                                               style="background: rgba(255,255,255,0.2); border: none; color: white; width: 40px; height: 40px; border-radius: 8px; cursor: pointer; font-size: 18px;">
+                                                    <f:ajax render="deliveryDetailsSection" />
+                                                </h:commandButton>
+                                            </div>
+                                        </div>
+                                        
+                                        <div style="padding: 24px;">
+                                            <!-- Info Cards Grid -->
+                                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin-bottom: 24px;">
+                                                <!-- Status Card -->
+                                                <!-- Thẻ trạng thái giao hàng -->
+                                                <div style="background: var(--shipper-gray-50); padding: 20px; border-radius: var(--radius-lg);">
+                                                    <h4 style="margin: 0 0 16px 0; color: var(--shipper-gray-600); font-size: 13px; text-transform: uppercase;">📊 Status</h4>
+                                                    <span class="badge" style="font-size: 14px; padding: 8px 16px; background: #{shipperDeliveryMBean.getStatusColor(shipperDeliveryMBean.selectedDelivery.status)}20; color: #{shipperDeliveryMBean.getStatusColor(shipperDeliveryMBean.selectedDelivery.status)};">
+                                                        #{shipperDeliveryMBean.getStatusText(shipperDeliveryMBean.selectedDelivery.status)}
+                                                    </span>
+                                                    <p style="margin: 12px 0 0 0; font-size: 13px; color: var(--shipper-gray-500);">
+                                                        Updated: #{shipperDeliveryMBean.formatDate(shipperDeliveryMBean.selectedDelivery.updatedAt)}
+                                                    </p>
+                                                </div>
+                                                
+                                                <!-- Customer Card -->
+                                                <!-- Thẻ thông tin khách hàng -->
+                                                <div style="background: var(--shipper-gray-50); padding: 20px; border-radius: var(--radius-lg);">
+                                                    <h4 style="margin: 0 0 16px 0; color: var(--shipper-gray-600); font-size: 13px; text-transform: uppercase;">👤 Customer</h4>
+                                                    <ui:fragment rendered="#{shipperDeliveryMBean.selectedOrder != null and shipperDeliveryMBean.selectedOrder.userID != null}">
+                                                        <p style="margin: 0 0 8px 0; font-weight: 600;">#{shipperDeliveryMBean.selectedOrder.userID.fullName != null ? shipperDeliveryMBean.selectedOrder.userID.fullName : shipperDeliveryMBean.selectedOrder.userID.userName}</p>
+                                                        <p style="margin: 0 0 8px 0; font-size: 13px; color: var(--shipper-gray-600);">📞 #{shipperDeliveryMBean.selectedOrder.userID.phone != null ? shipperDeliveryMBean.selectedOrder.userID.phone : 'N/A'}</p>
+                                                        <p style="margin: 0; font-size: 13px; color: var(--shipper-gray-600);">📍 #{shipperDeliveryMBean.selectedOrder.userID.address != null ? shipperDeliveryMBean.selectedOrder.userID.address : 'N/A'}</p>
+                                                    </ui:fragment>
+                                                </div>
+                                                
+                                                <!-- Order Card -->
+                                                <!-- Thẻ thông tin đơn hàng -->
+                                                <div style="background: var(--shipper-gray-50); padding: 20px; border-radius: var(--radius-lg);">
+                                                    <h4 style="margin: 0 0 16px 0; color: var(--shipper-gray-600); font-size: 13px; text-transform: uppercase;">🛒 Order</h4>
+                                                    <ui:fragment rendered="#{shipperDeliveryMBean.selectedOrder != null}">
+                                                        <p style="margin: 0 0 8px 0; font-size: 13px;">Order date: #{shipperDeliveryMBean.formatDate(shipperDeliveryMBean.selectedOrder.orderDate)}</p>
+                                                        <p style="margin: 0; font-size: 20px; font-weight: 700; color: var(--shipper-success);">
+                                                            #{shipperDeliveryMBean.formatAmount(shipperDeliveryMBean.selectedOrder.totalAmount)}
+                                                        </p>
+                                                    </ui:fragment>
+                                                </div>
+                                            </div>
+                                            
+                                            <!-- Products -->
+                                            <!-- Danh sách sản phẩm trong đơn -->
+                                            <div style="margin-bottom: 24px;">
+                                                <h4 style="margin: 0 0 16px 0; font-weight: 700;">📦 Products in Order</h4>
+                                                <h:dataTable value="#{shipperDeliveryMBean.orderDetails}" var="detail" 
+                                                           styleClass="shipper-table"
+                                                           rendered="#{not empty shipperDeliveryMBean.orderDetails}">
+                                                    <h:column>
+                                                        <f:facet name="header">Product</f:facet>
+                                                        <strong>#{detail.productID.name}</strong>
+                                                    </h:column>
+                                                    <h:column>
+                                                        <f:facet name="header">Qty</f:facet>
+                                                        <span class="badge" style="background: var(--shipper-gray-100); color: var(--shipper-gray-700);">#{detail.quantity}</span>
+                                                    </h:column>
+                                                    <h:column>
+                                                        <f:facet name="header">Unit Price</f:facet>
+                                                        #{shipperDeliveryMBean.formatAmount(detail.unitPrice)}
+                                                    </h:column>
+                                                    <h:column>
+                                                        <f:facet name="header">Subtotal</f:facet>
+                                                        <strong style="color: var(--shipper-primary);">#{shipperDeliveryMBean.formatAmount(detail.unitPrice * detail.quantity)}</strong>
+                                                    </h:column>
+                                                </h:dataTable>
+                                                <h:outputText value="No products" rendered="#{empty shipperDeliveryMBean.orderDetails}" style="color: var(--shipper-gray-500); font-style: italic;" />
+                                            </div>
+                                            
+                                            <!-- Quick Actions -->
+                                            <!-- Nút cập nhật trạng thái giao hàng -->
+                                            <div style="background: linear-gradient(135deg, rgba(14, 165, 233, 0.05), rgba(139, 92, 246, 0.05)); padding: 24px; border-radius: var(--radius-lg);">
+                                                <h4 style="margin: 0 0 16px 0; font-weight: 700;">⚡ Update Status</h4>
+                                                <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+                                                    <h:commandButton value="📦 Pick Up" 
+                                                                   actionListener="#{shipperDashboardMBean.pickUpDelivery(shipperDeliveryMBean.selectedDelivery)}"
+                                                                   styleClass="btn btn-primary"
+                                                                   disabled="#{shipperDeliveryMBean.selectedDelivery.status == 'delivered' or shipperDeliveryMBean.selectedDelivery.status == 'failed'}">
+                                                        <f:ajax render="deliveryDetailsSection deliveryTable :messages" />
+                                                    </h:commandButton>
+                                                    <h:commandButton value="🚚 Start Shipping" 
+                                                                   actionListener="#{shipperDashboardMBean.startShipping(shipperDeliveryMBean.selectedDelivery)}"
+                                                                   styleClass="btn btn-primary" style="background: linear-gradient(135deg, #06b6d4, #0891b2);"
+                                                                   disabled="#{shipperDeliveryMBean.selectedDelivery.status == 'delivered' or shipperDeliveryMBean.selectedDelivery.status == 'failed'}">
+                                                        <f:ajax render="deliveryDetailsSection deliveryTable :messages" />
+                                                    </h:commandButton>
+                                                    <h:commandButton value="📷 Mark Delivered" 
+                                                                   actionListener="#{shipperDashboardMBean.openProofUploadModal(shipperDeliveryMBean.selectedDelivery)}"
+                                                                   styleClass="btn btn-success"
+                                                                   disabled="#{shipperDeliveryMBean.selectedDelivery.status == 'delivered' or shipperDeliveryMBean.selectedDelivery.status == 'failed'}">
+                                                        <f:ajax render="proofUploadModal" />
+                                                    </h:commandButton>
+                                                    <h:commandButton value="📷 Report Failed" 
+                                                                   actionListener="#{shipperDashboardMBean.openFailureModal(shipperDeliveryMBean.selectedDelivery)}"
+                                                                   styleClass="btn btn-danger"
+                                                                   disabled="#{shipperDeliveryMBean.selectedDelivery.status == 'delivered' or shipperDeliveryMBean.selectedDelivery.status == 'failed'}">
+                                                        <f:ajax render="failureModal" />
+                                                    </h:commandButton>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </ui:fragment>
+                                
+                                <!-- Show details for available order (not yet assigned) -->
+                                <ui:fragment rendered="#{shipperDeliveryMBean.showDetails and shipperDeliveryMBean.selectedOrder != null and shipperDeliveryMBean.selectedDelivery == null}">
+                                    <div style="margin-top: 32px; background: var(--shipper-white); border-radius: var(--radius-xl); box-shadow: var(--shadow-card); overflow: hidden;">
+                                        <!-- Detail Header -->
+                                        <div style="padding: 24px; background: linear-gradient(135deg, #10b981, #059669); color: white;">
+                                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                                <div>
+                                                    <h2 style="margin: 0; font-size: 22px;">
+                                                        🛒 Order ##{shipperDeliveryMBean.selectedOrder.orderID}
+                                                    </h2>
+                                                    <p style="margin: 8px 0 0 0; opacity: 0.9;">
+                                                        Đơn hàng chưa được gán shipper
+                                                    </p>
+                                                </div>
+                                                <h:commandButton value="✕" actionListener="#{shipperDeliveryMBean.closeDetails}" 
+                                                               style="background: rgba(255,255,255,0.2); border: none; color: white; width: 40px; height: 40px; border-radius: 8px; cursor: pointer; font-size: 18px;">
+                                                    <f:ajax render="deliveryDetailsSection" />
+                                                </h:commandButton>
+                                            </div>
+                                        </div>
+                                        
+                                        <div style="padding: 24px;">
+                                            <!-- Info Cards Grid -->
+                                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin-bottom: 24px;">
+                                                <!-- Customer Card -->
+                                                <div style="background: var(--shipper-gray-50); padding: 20px; border-radius: var(--radius-lg);">
+                                                    <h4 style="margin: 0 0 16px 0; color: var(--shipper-gray-600); font-size: 13px; text-transform: uppercase;">👤 Customer</h4>
+                                                    <ui:fragment rendered="#{shipperDeliveryMBean.selectedOrder != null and shipperDeliveryMBean.selectedOrder.userID != null}">
+                                                        <p style="margin: 0 0 8px 0; font-weight: 600;">#{shipperDeliveryMBean.selectedOrder.userID.fullName != null ? shipperDeliveryMBean.selectedOrder.userID.fullName : shipperDeliveryMBean.selectedOrder.userID.userName}</p>
+                                                        <p style="margin: 0 0 8px 0; font-size: 13px; color: var(--shipper-gray-600);">📞 #{shipperDeliveryMBean.selectedOrder.userID.phone != null ? shipperDeliveryMBean.selectedOrder.userID.phone : 'N/A'}</p>
+                                                        <p style="margin: 0; font-size: 13px; color: var(--shipper-gray-600);">📍 #{shipperDeliveryMBean.selectedOrder.userID.address != null ? shipperDeliveryMBean.selectedOrder.userID.address : 'N/A'}</p>
+                                                    </ui:fragment>
+                                                </div>
+                                                
+                                                <!-- Order Card -->
+                                                <div style="background: var(--shipper-gray-50); padding: 20px; border-radius: var(--radius-lg);">
+                                                    <h4 style="margin: 0 0 16px 0; color: var(--shipper-gray-600); font-size: 13px; text-transform: uppercase;">🛒 Order</h4>
+                                                    <ui:fragment rendered="#{shipperDeliveryMBean.selectedOrder != null}">
+                                                        <p style="margin: 0 0 8px 0; font-size: 13px;">Order date: #{shipperDeliveryMBean.formatDate(shipperDeliveryMBean.selectedOrder.orderDate)}</p>
+                                                        <p style="margin: 0 0 8px 0; font-size: 13px;">Status: 
+                                                            <span class="badge" style="background: #{shipperDeliveryMBean.getStatusColor(shipperDeliveryMBean.selectedOrder.status)}20; color: #{shipperDeliveryMBean.getStatusColor(shipperDeliveryMBean.selectedOrder.status)};">
+                                                                #{shipperDeliveryMBean.selectedOrder.status}
+                                                            </span>
+                                                        </p>
+                                                        <p style="margin: 0; font-size: 20px; font-weight: 700; color: var(--shipper-success);">
+                                                            #{shipperDeliveryMBean.formatAmount(shipperDeliveryMBean.selectedOrder.totalAmount)}
+                                                        </p>
+                                                    </ui:fragment>
+                                                </div>
+                                            </div>
+                                            
+                                            <!-- Products -->
+                                            <div style="margin-bottom: 24px;">
+                                                <h4 style="margin: 0 0 16px 0; font-weight: 700;">📦 Products in Order</h4>
+                                                <h:dataTable value="#{shipperDeliveryMBean.orderDetails}" var="detail" 
+                                                           styleClass="shipper-table"
+                                                           rendered="#{not empty shipperDeliveryMBean.orderDetails}">
+                                                    <h:column>
+                                                        <f:facet name="header">Product</f:facet>
+                                                        <strong>#{detail.productID.name}</strong>
+                                                    </h:column>
+                                                    <h:column>
+                                                        <f:facet name="header">Qty</f:facet>
+                                                        <span class="badge" style="background: var(--shipper-gray-100); color: var(--shipper-gray-700);">#{detail.quantity}</span>
+                                                    </h:column>
+                                                    <h:column>
+                                                        <f:facet name="header">Unit Price</f:facet>
+                                                        #{shipperDeliveryMBean.formatAmount(detail.unitPrice)}
+                                                    </h:column>
+                                                    <h:column>
+                                                        <f:facet name="header">Subtotal</f:facet>
+                                                        <strong style="color: var(--shipper-primary);">#{shipperDeliveryMBean.formatAmount(detail.unitPrice * detail.quantity)}</strong>
+                                                    </h:column>
+                                                </h:dataTable>
+                                                <h:outputText value="No products" rendered="#{empty shipperDeliveryMBean.orderDetails}" style="color: var(--shipper-gray-500); font-style: italic;" />
+                                            </div>
+                                            
+                                            <!-- Accept Order Button -->
+                                            <div style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(5, 150, 105, 0.1)); padding: 24px; border-radius: var(--radius-lg); text-align: center;">
+                                                <h4 style="margin: 0 0 16px 0; font-weight: 700; color: var(--shipper-success);">✅ Nhận đơn hàng này?</h4>
+                                                <p style="margin: 0 0 20px 0; color: var(--shipper-gray-600);">Bấm nút bên dưới để nhận đơn hàng này và bắt đầu giao hàng</p>
+                                                <h:commandButton value="✅ Nhận đơn ngay" 
+                                                               actionListener="#{shipperDeliveryMBean.acceptOrder(shipperDeliveryMBean.selectedOrder)}"
+                                                               styleClass="btn btn-success"
+                                                               style="font-size: 16px; font-weight: 700; padding: 12px 32px;">
+                                                    <f:ajax render="deliveryForm :messages" 
+                                                            onevent="function(data){if(data.status=='success'){shipperDeliveryMBean.closeDetails();}}" />
+                                                </h:commandButton>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </ui:fragment>
+                            </h:panelGroup>
+                            
+                            <!-- Proof Upload Modal -->
+                            <h:panelGroup id="proofUploadModal">
+                                <ui:fragment rendered="#{shipperDashboardMBean.showProofUploadModal and shipperDashboardMBean.selectedDelivery != null}">
+                                    <div class="modal-overlay">
+                                        <div class="modal-content animate-slide-up">
+                                            <div class="modal-header" style="background: var(--gradient-success); color: white;">
+                                                <h3 class="modal-title" style="color: white;">📷 Confirm Delivery Success</h3>
+                                                <h:commandButton value="✕" actionListener="#{shipperDashboardMBean.closeProofUploadModal()}"
+                                                               style="background: rgba(255,255,255,0.2); border: none; color: white; width: 36px; height: 36px; border-radius: 8px; cursor: pointer;">
+                                                    <f:ajax render="proofUploadModal" />
+                                                </h:commandButton>
+                                            </div>
+                                            <div class="modal-body">
+                                                <div style="background: var(--shipper-success-bg); padding: 16px; border-radius: var(--radius-md); margin-bottom: 20px;">
+                                                    <p style="margin: 4px 0;"><strong>Order:</strong> ##{shipperDashboardMBean.selectedDelivery.orderID.orderID}</p>
+                                                    <p style="margin: 4px 0;"><strong>Customer:</strong> #{shipperDashboardMBean.selectedDelivery.orderID.userID.fullName}</p>
+                                                    <p style="margin: 4px 0;"><strong>Total:</strong> 
+                                                        <span style="color: var(--shipper-success); font-weight: 700;">#{shipperDashboardMBean.formatAmount(shipperDashboardMBean.selectedDelivery.orderID.totalAmount)}</span>
+                                                    </p>
+                                                </div>
+                                                
+                                                <h:form id="proofForm" enctype="multipart/form-data">
+                                                    <div class="form-group">
+                                                        <label class="form-label">📷 Upload Delivery Proof</label>
+                                                        <div class="file-upload">
+                                                            <h:inputFile id="proofImage" value="#{shipperDashboardMBean.proofImageFile}" 
+                                                                       accept="image/*"
+                                                                       style="opacity: 0; position: absolute; pointer-events: none;" />
+                                                            <div class="file-upload-icon">📸</div>
+                                                            <div class="file-upload-text">Tap to take photo or select from gallery</div>
+                                                            <div class="file-upload-hint">Supported: JPG, PNG (max 5MB)</div>
+                                                        </div>
+                                                    </div>
+                                                    
+                                                    <div class="form-group">
+                                                        <label class="form-label">📝 Notes (optional)</label>
+                                                        <h:inputTextarea value="#{shipperDashboardMBean.deliveryNotes}" 
+                                                                       styleClass="form-control" rows="3">
+                                                            <f:passThroughAttribute name="placeholder" value="E.g: Customer received directly, checked items..." />
+                                                        </h:inputTextarea>
+                                                    </div>
+                                                </h:form>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <h:commandButton value="Cancel" actionListener="#{shipperDashboardMBean.closeProofUploadModal()}"
+                                                               styleClass="btn btn-secondary">
+                                                    <f:ajax render="proofUploadModal" />
+                                                </h:commandButton>
+                                                <h:commandButton value="✅ Confirm Delivered" 
+                                                               action="#{shipperDashboardMBean.markAsDelivered()}"
+                                                               styleClass="btn btn-success" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </ui:fragment>
+                            </h:panelGroup>
+                            
+                            <!-- Failure Modal -->
+                            <h:panelGroup id="failureModal">
+                                <ui:fragment rendered="#{shipperDashboardMBean.showFailureModal and shipperDashboardMBean.selectedDelivery != null}">
+                                    <div class="modal-overlay">
+                                        <div class="modal-content animate-slide-up">
+                                            <div class="modal-header" style="background: var(--gradient-danger); color: white;">
+                                                <h3 class="modal-title" style="color: white;">❌ Report Delivery Failed</h3>
+                                                <h:commandButton value="✕" actionListener="#{shipperDashboardMBean.closeFailureModal()}"
+                                                               style="background: rgba(255,255,255,0.2); border: none; color: white; width: 36px; height: 36px; border-radius: 8px; cursor: pointer;">
+                                                    <f:ajax render="failureModal" />
+                                                </h:commandButton>
+                                            </div>
+                                            <div class="modal-body">
+                                                <div style="background: var(--shipper-danger-bg); padding: 16px; border-radius: var(--radius-md); margin-bottom: 20px;">
+                                                    <p style="margin: 4px 0;"><strong>Order:</strong> ##{shipperDashboardMBean.selectedDelivery.orderID.orderID}</p>
+                                                    <p style="margin: 4px 0;"><strong>Customer:</strong> #{shipperDashboardMBean.selectedDelivery.orderID.userID.fullName}</p>
+                                                </div>
+                                                
+                                                <h:form id="failureForm" enctype="multipart/form-data">
+                                                    <div class="form-group">
+                                                        <label class="form-label" style="color: var(--shipper-danger);">❗ Failure Reason (required)</label>
+                                                        <h:selectOneMenu value="#{shipperDashboardMBean.failureReason}" styleClass="form-control form-select">
+                                                            <f:selectItem itemLabel="-- Select reason --" itemValue="" />
+                                                            <f:selectItem itemValue="Customer not at home" itemLabel="🏠 Customer not at home" />
+                                                            <f:selectItem itemValue="Reschedule delivery" itemLabel="📅 Reschedule delivery" />
+                                                            <f:selectItem itemValue="Customer refused" itemLabel="🚫 Customer refused" />
+                                                            <f:selectItem itemValue="Package damaged" itemLabel="📦 Package damaged" />
+                                                            <f:selectItem itemValue="Wrong address" itemLabel="📍 Wrong address" />
+                                                            <f:selectItem itemValue="Cannot contact customer" itemLabel="📞 Cannot contact customer" />
+                                                            <f:selectItem itemValue="Other" itemLabel="📝 Other reason" />
+                                                        </h:selectOneMenu>
+                                                    </div>
+                                                    
+                                                    <div class="form-group">
+                                                        <label class="form-label">📷 Upload Evidence (optional)</label>
+                                                        <div class="file-upload" style="border-color: var(--shipper-danger);">
+                                                            <h:inputFile id="failureImage" value="#{shipperDashboardMBean.failureImageFile}" 
+                                                                       accept="image/*"
+                                                                       style="opacity: 0; position: absolute; pointer-events: none;" />
+                                                            <div class="file-upload-icon">📸</div>
+                                                            <div class="file-upload-text">Take photo of damaged goods or actual situation</div>
+                                                        </div>
+                                                    </div>
+                                                </h:form>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <h:commandButton value="Cancel" actionListener="#{shipperDashboardMBean.closeFailureModal()}"
+                                                               styleClass="btn btn-secondary">
+                                                    <f:ajax render="failureModal" />
+                                                </h:commandButton>
+                                                <h:commandButton value="❌ Confirm Failed" 
+                                                               action="#{shipperDashboardMBean.markAsFailed()}"
+                                                               styleClass="btn btn-danger" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </ui:fragment>
+                            </h:panelGroup>
+                            
+                        </h:form>
+                    </h:panelGroup>
+                    
+            </div>
+        </ui:define>
+    </ui:composition>
+</html>

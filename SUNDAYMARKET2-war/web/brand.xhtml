@@ -280,6 +280,23 @@
                                         #{p.productID}
                                     </h:column>
                                     <h:column>
+                                        <f:facet name="header">Hình ảnh</f:facet>
+                                        <div style="display: flex; gap: 5px; flex-wrap: wrap; align-items: center;">
+                                            <ui:repeat value="#{productMBean.getImageUrlsForProduct(p)}" var="imgUrl" varStatus="status">
+                                                <img src="#{imgUrl}"
+                                                     alt="Product #{status.index + 1}"
+                                                     style="width: 60px; height: 60px; border-radius: 8px; object-fit: cover; border: 2px solid #ddd; background-color: #f5f5f5; cursor: pointer; transition: transform 0.2s;"
+                                                     onerror="this.style.display='none';"
+                                                     onmouseover="this.style.transform='scale(1.1)'; this.style.borderColor='#3f72af';"
+                                                     onmouseout="this.style.transform='scale(1)'; this.style.borderColor='#ddd';"
+                                                     title="Hình ảnh sản phẩm" />
+                                            </ui:repeat>
+                                            <h:outputText value="Chưa có ảnh" 
+                                                         style="color: #999; font-style: italic; font-size: 12px;"
+                                                         rendered="#{empty productMBean.getImageUrlsForProduct(p) or productMBean.getImageUrlsForProduct(p).isEmpty()}" />
+                                        </div>
+                                    </h:column>
+                                    <h:column>
                                         <f:facet name="header">Tên sản phẩm</f:facet>
                                         #{p.name}
                                     </h:column>

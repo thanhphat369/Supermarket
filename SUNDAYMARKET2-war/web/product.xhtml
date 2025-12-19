@@ -524,12 +524,16 @@
                             var loadingDiv = document.createElement('div');
                             loadingDiv.id = 'uploadLoading';
                             loadingDiv.style.cssText = 'text-align: center; padding: 10px; color: #3f72af; font-weight: bold;';
-                            loadingDiv.textContent = '⏳ Đang upload ' + files.length + ' ảnh...';
+                            loadingDiv.textContent = '⏳ Uploading ' + files.length + ' images...';
                             previewContainer.appendChild(loadingDiv);
                         }
                         
-                        // Upload via AJAX
-                        fetch('/sundaymarket-war/upload/product-images', {
+                        // Upload via AJAX - Use dynamic context path
+                        var contextPath = window.location.pathname.substring(0, window.location.pathname.indexOf('/', 1));
+                        if (!contextPath || contextPath === '') {
+                            contextPath = '';
+                        }
+                        fetch(contextPath + '/upload/product-images', {
                             method: 'POST',
                             body: formData
                         })

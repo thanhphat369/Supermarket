@@ -323,32 +323,110 @@ public class ShoppingCartMBean implements Serializable {
         return String.format("%,d", amount) + " VND";
     }
     
-    // Get product image URL
+    // Get product image URL (first image from JSON array)
     public String getProductImageUrl(Product product) {
         if (product == null || product.getImageURL() == null || product.getImageURL().isEmpty()) {
             return null;
         }
         
-        // Extract filename if it contains path (old data)
-        String imageURL = product.getImageURL();
-        String fileName;
-        if (imageURL.contains("\\") || imageURL.contains("/")) {
-            java.io.File file = new java.io.File(imageURL);
-            fileName = file.getName();
-        } else {
-            fileName = imageURL;
+        // Parse JSON array to get first image
+        List<String> fileNames = parseJsonArray(product.getImageURL());
+        if (fileNames == null || fileNames.isEmpty()) {
+            return null;
         }
         
+        String fileName = fileNames.get(0);
         if (fileName == null || fileName.isEmpty()) {
             return null;
         }
         
-        FacesContext facesContext = FacesContext.getCurrentInstance();
-        if (facesContext != null) {
-            String contextPath = facesContext.getExternalContext().getRequestContextPath();
-            return contextPath + "/resources/images/" + fileName + "?v=" + (System.currentTimeMillis() % 1000000);
+        // Handle old format with full path
+        if (fileName.contains("\\") || fileName.contains("/")) {
+            java.io.File file = new java.io.File(fileName);
+            fileName = file.getName();
         }
-        return "/resources/images/" + fileName;
+        
+        FacesContext facesContext = FacesContext.getCurrentInstance();
+        String contextPath = "";
+        if (facesContext != null) {
+            contextPath = facesContext.getExternalContext().getRequestContextPath();
+        }
+        
+        long cacheBuster = System.currentTimeMillis() % 1000000;
+        return contextPath + "/images/product/" + fileName + "?v=" + cacheBuster;
+    }
+    
+    // Parse JSON array string to list of file names (same logic as ProductMBean)
+    private List<String> parseJsonArray(String jsonString) {
+        List<String> fileNames = new java.util.ArrayList<>();
+        if (jsonString == null || jsonString.trim().isEmpty() || jsonString.trim().equals("[]")) {
+            return fileNames;
+        }
+        
+        try {
+            String trimmed = jsonString.trim();
+            
+            // Format 1: JSON array ["file1.jpg","file2.jpg"]
+            if (trimmed.startsWith("[") && trimmed.endsWith("]")) {
+                String content = trimmed.substring(1, trimmed.length() - 1).trim();
+                if (!content.isEmpty()) {
+                    // Split by comma, but handle quoted strings
+                    String[] parts = content.split(",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)");
+                    for (String part : parts) {
+                        part = part.trim();
+                        if (part.startsWith("\"") && part.endsWith("\"")) {
+                            String fileName = part.substring(1, part.length() - 1).replace("\\\"", "\"");
+                            if (!fileName.isEmpty()) {
+                                // Extract filename if it contains path
+                                if (fileName.contains("\\") || fileName.contains("/")) {
+                                    java.io.File file = new java.io.File(fileName);
+                                    fileName = file.getName();
+                                }
+                                fileNames.add(fileName);
+                            }
+                        }
+                    }
+                }
+            } 
+            // Format 2 & 3: Comma-separated (with or without paths)
+            else if (trimmed.contains(",")) {
+                String[] parts = trimmed.split(",");
+                for (String part : parts) {
+                    part = part.trim();
+                    if (!part.isEmpty()) {
+                        // Extract filename if it contains path
+                        String fileName = part;
+                        if (part.contains("\\") || part.contains("/")) {
+                            java.io.File file = new java.io.File(part);
+                            fileName = file.getName();
+                        }
+                        fileNames.add(fileName);
+                    }
+                }
+            } 
+            // Format 4: Single filename
+            else {
+                String fileName = trimmed;
+                // Extract filename if it contains path
+                if (trimmed.contains("\\") || trimmed.contains("/")) {
+                    java.io.File file = new java.io.File(trimmed);
+                    fileName = file.getName();
+                }
+                fileNames.add(fileName);
+            }
+        } catch (Exception e) {
+            System.err.println("ShoppingCartMBean.parseJsonArray() - Error parsing: " + e.getMessage());
+            e.printStackTrace();
+            // Fallback: treat as single filename
+            String fileName = jsonString;
+            if (jsonString.contains("\\") || jsonString.contains("/")) {
+                java.io.File file = new java.io.File(jsonString);
+                fileName = file.getName();
+            }
+            fileNames.add(fileName);
+        }
+        
+        return fileNames;
     }
     
     private void addInfo(String msg) {

@@ -21,4 +21,18 @@
         <welcome-file>index.xhtml</welcome-file>
         <welcome-file>faces/login.xhtml</welcome-file>
     </welcome-file-list>
+    
+    <!-- Character Encoding Filter for UTF-8 -->
+    <filter>
+        <filter-name>CharacterEncodingFilter</filter-name>
+        <filter-class>com.mypack.filters.CharacterEncodingFilter</filter-class>
+        <init-param>
+            <param-name>encoding</param-name>
+            <param-value>UTF-8</param-value>
+        </init-param>
+    </filter>
+    <filter-mapping>
+        <filter-name>CharacterEncodingFilter</filter-name>
+        <url-pattern>/*</url-pattern>
+    </filter-mapping>
 </web-app>

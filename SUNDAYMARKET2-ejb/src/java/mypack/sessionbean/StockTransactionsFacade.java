@@ -28,4 +28,22 @@ public class StockTransactionsFacade extends AbstractFacade<StockTransactions> i
         super(StockTransactions.class);
     }
     
+    // Lấy giao dịch IMPORT gần nhất theo sản phẩm
+    @Override
+    public StockTransactions findLastImportByProduct(int productId) {
+        try {
+            return em.createQuery(
+                "SELECT s FROM StockTransactions s " +
+                "WHERE s.productID.productID = :pid AND s.type = 'Import' " +
+                "ORDER BY s.createdAt DESC",
+                StockTransactions.class
+            )
+            .setParameter("pid", productId)
+            .setMaxResults(1)
+            .getSingleResult();
+        } catch (Exception e) {
+            return null;
+        }
+    }
+    
 }

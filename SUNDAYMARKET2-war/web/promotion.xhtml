@@ -1,0 +1,351 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:h="jakarta.faces.html"
+      xmlns:f="jakarta.faces.core"
+      xmlns:pt="http://xmlns.jcp.org/jsf/passthrough"
+      xmlns:ui="jakarta.faces.facelets">
+
+    <ui:composition template="/template.xhtml">
+
+        <ui:define name="title">🎁 Quản lý Khuyến mãi</ui:define>
+
+        <ui:define name="content">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
+                <h1 style="margin: 0;">🎁 Quản lý Khuyến mãi</h1>
+                <h:form>
+                    <h:commandButton value="➕ Thêm Promotion" actionListener="#{promotionMBean.prepareCreate}" 
+                                    styleClass="btn btn-success-modern"
+                                    style="padding: 12px 30px; font-size: 15px; font-weight: 600; border-radius: 8px; border: none; background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white; box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3); transition: all 0.3s; cursor: pointer;"
+                                    onclick="showModal('promotionFormModal');">
+                        <f:ajax render="promotionFormModal promotionTable" 
+                                onevent="function(data){if(data.status=='success'){showModal('promotionFormModal');}}" />
+                    </h:commandButton>
+                </h:form>
+            </div>
+
+            <h:messages globalOnly="true" />
+            
+            <!-- Filter Section -->
+            <div style="background: white; padding: 20px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                <h:form id="filterForm">
+                    <div style="display: flex; gap: 15px; align-items: end; flex-wrap: wrap;">
+                        <div style="flex: 1; min-width: 250px;">
+                            <label style="display: block; margin-bottom: 8px; font-weight: 600;">🔍 Search</label>
+                            <h:inputText value="#{promotionMBean.searchKeyword}" 
+                                       styleClass="form-control">
+                                <f:passThroughAttribute name="placeholder" value="Search by code, description..." />
+                                <f:ajax event="keyup" delay="300" listener="#{promotionMBean.performSearch()}" render="promotionTable paginationInfo" />
+                            </h:inputText>
+                        </div>
+                        
+                        <!-- Lọc theo trạng thái -->
+                        <div style="min-width: 180px;">
+                            <label style="display: block; margin-bottom: 8px; font-weight: 600;">📊 Status</label>
+                            <h:selectOneMenu value="#{promotionMBean.statusFilter}" styleClass="form-control form-select">
+                                <f:selectItem itemValue="all" itemLabel="📋 All" />
+                                <f:selectItem itemValue="active" itemLabel="✅ Active" />
+                                <f:selectItem itemValue="inactive" itemLabel="❌ Inactive" />
+                                <f:selectItem itemValue="expired" itemLabel="🔴 Expired" />
+                                <f:selectItem itemValue="upcoming" itemLabel="⏳ Upcoming" />
+                                <f:ajax event="change" listener="#{promotionMBean.performSearch()}" render="promotionTable paginationInfo" />
+                            </h:selectOneMenu>
+                        </div>
+                        
+                        <div>
+                            <h:commandButton value="🔍 Search" 
+                                           actionListener="#{promotionMBean.performSearch()}"
+                                           styleClass="btn btn-primary">
+                                <f:ajax render="promotionTable paginationInfo" />
+                            </h:commandButton>
+                        </div>
+                        
+                        <h:panelGroup rendered="#{not empty promotionMBean.searchKeyword or promotionMBean.statusFilter != 'all'}">
+                            <div>
+                                <h:commandButton value="✖ Clear Filter" 
+                                               actionListener="#{promotionMBean.clearSearch()}"
+                                               styleClass="btn btn-secondary">
+                                    <f:ajax render="filterForm promotionTable paginationInfo" />
+                                </h:commandButton>
+                            </div>
+                        </h:panelGroup>
+                    </div>
+                </h:form>
+            </div>
+            
+            <!-- ========== MODAL OVERLAY ========== -->
+            <h:panelGroup id="promotionFormModal">
+                <div id="promotionModalOverlay" 
+                     style="display: #{promotionMBean.showForm ? 'block' : 'none'}; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; overflow-y: auto; animation: fadeIn 0.3s ease-out;"
+                     onclick="if(event.target === this) { closeModal('promotionFormModal'); }">
+                    <div class="form-section" style="background: #ffffff; border-radius: 16px; box-shadow: 0 8px 32px rgba(0,0,0,0.2); padding: 0; margin: 40px auto; max-width: 900px; width: 95%; max-height: 90vh; overflow-y: auto; position: relative; animation: slideUp 0.3s ease-out;">
+                        <div style="position: sticky; top: 0; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; padding: 20px 30px; border-radius: 16px 16px 0 0; display: flex; justify-content: space-between; align-items: center; z-index: 10; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+                            <h2 style="margin: 0; font-size: 24px; font-weight: 600;">
+                                <h:outputText value="#{promotionMBean.editMode ? '✏️ Update Promotion' : '➕ Add New Promotion'}" />
+                            </h2>
+                            <h:form>
+                                <h:commandButton value="✕" actionListener="#{promotionMBean.cancel()}" 
+                                                style="background: rgba(255,255,255,0.2); border: none; color: white; width: 40px; height: 40px; border-radius: 50%; font-size: 20px; cursor: pointer; transition: all 0.3s;"
+                                                title="Close"
+                                                onclick="closeModal('promotionFormModal');">
+                                    <f:ajax render="promotionFormModal promotionTable" 
+                                            onevent="function(data){if(data.status=='success'){closeModal('promotionFormModal');}}" />
+                                </h:commandButton>
+                            </h:form>
+                        </div>
+                        <div style="padding: 30px;">
+                            <h:form styleClass="fu-form" id="promotionForm">
+                                <!-- Form nhập thông tin promotion -->
+                                <h:panelGrid columns="2" columnClasses="label,value" cellpadding="12">
+                                    <h:outputLabel value="Promotion Code *:" for="code" />
+                                    <h:inputText id="code" value="#{promotionMBean.selected.code}" required="true" styleClass="form-control">
+                                        <f:passThroughAttribute name="placeholder" value="E.g: SALE50, NEWYEAR2024" />
+                                    </h:inputText>
+
+                                    <h:outputLabel value="Description:" for="description" />
+                                    <h:inputTextarea id="description" value="#{promotionMBean.selected.description}" styleClass="form-control" rows="3">
+                                        <f:passThroughAttribute name="placeholder" value="Description about this promotion" />
+                                    </h:inputTextarea>
+
+                                    <h:outputLabel value="Discount Type *:" for="discountType" />
+                                    <h:selectOneMenu id="discountType" value="#{promotionMBean.selected.discountType}" required="true" styleClass="form-select">
+                                        <f:selectItem itemLabel="-- Select type --" noSelectionOption="true" />
+                                        <f:selectItem itemValue="percentage" itemLabel="Percentage (%)" />
+                                        <f:selectItem itemValue="fixed" itemLabel="Fixed Amount (VND)" />
+                                    </h:selectOneMenu>
+
+                                    <h:outputLabel value="Discount Value *:" for="discountValue" />
+                                    <h:inputText id="discountValue" value="#{promotionMBean.selected.discountValue}" required="true" styleClass="form-control">
+                                        <f:passThroughAttribute name="type" value="number" />
+                                        <f:passThroughAttribute name="step" value="0.01" />
+                                        <f:passThroughAttribute name="min" value="0" />
+                                        <f:passThroughAttribute name="placeholder" value="Enter discount value" />
+                                    </h:inputText>
+
+                                    <h:outputLabel value="Max Discount (VND):" for="maxDiscountAmount" />
+                                    <h:inputText id="maxDiscountAmount" value="#{promotionMBean.selected.maxDiscountAmount}" styleClass="form-control">
+                                        <f:passThroughAttribute name="type" value="number" />
+                                        <f:passThroughAttribute name="step" value="0.01" />
+                                        <f:passThroughAttribute name="min" value="0" />
+                                        <f:passThroughAttribute name="placeholder" value="E.g: 50000 (optional)" />
+                                    </h:inputText>
+
+                                    <h:outputLabel value="Min Order Value (VND):" for="minOrderValue" />
+                                    <h:inputText id="minOrderValue" value="#{promotionMBean.selected.minOrderValue}" styleClass="form-control">
+                                        <f:passThroughAttribute name="type" value="number" />
+                                        <f:passThroughAttribute name="step" value="0.01" />
+                                        <f:passThroughAttribute name="min" value="0" />
+                                        <f:passThroughAttribute name="placeholder" value="E.g: 100000 (optional)" />
+                                    </h:inputText>
+
+                                    <h:outputLabel value="Start Date *:" for="startDate" />
+                                    <h:inputText id="startDate" value="#{promotionMBean.selected.startDate}" required="true" styleClass="form-control">
+                                        <f:convertDateTime pattern="yyyy-MM-dd'T'HH:mm" />
+                                        <f:passThroughAttribute name="type" value="datetime-local" />
+                                    </h:inputText>
+
+                                    <h:outputLabel value="End Date *:" for="endDate" />
+                                    <h:inputText id="endDate" value="#{promotionMBean.selected.endDate}" required="true" styleClass="form-control">
+                                        <f:convertDateTime pattern="yyyy-MM-dd'T'HH:mm" />
+                                        <f:passThroughAttribute name="type" value="datetime-local" />
+                                    </h:inputText>
+
+                                    <h:outputLabel value="Usage Limit:" for="usageLimit" />
+                                    <h:inputText id="usageLimit" value="#{promotionMBean.selected.usageLimit}" styleClass="form-control">
+                                        <f:passThroughAttribute name="type" value="number" />
+                                        <f:passThroughAttribute name="min" value="0" />
+                                        <f:passThroughAttribute name="placeholder" value="Max usage (optional)" />
+                                    </h:inputText>
+
+                                    <h:outputLabel value="Limit Per User:" for="limitPerUser" />
+                                    <h:inputText id="limitPerUser" value="#{promotionMBean.selected.limitPerUser}" styleClass="form-control">
+                                        <f:passThroughAttribute name="type" value="number" />
+                                        <f:passThroughAttribute name="min" value="0" />
+                                        <f:passThroughAttribute name="placeholder" value="Per user limit (optional)" />
+                                    </h:inputText>
+
+                                    <h:outputLabel value="Status:" for="isActive" />
+                                    <h:selectOneMenu id="isActive" value="#{promotionMBean.selected.isActive}" styleClass="form-select">
+                                        <f:selectItem itemValue="true" itemLabel="✅ Active" />
+                                        <f:selectItem itemValue="false" itemLabel="❌ Inactive" />
+                                    </h:selectOneMenu>
+
+                                    <h:outputLabel value="Used Count:" />
+                                    <h:outputText value="#{promotionMBean.selected.usageCount != null ? promotionMBean.selected.usageCount : 0}" 
+                                               style="font-weight: 600; color: #3f72af;" />
+                                </h:panelGrid>
+
+                                <div style="margin-top: 30px; display: flex; gap: 12px; justify-content: flex-end;">
+                                    <h:commandButton value="❌ Cancel" actionListener="#{promotionMBean.cancel()}" 
+                                                   styleClass="btn btn-secondary"
+                                                   onclick="closeModal('promotionFormModal');">
+                                        <f:ajax render="promotionFormModal promotionTable" 
+                                                onevent="function(data){if(data.status=='success'){closeModal('promotionFormModal');}}" />
+                                    </h:commandButton>
+                                    <h:commandButton value="💾 Save" action="#{promotionMBean.save()}" 
+                                                   styleClass="btn btn-primary">
+                                        <f:ajax render="promotionFormModal promotionTable :messages" 
+                                                onevent="function(data){if(data.status=='success' &amp;&amp; !data.responseXML.querySelector('messages')?.textContent.includes('❌')){closeModal('promotionFormModal');}}" />
+                                    </h:commandButton>
+                                </div>
+                            </h:form>
+                        </div>
+                    </div>
+                </div>
+            </h:panelGroup>
+            
+            <!-- ========== TABLE ========== -->
+            <div id="promotionTable">
+                <div style="background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); overflow: hidden;">
+                    <h:dataTable value="#{promotionMBean.pagedItems}" var="p" 
+                               styleClass="table table-striped table-hover"
+                               style="margin: 0;">
+                        <h:column>
+                            <f:facet name="header">
+                                <strong>ID</strong>
+                            </f:facet>
+                            <strong>##{p.promotionID}</strong>
+                        </h:column>
+                        
+                        <h:column>
+                            <f:facet name="header">
+                                <strong>Mã Code</strong>
+                            </f:facet>
+                            <span style="font-family: 'Courier New', monospace; font-weight: 600; color: #3f72af;">
+                                #{p.code}
+                            </span>
+                        </h:column>
+                        
+                        <h:column>
+                            <f:facet name="header">
+                                <strong>Mô tả</strong>
+                            </f:facet>
+                            <span style="max-width: 200px; display: inline-block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                #{p.description != null ? p.description : '-'}
+                            </span>
+                        </h:column>
+                        
+                        <h:column>
+                            <f:facet name="header">
+                                <strong>Loại giảm giá</strong>
+                            </f:facet>
+                            <span class="badge" style="background: #e3f2fd; color: #1976d2; padding: 4px 12px; border-radius: 12px;">
+                                #{promotionMBean.getDiscountTypeText(p.discountType)}
+                            </span>
+                        </h:column>
+                        
+                        <h:column>
+                            <f:facet name="header">
+                                <strong>Giá trị</strong>
+                            </f:facet>
+                            <strong style="color: #28a745;">
+                                #{p.discountType != null and p.discountType.equalsIgnoreCase('percentage') ? 
+                                  p.discountValue + '%' : 
+                                  promotionMBean.formatAmount(p.discountValue)}
+                            </strong>
+                        </h:column>
+                        
+                        <h:column>
+                            <f:facet name="header">
+                                <strong>Thời gian</strong>
+                            </f:facet>
+                            <div style="font-size: 12px;">
+                                <div>📅 Bắt đầu: #{promotionMBean.formatDate(p.startDate)}</div>
+                                <div>📅 Kết thúc: #{promotionMBean.formatDate(p.endDate)}</div>
+                            </div>
+                        </h:column>
+                        
+                        <h:column>
+                            <f:facet name="header">
+                                <strong>Trạng thái</strong>
+                            </f:facet>
+                            <span class="badge" style="background: #{promotionMBean.getStatusColor(p)}20; color: #{promotionMBean.getStatusColor(p)}; padding: 6px 12px; border-radius: 12px;">
+                                #{promotionMBean.getStatusText(p)}
+                            </span>
+                        </h:column>
+                        
+                        <h:column>
+                            <f:facet name="header">
+                                <strong>Sử dụng</strong>
+                            </f:facet>
+                            <div style="font-size: 12px;">
+                                <div>#{p.usageCount != null ? p.usageCount : 0} / #{p.usageLimit != null ? p.usageLimit : '∞'}</div>
+                                <div style="color: #666;">Mỗi user: #{p.limitPerUser != null ? p.limitPerUser : '∞'}</div>
+                            </div>
+                        </h:column>
+                        
+                        <h:column>
+                            <f:facet name="header">
+                                <strong>Thao tác</strong>
+                            </f:facet>
+                            <div style="display: flex; gap: 6px;">
+                                <h:commandButton value="✏️" 
+                                               actionListener="#{promotionMBean.prepareEdit(p)}"
+                                               styleClass="btn btn-primary btn-sm"
+                                               title="Sửa"
+                                               onclick="showModal('promotionFormModal');">
+                                    <f:ajax render="promotionFormModal" 
+                                            onevent="function(data){if(data.status=='success'){showModal('promotionFormModal');}}" />
+                                </h:commandButton>
+                                <h:commandButton value="🗑️" 
+                                               actionListener="#{promotionMBean.delete(p)}"
+                                               styleClass="btn btn-danger btn-sm"
+                                               title="Xóa"
+                                               onclick="return confirm('Bạn có chắc muốn xóa promotion này?');">
+                                    <f:ajax render="promotionTable :messages" />
+                                </h:commandButton>
+                            </div>
+                        </h:column>
+                    </h:dataTable>
+                    
+                    <h:panelGroup rendered="#{empty promotionMBean.pagedItems}">
+                        <div style="padding: 40px; text-align: center; color: #999;">
+                            <div style="font-size: 48px; margin-bottom: 16px;">📭</div>
+                            <h3>Chưa có promotion nào</h3>
+                            <p>Tạo promotion mới để bắt đầu</p>
+                        </div>
+                    </h:panelGroup>
+                </div>
+            </div>
+            
+            <!-- Pagination -->
+            <div id="paginationInfo" style="margin-top: 20px; display: flex; justify-content: space-between; align-items: center; background: white; padding: 15px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                <span style="color: #666;">
+                    Trang #{promotionMBean.currentPage} / #{promotionMBean.totalPages} 
+                    (#{promotionMBean.totalItems} promotion)
+                </span>
+                <div style="display: flex; gap: 8px;">
+                    <h:commandButton value="⏮" actionListener="#{promotionMBean.firstPage()}" 
+                                   styleClass="btn btn-sm btn-secondary" 
+                                   disabled="#{promotionMBean.currentPage == 1}">
+                        <f:ajax render="promotionTable paginationInfo" />
+                    </h:commandButton>
+                    <h:commandButton value="◀" actionListener="#{promotionMBean.previousPage()}" 
+                                   styleClass="btn btn-sm btn-secondary" 
+                                   disabled="#{promotionMBean.currentPage == 1}">
+                        <f:ajax render="promotionTable paginationInfo" />
+                    </h:commandButton>
+                    <h:commandButton value="▶" actionListener="#{promotionMBean.nextPage()}" 
+                                   styleClass="btn btn-sm btn-secondary" 
+                                   disabled="#{promotionMBean.currentPage == promotionMBean.totalPages}">
+                        <f:ajax render="promotionTable paginationInfo" />
+                    </h:commandButton>
+                    <h:commandButton value="⏭" actionListener="#{promotionMBean.lastPage()}" 
+                                   styleClass="btn btn-sm btn-secondary" 
+                                   disabled="#{promotionMBean.currentPage == promotionMBean.totalPages}">
+                        <f:ajax render="promotionTable paginationInfo" />
+                    </h:commandButton>
+                </div>
+            </div>
+            
+            <script>
+                function showModal(modalId) {
+                    document.getElementById(modalId + 'Overlay').style.display = 'block';
+                }
+                function closeModal(modalId) {
+                    document.getElementById(modalId + 'Overlay').style.display = 'none';
+                }
+            </script>
+        </ui:define>
+    </ui:composition>
+</html>

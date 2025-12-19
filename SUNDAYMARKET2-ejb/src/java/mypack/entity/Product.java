@@ -38,7 +38,9 @@ import java.util.Collection;
     @NamedQuery(name = "Product.findByName", query = "SELECT p FROM Product p WHERE p.name = :name"),
     @NamedQuery(name = "Product.findByDescription", query = "SELECT p FROM Product p WHERE p.description = :description"),
     @NamedQuery(name = "Product.findByUnitPrice", query = "SELECT p FROM Product p WHERE p.unitPrice = :unitPrice"),
-    @NamedQuery(name = "Product.findByImageURL", query = "SELECT p FROM Product p WHERE p.imageURL = :imageURL")})
+    @NamedQuery(name = "Product.findByImageURL", query = "SELECT p FROM Product p WHERE p.imageURL = :imageURL"),
+    @NamedQuery(name = "Product.findByQuantity", query = "SELECT p FROM Product p WHERE p.quantity = :quantity"),
+    @NamedQuery(name = "Product.findByMinStock", query = "SELECT p FROM Product p WHERE p.minStock = :minStock")})
 public class Product implements Serializable {
 
     private static final long serialVersionUID = 1L;
@@ -62,6 +64,10 @@ public class Product implements Serializable {
     @Size(max = 255)
     @Column(name = "ImageURL")
     private String imageURL;
+    @Column(name = "Quantity")
+    private Integer quantity;
+    @Column(name = "Min_Stock")
+    private Integer minStock;
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "productID")
     private Collection<OrderDetails> orderDetailsCollection;
     @JoinColumn(name = "Brand_ID", referencedColumnName = "Brand_ID")
@@ -76,8 +82,6 @@ public class Product implements Serializable {
     private Collection<ShoppingCart> shoppingCartCollection;
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "productID")
     private Collection<Feedback> feedbackCollection;
-    @OneToOne(cascade = CascadeType.ALL, mappedBy = "product")
-    private Inventory inventory;
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "product")
     private Collection<PromotionProduct> promotionProductCollection;
 
@@ -134,6 +138,22 @@ public class Product implements Serializable {
         this.imageURL = imageURL;
     }
 
+    public Integer getQuantity() {
+        return quantity;
+    }
+
+    public void setQuantity(Integer quantity) {
+        this.quantity = quantity;
+    }
+
+    public Integer getMinStock() {
+        return minStock;
+    }
+
+    public void setMinStock(Integer minStock) {
+        this.minStock = minStock;
+    }
+
     @XmlTransient
     public Collection<OrderDetails> getOrderDetailsCollection() {
         return orderDetailsCollection;
@@ -186,13 +206,6 @@ public class Product implements Serializable {
         this.feedbackCollection = feedbackCollection;
     }
 
-    public Inventory getInventory() {
-        return inventory;
-    }
-
-    public void setInventory(Inventory inventory) {
-        this.inventory = inventory;
-    }
 
     @XmlTransient
     public Collection<PromotionProduct> getPromotionProductCollection() {

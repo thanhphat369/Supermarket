@@ -11,18 +11,35 @@
             <h:messages globalOnly="true" />
             
             <div style="padding: 20px;">
-                <h1 style="color: #2f5061; margin-bottom: 20px; text-align: center;">🛒 Sunday Market</h1>
                 
                 <h:panelGroup rendered="#{loginMBean.currentUser == null}">
-                    <div style="text-align: center; padding: 40px 20px;">
-                        <p style="font-size: 18px; color: #64748b; margin-bottom: 30px;">
-                            Welcome to Sunday Market - Your trusted online shopping destination
-                        </p>
-                        <div style="margin-top: 30px;">
-                            <h:link outcome="login" value="🔓 Login" 
-                                    style="display: inline-block; padding: 12px 24px; background-color: #3f72af; color: white; text-decoration: none; border-radius: 6px; margin: 10px; font-weight: 500;" />
-                            <h:link outcome="register" value="📝 Register" 
-                                    style="display: inline-block; padding: 12px 24px; background-color: #28a745; color: white; text-decoration: none; border-radius: 6px; margin: 10px; font-weight: 500;" />
+                    <!-- Simple Landing Page -->
+                    <div style="min-height: 60vh; display: flex; align-items: center; justify-content: center;">
+                        <div style="text-align: center; padding: 40px;">
+                            <!-- Logo -->
+                            <div style="font-size: 64px; margin-bottom: 15px;">🛒</div>
+                            
+                            <!-- Title -->
+                            <h1 style="font-size: 42px; color: #2f5061; margin: 0 0 10px 0; font-weight: 700;">
+                                Sunday Market
+                            </h1>
+                            
+                            <!-- Tagline -->
+                            <p style="font-size: 16px; color: #64748b; margin: 0 0 35px 0;">
+                                Your trusted online shopping destination
+                            </p>
+                            
+                            <!-- Login/Register Buttons -->
+                            <div style="display: flex; justify-content: center; gap: 15px; flex-wrap: wrap;">
+                                <h:link outcome="login" 
+                                        style="display: inline-flex; align-items: center; gap: 8px; padding: 14px 36px; background: linear-gradient(135deg, #3f72af 0%, #2b517f 100%); color: white; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px; box-shadow: 0 4px 15px rgba(63, 114, 175, 0.3);">
+                                    🔐 Login
+                                </h:link>
+                                <h:link outcome="register" 
+                                        style="display: inline-flex; align-items: center; gap: 8px; padding: 14px 36px; background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px; box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);">
+                                    📝 Register
+                                </h:link>
+                            </div>
                         </div>
                     </div>
                 </h:panelGroup>

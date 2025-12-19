@@ -75,13 +75,13 @@ public class LoginMBean implements Serializable {
             switch (roleName.toLowerCase()) {
                 case "admin":
                     message = "✅ Welcome Admin!";
-                    return "user?faces-redirect=true"; // User management page
+                    return "admin-dashboard?faces-redirect=true"; // Admin dashboard
                 case "customer":
                     message = "🛒 Welcome Customer!";
                     return "index?faces-redirect=true";
                 case "shipper":
                     message = "🚚 Welcome Shipper!";
-                    return "index?faces-redirect=true";
+                    return "shipper-dashboard?faces-redirect=true";
                 default:
                     message = "✅ Welcome " + roleName + "!";
                     return "index?faces-redirect=true";
@@ -317,13 +317,12 @@ public class LoginMBean implements Serializable {
             return null;
         }
         
-        // ✅ Dùng static resource từ resources/avatars (giống ProfileDetailMBean)
+        // ✅ Dùng servlet để hiển thị avatar
         FacesContext facesContext = FacesContext.getCurrentInstance();
         if (facesContext != null) {
             String contextPath = facesContext.getExternalContext().getRequestContextPath();
-            // Dùng resources/avatars thay vì servlet
-            return contextPath + "/resources/avatars/" + fileName + "?v=" + (System.currentTimeMillis() % 1000000);
+            return contextPath + "/images/avatar/" + fileName + "?v=" + (System.currentTimeMillis() % 1000000);
         }
-        return "/resources/avatars/" + fileName;
+        return "/images/avatar/" + fileName;
     }
 }

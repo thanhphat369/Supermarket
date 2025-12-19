@@ -1,0 +1,360 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:h="jakarta.faces.html"
+      xmlns:f="jakarta.faces.core"
+      xmlns:ui="jakarta.faces.facelets">
+
+    <ui:composition template="/template.xhtml">
+
+        <ui:define name="title">Feedback Management</ui:define>
+
+        <ui:define name="content">
+            <div style="margin-bottom: 25px;">
+                <h1 style="margin: 0; display: flex; align-items: center; gap: 10px;">
+                    <span style="font-size: 32px;">⭐</span> 
+                    Product Feedback Management
+                </h1>
+                <p style="color: #666; margin-top: 8px;">View and analyze customer feedback for all products</p>
+            </div>
+
+            <h:messages globalOnly="true" />
+            
+            <!-- ========== STATISTICS CARDS ========== -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px;">
+                <!-- Total Feedbacks -->
+                <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 16px; padding: 25px; color: white; box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);">
+                    <div style="font-size: 14px; opacity: 0.9; margin-bottom: 8px;">📝 Total Feedbacks</div>
+                    <div style="font-size: 36px; font-weight: 700;">#{feedbackMBean.totalFeedbackCount}</div>
+                </div>
+                
+                <!-- Products with Feedback -->
+                <div style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); border-radius: 16px; padding: 25px; color: white; box-shadow: 0 8px 25px rgba(17, 153, 142, 0.3);">
+                    <div style="font-size: 14px; opacity: 0.9; margin-bottom: 8px;">📦 Products with Feedback</div>
+                    <div style="font-size: 36px; font-weight: 700;">#{feedbackMBean.totalProductsWithFeedback}</div>
+                </div>
+                
+                <!-- Overall Rating -->
+                <div style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); border-radius: 16px; padding: 25px; color: white; box-shadow: 0 8px 25px rgba(240, 147, 251, 0.3);">
+                    <div style="font-size: 14px; opacity: 0.9; margin-bottom: 8px;">⭐ Average Rating</div>
+                    <div style="font-size: 36px; font-weight: 700;">#{feedbackMBean.overallAverageRating}</div>
+                </div>
+                
+                <!-- 5-Star Count -->
+                <div style="background: linear-gradient(135deg, #ffc107 0%, #ff8c00 100%); border-radius: 16px; padding: 25px; color: white; box-shadow: 0 8px 25px rgba(255, 193, 7, 0.3);">
+                    <div style="font-size: 14px; opacity: 0.9; margin-bottom: 8px;">🌟 5-Star Reviews</div>
+                    <div style="font-size: 36px; font-weight: 700;">#{feedbackMBean.getFeedbackCountByRating(5)}</div>
+                </div>
+            </div>
+            
+            <!-- ========== RATING DISTRIBUTION ========== -->
+            <div style="background: white; border-radius: 16px; padding: 25px; margin-bottom: 30px; box-shadow: 0 4px 15px rgba(0,0,0,0.08);">
+                <h3 style="margin: 0 0 20px 0; color: #333;">📊 Rating Distribution</h3>
+                <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+                    <ui:repeat value="#{[5, 4, 3, 2, 1]}" var="r">
+                        <div style="flex: 1; min-width: 150px; background: #f8f9fa; border-radius: 12px; padding: 15px; text-align: center;">
+                            <div style="font-size: 24px; margin-bottom: 5px;">
+                                <ui:repeat value="#{[1,2,3,4,5]}" var="s">
+                                    <span style="color: #{s le r ? '#ffc107' : '#ddd'};">★</span>
+                                </ui:repeat>
+                            </div>
+                            <div style="font-size: 28px; font-weight: 700; color: #333;">#{feedbackMBean.getFeedbackCountByRating(r)}</div>
+                            <div style="font-size: 12px; color: #666;">reviews</div>
+                        </div>
+                    </ui:repeat>
+                </div>
+            </div>
+            
+            <!-- ========== SEARCH BAR ========== -->
+            <div style="margin: 20px 0; padding: 20px; background: linear-gradient(135deg, #3f72af 0%, #2b517f 100%); border-radius: 16px;">
+                <h:form id="searchForm">
+                    <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+                        <div style="flex: 1; min-width: 280px; position: relative; background: white; border-radius: 12px; overflow: hidden;">
+                            <h:inputText id="searchInput" 
+                                       value="#{feedbackMBean.searchKeyword}" 
+                                       styleClass="form-control"
+                                       style="width: 100%; padding: 14px 50px 14px 14px; border: none; border-radius: 12px; font-size: 15px; outline: none;">
+                                <f:passThroughAttribute name="placeholder" value="Search by product name, brand, category..." />
+                                <f:ajax event="keyup" delay="300" listener="#{feedbackMBean.performSearch()}" render="productTable paginationInfo" />
+                            </h:inputText>
+                            <h:commandButton value="✕" 
+                                           actionListener="#{feedbackMBean.clearSearch()}"
+                                           rendered="#{not empty feedbackMBean.searchKeyword}"
+                                           style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); width: 32px; height: 32px; padding: 0; background: #f0f0f0; border: none; color: #999; font-size: 16px; cursor: pointer; border-radius: 50%;"
+                                           title="Clear search">
+                                <f:ajax render="searchForm productTable paginationInfo" />
+                            </h:commandButton>
+                        </div>
+                        <h:commandButton value="🔍 Search" 
+                                       actionListener="#{feedbackMBean.performSearch()}"
+                                       style="padding: 14px 28px; font-size: 15px; font-weight: 600; border-radius: 12px; border: none; background: white; color: #3f72af; cursor: pointer;">
+                            <f:ajax render="productTable paginationInfo" />
+                        </h:commandButton>
+                    </div>
+                    <h:outputText value="📊 Found: #{feedbackMBean.totalItems} products" 
+                                rendered="#{not empty feedbackMBean.searchKeyword}"
+                                style="display: block; margin-top: 12px; color: white; font-size: 14px; text-align: center;" />
+                </h:form>
+            </div>
+
+            <!-- ========== PRODUCT LIST WITH FEEDBACK ========== -->
+            <h:form id="productTable">
+                <h:outputText value="No products with feedback found" 
+                             rendered="#{empty feedbackMBean.pagedProductsWithFeedback}" 
+                             style="display: block; text-align: center; padding: 40px; color: #999; font-style: italic; background: #f5f5f5; border-radius: 12px;" />
+                
+                <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 20px;"
+                     rendered="#{not empty feedbackMBean.pagedProductsWithFeedback}">
+                    <ui:repeat value="#{feedbackMBean.pagedProductsWithFeedback}" var="p">
+                        <div style="background: white; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.08); transition: all 0.3s; cursor: pointer;"
+                             onmouseover="this.style.transform='translateY(-5px)'; this.style.boxShadow='0 8px 25px rgba(0,0,0,0.15)';"
+                             onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(0,0,0,0.08)';">
+                            
+                            <!-- Product Header -->
+                            <div style="padding: 20px; border-bottom: 1px solid #eee;">
+                                <div style="display: flex; gap: 15px; align-items: flex-start;">
+                                    <!-- Product Image -->
+                                    <div style="flex-shrink: 0;">
+                                        <div style="width: 100px; height: 100px; display: flex; align-items: center; justify-content: center; background: #f8f9fa; border-radius: 8px; overflow: hidden;">
+                                            <img src="#{productMBean.getImageUrlForProduct(p)}"
+                                                 alt="#{p.name}"
+                                                 style="max-width: 100%; max-height: 100%; object-fit: contain;"
+                                                 onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" />
+                                            <div style="display: none; width: 100%; height: 100%; align-items: center; justify-content: center; color: #999; font-size: 32px;">
+                                                📦
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <!-- Product Info -->
+                                    <div style="flex: 1;">
+                                        <h4 style="margin: 0 0 8px 0; font-size: 16px; color: #333; line-height: 1.4;">#{p.name}</h4>
+                                        <div style="font-size: 13px; color: #666;">
+                                            <span style="background: #e3f2fd; color: #1976d2; padding: 2px 8px; border-radius: 4px; margin-right: 8px;">#{p.brandID.brandName}</span>
+                                            <span style="background: #f3e5f5; color: #7b1fa2; padding: 2px 8px; border-radius: 4px;">#{p.categoryID.categoryName}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Rating Summary -->
+                            <div style="padding: 20px; background: #fafafa;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                                    <div>
+                                        <div style="font-size: 32px; font-weight: 700; color: #{feedbackMBean.getRatingColor(feedbackMBean.getAverageRating(p))};">
+                                            #{feedbackMBean.getFormattedAverageRating(p)}
+                                        </div>
+                                        <div style="color: #ffc107; font-size: 18px;">
+                                            <ui:repeat value="#{[1,2,3,4,5]}" var="s">
+                                                <span style="color: #{s le feedbackMBean.getAverageRating(p) ? '#ffc107' : '#ddd'};">★</span>
+                                            </ui:repeat>
+                                        </div>
+                                    </div>
+                                    <div style="text-align: right;">
+                                        <div style="font-size: 24px; font-weight: 600; color: #333;">#{feedbackMBean.getFeedbackCountForProduct(p)}</div>
+                                        <div style="font-size: 13px; color: #666;">reviews</div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Rating Bars -->
+                                <div style="space-y: 4px;">
+                                    <ui:repeat value="#{[5, 4, 3, 2, 1]}" var="r">
+                                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                                            <span style="font-size: 12px; color: #666; width: 15px;">#{r}</span>
+                                            <span style="color: #ffc107; font-size: 12px;">★</span>
+                                            <div style="flex: 1; height: 8px; background: #e0e0e0; border-radius: 4px; overflow: hidden;">
+                                                <div style="height: 100%; background: linear-gradient(90deg, #ffc107, #ff9800); border-radius: 4px; width: #{feedbackMBean.getRatingPercentageForProduct(p, r)}%;"></div>
+                                            </div>
+                                            <span style="font-size: 11px; color: #999; width: 30px; text-align: right;">#{feedbackMBean.getFeedbackCountByRatingForProduct(p, r)}</span>
+                                        </div>
+                                    </ui:repeat>
+                                </div>
+                            </div>
+                            
+                            <!-- View Button -->
+                            <div style="padding: 15px 20px; border-top: 1px solid #eee;">
+                                <h:commandButton value="👁️ View All Feedbacks" 
+                                               actionListener="#{feedbackMBean.viewProductFeedbacks(p)}"
+                                               style="width: 100%; padding: 12px; font-size: 14px; font-weight: 600; border-radius: 8px; border: none; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; cursor: pointer; transition: all 0.3s;"
+                                               onmouseover="this.style.opacity='0.9';"
+                                               onmouseout="this.style.opacity='1';">
+                                    <f:ajax render=":feedbackModal" 
+                                            onevent="function(data){if(data.status=='success'){showFeedbackModal();}}" />
+                                </h:commandButton>
+                            </div>
+                        </div>
+                    </ui:repeat>
+                </div>
+                
+                <!-- ===== PAGINATION ===== -->
+                <div id="paginationInfo" style="margin-top: 25px; padding: 15px; background: #f8f9fa; border-radius: 12px;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 15px;">
+                        <h:outputText value="Page #{feedbackMBean.currentPage} / #{feedbackMBean.totalPages} (Total: #{feedbackMBean.totalItems} products)" 
+                                     style="font-weight: 500; color: #333;" />
+                        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                            <h:commandButton value="⏮️ First" actionListener="#{feedbackMBean.firstPage()}" 
+                                           styleClass="btn btn-secondary" 
+                                           disabled="#{feedbackMBean.currentPage == 1}">
+                                <f:ajax render="productTable paginationInfo" />
+                            </h:commandButton>
+                            <h:commandButton value="◀️ Prev" actionListener="#{feedbackMBean.previousPage()}" 
+                                           styleClass="btn btn-secondary" 
+                                           disabled="#{feedbackMBean.currentPage == 1}">
+                                <f:ajax render="productTable paginationInfo" />
+                            </h:commandButton>
+                            <h:commandButton value="Next ▶️" actionListener="#{feedbackMBean.nextPage()}" 
+                                           styleClass="btn btn-secondary" 
+                                           disabled="#{feedbackMBean.currentPage == feedbackMBean.totalPages}">
+                                <f:ajax render="productTable paginationInfo" />
+                            </h:commandButton>
+                            <h:commandButton value="Last ⏭️" actionListener="#{feedbackMBean.lastPage()}" 
+                                           styleClass="btn btn-secondary" 
+                                           disabled="#{feedbackMBean.currentPage == feedbackMBean.totalPages}">
+                                <f:ajax render="productTable paginationInfo" />
+                            </h:commandButton>
+                        </div>
+                    </div>
+                </div>
+            </h:form>
+            
+            <!-- ========== FEEDBACK DETAIL MODAL ========== -->
+            <h:panelGroup id="feedbackModal">
+                <div id="feedbackModalOverlay" 
+                     style="display: #{feedbackMBean.showProductFeedbacks ? 'block' : 'none'}; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; overflow-y: auto;"
+                     onclick="if(event.target === this) { closeFeedbackModal(); }">
+                    <div style="background: #f5f5f5; border-radius: 20px; margin: 30px auto; max-width: 900px; width: 95%; max-height: 90vh; overflow: hidden; display: flex; flex-direction: column; animation: slideUp 0.3s ease-out;">
+                        
+                        <!-- Modal Header -->
+                        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 25px 30px; display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <h2 style="margin: 0; font-size: 22px;">
+                                    ⭐ Feedbacks for: #{feedbackMBean.selectedProductForView.name}
+                                </h2>
+                                <div style="margin-top: 8px; opacity: 0.9; font-size: 14px;">
+                                    <span style="margin-right: 15px;">Rating: #{feedbackMBean.getFormattedAverageRating(feedbackMBean.selectedProductForView)}/5</span>
+                                    <span>Total: #{feedbackMBean.getFeedbackCountForProduct(feedbackMBean.selectedProductForView)} reviews</span>
+                                </div>
+                            </div>
+                            <h:form>
+                                <h:commandButton value="✕" actionListener="#{feedbackMBean.closeProductFeedbacks()}"
+                                               style="background: rgba(255,255,255,0.2); border: none; color: white; width: 45px; height: 45px; border-radius: 50%; font-size: 20px; cursor: pointer;"
+                                               onclick="closeFeedbackModal();">
+                                    <f:ajax render=":feedbackModal" />
+                                </h:commandButton>
+                            </h:form>
+                        </div>
+                        
+                        <!-- Rating Filter -->
+                        <div style="background: white; padding: 15px 30px; border-bottom: 1px solid #eee;">
+                            <h:form id="filterForm">
+                                <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                                    <span style="font-weight: 500; color: #333;">Filter by rating:</span>
+                                    <h:commandButton value="All" 
+                                                   actionListener="#{feedbackMBean.clearRatingFilter()}"
+                                                   style="padding: 8px 16px; border-radius: 20px; border: 2px solid #{feedbackMBean.ratingFilter == null ? '#667eea' : '#ddd'}; background: #{feedbackMBean.ratingFilter == null ? '#667eea' : 'white'}; color: #{feedbackMBean.ratingFilter == null ? 'white' : '#333'}; font-weight: 500; cursor: pointer;">
+                                        <f:ajax render=":feedbackModal" />
+                                    </h:commandButton>
+                                    <ui:repeat value="#{[5, 4, 3, 2, 1]}" var="r">
+                                        <h:commandButton value="#{r} ★" 
+                                                       actionListener="#{feedbackMBean.setRatingFilter(r)}"
+                                                       style="padding: 8px 16px; border-radius: 20px; border: 2px solid #{feedbackMBean.ratingFilter == r ? '#ffc107' : '#ddd'}; background: #{feedbackMBean.ratingFilter == r ? '#ffc107' : 'white'}; color: #{feedbackMBean.ratingFilter == r ? 'white' : '#333'}; font-weight: 500; cursor: pointer;">
+                                            <f:ajax render=":feedbackModal" />
+                                        </h:commandButton>
+                                    </ui:repeat>
+                                </div>
+                            </h:form>
+                        </div>
+                        
+                        <!-- Feedback List -->
+                        <div style="flex: 1; overflow-y: auto; padding: 20px 30px;">
+                            <h:outputText value="No feedbacks found for this filter" 
+                                         rendered="#{empty feedbackMBean.selectedProductFeedbacks}"
+                                         style="display: block; text-align: center; padding: 40px; color: #999; font-style: italic;" />
+                            
+                            <ui:repeat value="#{feedbackMBean.selectedProductFeedbacks}" var="fb">
+                                <div style="background: white; border-radius: 12px; padding: 20px; margin-bottom: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.06);">
+                                    <!-- Feedback Header -->
+                                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
+                                        <div style="display: flex; align-items: center; gap: 12px;">
+                                            <div style="width: 45px; height: 45px; border-radius: 50%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 18px;">
+                                                #{fb.userID.fullName.substring(0, 1).toUpperCase()}
+                                            </div>
+                                            <div>
+                                                <div style="font-weight: 600; color: #333;">#{fb.userID.fullName}</div>
+                                                <div style="font-size: 12px; color: #999;">@#{fb.userID.userName}</div>
+                                            </div>
+                                        </div>
+                                        <div style="text-align: right;">
+                                            <div style="color: #ffc107; font-size: 16px; margin-bottom: 4px;">
+                                                <ui:repeat value="#{[1,2,3,4,5]}" var="s">
+                                                    <span style="color: #{s le fb.rating ? '#ffc107' : '#ddd'};">★</span>
+                                                </ui:repeat>
+                                            </div>
+                                            <div style="font-size: 12px; color: #999;">#{feedbackMBean.formatDate(fb.createdAt)}</div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Feedback Content -->
+                                    <div style="color: #555; line-height: 1.6; padding: 12px; background: #f9f9f9; border-radius: 8px; border-left: 4px solid #{feedbackMBean.getRatingColor(fb.rating)};">
+                                        "#{fb.content}"
+                                    </div>
+                                </div>
+                            </ui:repeat>
+                        </div>
+                        
+                        <!-- Modal Footer -->
+                        <div style="padding: 15px 30px; background: white; border-top: 1px solid #eee; text-align: right;">
+                            <h:form>
+                                <h:commandButton value="Close" actionListener="#{feedbackMBean.closeProductFeedbacks()}"
+                                               style="padding: 12px 30px; font-size: 14px; font-weight: 600; border-radius: 8px; border: 2px solid #667eea; background: white; color: #667eea; cursor: pointer;"
+                                               onclick="closeFeedbackModal();">
+                                    <f:ajax render=":feedbackModal" />
+                                </h:commandButton>
+                            </h:form>
+                        </div>
+                    </div>
+                </div>
+            </h:panelGroup>
+            
+            <h:outputScript>
+                <![CDATA[
+                    function showFeedbackModal() {
+                        var modal = document.getElementById('feedbackModalOverlay');
+                        if (modal) {
+                            modal.style.display = 'block';
+                            document.body.style.overflow = 'hidden';
+                        }
+                    }
+                    
+                    function closeFeedbackModal() {
+                        var modal = document.getElementById('feedbackModalOverlay');
+                        if (modal) {
+                            modal.style.display = 'none';
+                            document.body.style.overflow = '';
+                        }
+                    }
+                    
+                    document.addEventListener('keydown', function(e) {
+                        if (e.key === 'Escape') {
+                            closeFeedbackModal();
+                        }
+                    });
+                ]]>
+            </h:outputScript>
+            
+            <style>
+                @keyframes slideUp {
+                    from {
+                        opacity: 0;
+                        transform: translateY(30px);
+                    }
+                    to {
+                        opacity: 1;
+                        transform: translateY(0);
+                    }
+                }
+            </style>
+
+            <br/>
+        </ui:define>
+    </ui:composition>
+</html>

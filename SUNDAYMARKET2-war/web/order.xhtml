@@ -39,20 +39,20 @@
                         <h:selectOneMenu value="#{orderMBean.statusFilter}" 
                                        styleClass="form-select" 
                                        style="min-width: 150px; padding: 14px; border-radius: 12px; border: none; background: white; font-size: 15px; outline: none;">
-                            <f:selectItem itemValue="all" itemLabel="Tất cả trạng thái" />
-                            <f:selectItem itemValue="pending" itemLabel="Đang chờ" />
-                            <f:selectItem itemValue="processing" itemLabel="Đang xử lý" />
-                            <f:selectItem itemValue="completed" itemLabel="Hoàn thành" />
-                            <f:selectItem itemValue="cancelled" itemLabel="Đã hủy" />
+                            <f:selectItem itemValue="all" itemLabel="All Status" />
+                            <f:selectItem itemValue="pending" itemLabel="Pending" />
+                            <f:selectItem itemValue="processing" itemLabel="Processing" />
+                            <f:selectItem itemValue="completed" itemLabel="Completed" />
+                            <f:selectItem itemValue="cancelled" itemLabel="Cancelled" />
                             <f:ajax event="change" listener="#{orderMBean.performSearch()}" render="orderTable paginationInfo" />
                         </h:selectOneMenu>
-                        <h:commandButton value="🔍 Tìm kiếm" 
+                        <h:commandButton value="🔍 Search" 
                                        actionListener="#{orderMBean.performSearch()}"
                                        styleClass="btn-search-modern"
                                        style="padding: 14px 28px; font-size: 15px; font-weight: 600; border-radius: 12px; border: none; background: white; color: #667eea; box-shadow: 0 4px 12px rgba(255,255,255,0.3); transition: all 0.3s; cursor: pointer; white-space: nowrap;">
                             <f:ajax render="orderTable paginationInfo" />
                         </h:commandButton>
-                        <h:commandButton value="✕ Xóa" 
+                        <h:commandButton value="✕ Clear" 
                                        actionListener="#{orderMBean.clearSearch()}"
                                        styleClass="btn-search-modern"
                                        rendered="#{not empty orderMBean.searchKeyword or (not empty orderMBean.statusFilter and orderMBean.statusFilter != 'all')}"
@@ -60,7 +60,7 @@
                             <f:ajax render="searchForm orderTable paginationInfo" />
                         </h:commandButton>
                     </div>
-                    <h:outputText value="📊 Tìm thấy: #{orderMBean.totalItems} đơn hàng" 
+                    <h:outputText value="📊 Found: #{orderMBean.totalItems} orders" 
                                 rendered="#{not empty orderMBean.searchKeyword or (not empty orderMBean.statusFilter and orderMBean.statusFilter != 'all')}"
                                 style="display: block; margin-top: 12px; color: white; font-size: 14px; font-weight: 500; text-align: center; padding: 8px; background: rgba(255,255,255,0.2); border-radius: 8px;" />
                 </h:form>
@@ -68,7 +68,7 @@
 
             <!-- ========== DANH SÁCH ORDER ========== -->
             <h:form id="orderTable">
-                <h:outputText value="Không có đơn hàng nào" 
+                <h:outputText value="No orders found" 
                              rendered="#{empty orderMBean.pagedItems}" 
                              style="display: block; text-align: center; padding: 20px; color: #999; font-style: italic; background: #f5f5f5; border-radius: 8px; margin: 20px 0;" />
                 <h:dataTable value="#{orderMBean.pagedItems}" var="o" styleClass="table table-striped table-hover table-full-width table-margin-top"
@@ -79,63 +79,83 @@
                         #{o.orderID}
                     </h:column>
                     <h:column>
-                        <f:facet name="header">Ngày đặt</f:facet>
+                        <f:facet name="header">Order Date</f:facet>
                         #{orderMBean.formatDate(o.orderDate)}
                     </h:column>
                     <h:column>
-                        <f:facet name="header">Khách hàng</f:facet>
+                        <f:facet name="header">Customer</f:facet>
                         #{o.userID != null ? (o.userID.fullName != null ? o.userID.fullName : o.userID.userName) : '-'}
                     </h:column>
                     <h:column>
-                        <f:facet name="header">Tổng tiền</f:facet>
+                        <f:facet name="header">Total</f:facet>
                         #{orderMBean.formatAmount(o.totalAmount)}
                     </h:column>
                     <h:column>
-                        <f:facet name="header">Trạng thái</f:facet>
+                        <f:facet name="header">Status</f:facet>
                         <h:outputText value="#{o.status}" 
                                      style="color: #{orderMBean.getStatusColor(o.status)}; font-weight: bold;" />
                     </h:column>
                     <h:column>
-                        <f:facet name="header">Hành động</f:facet>
-                        <h:commandButton value="📋 Detail" actionListener="#{orderMBean.viewDetails(o)}" styleClass="btn btn-soft-primary">
-                            <f:ajax render="orderDetailsSection" />
-                        </h:commandButton>
-                        <h:selectOneMenu value="#{o.status}" styleClass="form-select" style="min-width: 120px; display: inline-block;">
-                            <f:selectItem itemValue="pending" itemLabel="Pending" />
-                            <f:selectItem itemValue="processing" itemLabel="Processing" />
-                            <f:selectItem itemValue="completed" itemLabel="Completed" />
-                            <f:selectItem itemValue="cancelled" itemLabel="Cancelled" />
-                            <f:ajax event="change" listener="#{orderMBean.updateStatus(o)}" render="orderTable :messages" />
-                        </h:selectOneMenu>
+                        <f:facet name="header">Shipper</f:facet>
+                        <h:outputText value="#{orderMBean.getShipperForOrder(o) != null ? (orderMBean.getShipperForOrder(o).fullName != null ? orderMBean.getShipperForOrder(o).fullName : orderMBean.getShipperForOrder(o).userName) : 'Chưa gán'}" 
+                                     style="color: #{orderMBean.getShipperForOrder(o) != null ? '#28a745' : '#999'}; font-weight: #{orderMBean.getShipperForOrder(o) != null ? 'bold' : 'normal'};" />
+                    </h:column>
+                    <h:column>
+                        <f:facet name="header">Actions</f:facet>
+                        <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+                            <h:commandButton value="📋 Detail" actionListener="#{orderMBean.viewDetails(o)}" styleClass="btn btn-soft-primary" style="font-size: 12px; padding: 6px 12px;">
+                                <f:ajax render="orderDetailsSection :messages" />
+                            </h:commandButton>
+                            <h:selectOneMenu id="shipperSelect_#{o.orderID}" 
+                                           value="#{orderMBean.getShipperForOrder(o) != null ? orderMBean.getShipperForOrder(o).userID : ''}" 
+                                           styleClass="form-select" 
+                                           style="min-width: 150px; font-size: 12px; padding: 6px 12px; display: inline-block;"
+                                           disabled="true"
+                                           title="Shipper phải tự nhận đơn từ trang quản lý của họ">
+                                <f:selectItem itemValue="" itemLabel="Chưa gán" />
+                                <f:selectItems value="#{orderMBean.shippers}" var="shipper"
+                                               itemValue="#{shipper.userID}" 
+                                               itemLabel="#{shipper.fullName != null ? shipper.fullName : shipper.userName}" />
+                            </h:selectOneMenu>
+                            <h:selectOneMenu value="#{o.status}" 
+                                           styleClass="form-select" 
+                                           style="min-width: 120px; font-size: 12px; padding: 6px 12px; display: inline-block;">
+                                <f:selectItem itemValue="pending" itemLabel="Pending" />
+                                <f:selectItem itemValue="processing" itemLabel="Processing" />
+                                <f:selectItem itemValue="completed" itemLabel="Completed" />
+                                <f:selectItem itemValue="cancelled" itemLabel="Cancelled" />
+                                <f:ajax event="change" listener="#{orderMBean.updateStatus(o)}" render="orderTable orderDetailsSection :messages" />
+                            </h:selectOneMenu>
+                        </div>
                     </h:column>
                 </h:dataTable>
                 
                 <!-- ===== PHÂN TRANG ===== -->
                 <div class="pagination-container" id="paginationInfo" style="margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px; display: block; width: 100%;">
                     <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 15px;">
-                        <h:outputText value="Trang #{orderMBean.currentPage} / #{orderMBean.totalPages} (Tổng: #{orderMBean.totalItems} đơn hàng)" 
+                        <h:outputText value="Page #{orderMBean.currentPage} / #{orderMBean.totalPages} (Total: #{orderMBean.totalItems} orders)" 
                                      styleClass="pagination-info" 
                                      style="font-weight: 500; color: #333; font-size: 14px;" />
                         <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-                            <h:commandButton value="⏮️ Trang đầu" actionListener="#{orderMBean.firstPage()}" 
+                            <h:commandButton value="⏮️ First" actionListener="#{orderMBean.firstPage()}" 
                                            styleClass="btn btn-secondary" 
                                            disabled="#{orderMBean.currentPage == 1 or orderMBean.totalPages le 1}"
                                            style="min-width: 100px;">
                                 <f:ajax render="orderTable paginationInfo" />
                             </h:commandButton>
-                            <h:commandButton value="◀️ Trước" actionListener="#{orderMBean.previousPage()}" 
+                            <h:commandButton value="◀️ Prev" actionListener="#{orderMBean.previousPage()}" 
                                            styleClass="btn btn-secondary" 
                                            disabled="#{orderMBean.currentPage == 1 or orderMBean.totalPages le 1}"
                                            style="min-width: 80px;">
                                 <f:ajax render="orderTable paginationInfo" />
                             </h:commandButton>
-                            <h:commandButton value="Sau ▶️" actionListener="#{orderMBean.nextPage()}" 
+                            <h:commandButton value="Next ▶️" actionListener="#{orderMBean.nextPage()}" 
                                            styleClass="btn btn-secondary" 
                                            disabled="#{orderMBean.currentPage == orderMBean.totalPages or orderMBean.totalPages le 1}"
                                            style="min-width: 80px;">
                                 <f:ajax render="orderTable paginationInfo" />
                             </h:commandButton>
-                            <h:commandButton value="Trang cuối ⏭️" actionListener="#{orderMBean.lastPage()}" 
+                            <h:commandButton value="Last ⏭️" actionListener="#{orderMBean.lastPage()}" 
                                            styleClass="btn btn-secondary" 
                                            disabled="#{orderMBean.currentPage == orderMBean.totalPages or orderMBean.totalPages le 1}"
                                            style="min-width: 100px;">
@@ -147,62 +167,70 @@
             </h:form>
 
             <!-- ========== CHI TIẾT ĐƠN HÀNG ========== -->
-            <div id="orderDetailsSection" style="margin-top: 30px;">
-                <h:panelGroup rendered="#{orderMBean.selected != null}">
-                    <div class="form-section" style="background: #fff; border: 2px solid #3f72af;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                            <h2 style="margin: 0; color: #3f72af;">📋 Chi tiết Đơn hàng ##{orderMBean.selected.orderID}</h2>
-                            <h:commandButton value="✖ Đóng" actionListener="#{orderMBean.closeDetails}" styleClass="btn btn-secondary">
-                                <f:ajax render="orderDetailsSection" />
-                            </h:commandButton>
-                        </div>
+            <h:form id="orderDetailsForm">
+                <div id="orderDetailsSection" style="margin-top: 30px;">
+                    <h:panelGroup rendered="#{orderMBean.selected != null and orderMBean.isSelectedValid()}">
+                            <div class="form-section" style="background: #fff; border: 2px solid #3f72af;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                                    <h2 style="margin: 0; color: #3f72af;">📋 Order Details ##{orderMBean.selected.orderID}</h2>
+                                <h:commandButton value="✖ Close" actionListener="#{orderMBean.closeDetails}" styleClass="btn btn-secondary">
+                                    <f:ajax render="orderDetailsSection :messages" />
+                                </h:commandButton>
+                            </div>
                         
                         <div style="margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px;">
-                            <p><strong>Khách hàng:</strong> #{orderMBean.selected.userID != null ? (orderMBean.selected.userID.fullName != null ? orderMBean.selected.userID.fullName : orderMBean.selected.userID.userName) : '-'}</p>
-                            <p><strong>Ngày đặt:</strong> #{orderMBean.formatDate(orderMBean.selected.orderDate)}</p>
-                            <p><strong>Tổng tiền:</strong> #{orderMBean.formatAmount(orderMBean.selected.totalAmount)}</p>
-                            <p><strong>Trạng thái:</strong> 
+                            <p><strong>Customer:</strong> #{orderMBean.selected.userID != null ? (orderMBean.selected.userID.fullName != null ? orderMBean.selected.userID.fullName : orderMBean.selected.userID.userName) : '-'}</p>
+                            <p><strong>Order Date:</strong> #{orderMBean.formatDate(orderMBean.selected.orderDate)}</p>
+                            <p><strong>Total:</strong> #{orderMBean.formatAmount(orderMBean.selected.totalAmount)}</p>
+                            <p><strong>Status:</strong> 
                                 <span style="color: #{orderMBean.getStatusColor(orderMBean.selected.status)}; font-weight: bold;">
-                                    #{orderMBean.selected.status}
+                                    #{orderMBean.selected.status != null ? orderMBean.selected.status : '-'}
                                 </span>
                             </p>
+                            <p><strong>Shipper:</strong> 
+                                <span style="color: #{orderMBean.getShipperForOrder(orderMBean.selected) != null ? '#28a745' : '#999'}; font-weight: #{orderMBean.getShipperForOrder(orderMBean.selected) != null ? 'bold' : 'normal'};">
+                                    #{orderMBean.getShipperForOrder(orderMBean.selected) != null ? (orderMBean.getShipperForOrder(orderMBean.selected).fullName != null ? orderMBean.getShipperForOrder(orderMBean.selected).fullName : orderMBean.getShipperForOrder(orderMBean.selected).userName) : 'Chưa gán'}
+                                </span>
+                            </p>
+                            <!-- KHÓA: Admin không được gán shipper. Shipper phải tự nhận đơn từ trang quản lý của họ -->
                         </div>
                         
-                        <h3 style="color: #3f72af; margin-bottom: 15px;">Danh sách sản phẩm:</h3>
+                        <h3 style="color: #3f72af; margin-bottom: 15px;">Product List:</h3>
                         <h:dataTable value="#{orderMBean.selected.orderDetailsCollection}" var="od" 
                                      styleClass="table table-striped table-hover"
-                                     rendered="#{not empty orderMBean.selected.orderDetailsCollection}">
+                                     rendered="#{orderMBean.selected.orderDetailsCollection != null and not empty orderMBean.selected.orderDetailsCollection}">
                             <h:column>
                                 <f:facet name="header">ID</f:facet>
-                                #{od.oDetailID}
+                                #{od.oDetailID != null ? od.oDetailID : '-'}
                             </h:column>
                             <h:column>
-                                <f:facet name="header">Sản phẩm</f:facet>
-                                #{od.productID != null ? od.productID.name : '-'}
+                                <f:facet name="header">Product</f:facet>
+                                #{od.productID != null and od.productID.name != null ? od.productID.name : '-'}
                             </h:column>
                             <h:column>
-                                <f:facet name="header">Số lượng</f:facet>
+                                <f:facet name="header">Quantity</f:facet>
                                 #{od.quantity}
                             </h:column>
                             <h:column>
-                                <f:facet name="header">Đơn giá</f:facet>
+                                <f:facet name="header">Unit Price</f:facet>
                                 #{orderMBean.formatAmount(od.unitPrice)}
                             </h:column>
                             <h:column>
-                                <f:facet name="header">Thành tiền</f:facet>
+                                <f:facet name="header">Subtotal</f:facet>
                                 #{orderMBean.formatAmount(od.quantity * od.unitPrice)}
                             </h:column>
                             <h:column>
-                                <f:facet name="header">Địa chỉ giao hàng</f:facet>
+                                <f:facet name="header">Shipping Address</f:facet>
                                 #{od.shipAddress != null ? od.shipAddress : '-'}
                             </h:column>
                         </h:dataTable>
                         <h:outputText value="Không có chi tiết nào" 
-                                     rendered="#{empty orderMBean.selected.orderDetailsCollection}" 
+                                     rendered="#{orderMBean.selected.orderDetailsCollection == null or empty orderMBean.selected.orderDetailsCollection}" 
                                      style="display: block; text-align: center; padding: 20px; color: #999; font-style: italic;" />
                     </div>
                 </h:panelGroup>
-            </div>
+                </div>
+            </h:form>
 
             <br/>
         </ui:define>

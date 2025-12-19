@@ -1,0 +1,250 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:h="jakarta.faces.html"
+      xmlns:f="jakarta.faces.core"
+      xmlns:ui="jakarta.faces.facelets">
+
+    <ui:composition template="/template.xhtml">
+        <ui:define name="title">Dashboard - Shipper</ui:define>
+
+        <ui:define name="content">
+            <h:outputStylesheet library="css" name="shipper-style.css" />
+            <h:messages globalOnly="true" id="messages" />
+            
+            <div class="shipper-page">
+                    
+                    <!-- Check login -->
+                    <h:panelGroup rendered="#{loginMBean.currentUser == null or !loginMBean.isShipper()}">
+                        <div class="empty-state" style="padding: 80px 20px;">
+                            <div class="empty-state-icon">🚚</div>
+                            <h2 class="empty-state-title">Shipper Dashboard</h2>
+                            <p class="empty-state-desc">Vui lòng đăng nhập với tài khoản Shipper để truy cập</p>
+                            <h:link outcome="login" styleClass="btn btn-primary btn-lg" style="margin-top: 24px;">
+                                🔓 Đăng nhập
+                            </h:link>
+                        </div>
+                    </h:panelGroup>
+                    
+                    <!-- Dashboard Content -->
+                    <h:panelGroup rendered="#{loginMBean.currentUser != null and loginMBean.isShipper()}">
+                        <h:form id="dashboardForm">
+                            
+                            <!-- Page Header -->
+                            <div class="shipper-header">
+                                <div>
+                                    <h1 class="shipper-title">
+                                        <span class="shipper-title-icon">🚚</span>
+                                        Dashboard
+                                    </h1>
+                                    <p class="shipper-subtitle">
+                                        Xin chào, <strong>#{loginMBean.currentUser.fullName != null ? loginMBean.currentUser.fullName : loginMBean.currentUser.userName}</strong>! 
+                                        Chúc bạn một ngày làm việc hiệu quả 🎯
+                                    </p>
+                                </div>
+                                <div style="display: flex; gap: 12px;">
+                                    <h:commandButton value="🔄 Làm mới" 
+                                                   actionListener="#{shipperDashboardMBean.refreshStatistics()}"
+                                                   styleClass="btn btn-secondary">
+                                        <f:ajax render="dashboardForm" />
+                                    </h:commandButton>
+                                </div>
+                            </div>
+                            
+                            <!-- Statistics Cards -->
+                            <div class="stats-grid">
+                                <!-- Đơn chờ nhận -->
+                                <div class="stat-card pending animate-slide-up">
+                                    <div class="stat-card-header">
+                                        <div class="stat-icon">⏳</div>
+                                    </div>
+                                    <div class="stat-content">
+                                        <div class="stat-label">Đơn chờ nhận</div>
+                                        <div class="stat-value">#{shipperDashboardMBean.pendingCount}</div>
+                                    </div>
+                                    <h:link outcome="shipperdelivery" styleClass="stat-btn">Xem đơn →</h:link>
+                                </div>
+                                
+                                <!-- Đơn đã nhận -->
+                                <div class="stat-card picked animate-slide-up" style="animation-delay: 0.1s;">
+                                    <div class="stat-card-header">
+                                        <div class="stat-icon">📦</div>
+                                    </div>
+                                    <div class="stat-content">
+                                        <div class="stat-label">Đơn đã lấy</div>
+                                        <div class="stat-value">#{shipperDashboardMBean.pickedUpCount}</div>
+                                    </div>
+                                    <h:link outcome="shipperdelivery" styleClass="stat-btn">View Orders →</h:link>
+                                </div>
+                                
+                                <!-- Đang giao hàng -->
+                                <div class="stat-card shipping animate-slide-up" style="animation-delay: 0.2s;">
+                                    <div class="stat-card-header">
+                                        <div class="stat-icon">🚴</div>
+                                    </div>
+                                    <div class="stat-content">
+                                        <div class="stat-label">Shipping</div>
+                                        <div class="stat-value">#{shipperDashboardMBean.shippingCount}</div>
+                                    </div>
+                                    <h:link outcome="shipperdelivery" styleClass="stat-btn">View Orders →</h:link>
+                                </div>
+                                
+                                <!-- Đã hoàn thành giao hàng -->
+                                <div class="stat-card delivered animate-slide-up" style="animation-delay: 0.3s;">
+                                    <div class="stat-card-header">
+                                        <div class="stat-icon">✅</div>
+                                        <span class="stat-trend up">↗ #{shipperDashboardMBean.todayDeliveredCount} today</span>
+                                    </div>
+                                    <div class="stat-content">
+                                        <div class="stat-label">Completed</div>
+                                        <div class="stat-value">#{shipperDashboardMBean.deliveredCount}</div>
+                                    </div>
+                                    <h:link outcome="deliveryhistory" styleClass="stat-btn">History →</h:link>
+                                </div>
+                            </div>
+                            
+                            <!-- Quick Actions -->
+                            <!-- Các thao tác nhanh -->
+                            <div class="section-header">
+                                <h2 class="section-title">
+                                    <span class="section-title-icon">⚡</span>
+                                    Quick Actions
+                                </h2>
+                            </div>
+                            <div class="quick-actions">
+                                <h:link outcome="shipperdelivery" styleClass="quick-action-btn qa-primary">
+                                    📋 Manage Orders
+                                </h:link>
+                                <h:link outcome="deliveryhistory" styleClass="quick-action-btn qa-primary" style="background: linear-gradient(135deg, #3f72af, #2b5c8a);">
+                                    📜 Delivery History
+                                </h:link>
+                                <h:link outcome="shipper-finance" styleClass="quick-action-btn qa-warning">
+                                    💰 Finance &amp; COD
+                                </h:link>
+                                <h:link outcome="profiledetail" styleClass="quick-action-btn qa-secondary">
+                                    👤 Profile
+                                </h:link>
+                            </div>
+                            
+                            <!-- Contact Cards -->
+                            <!-- Liên hệ nhanh -->
+                            <div class="section-header">
+                                <h2 class="section-title">
+                                    <span class="section-title-icon">💬</span>
+                                    Quick Contact
+                                </h2>
+                                <a href="#" class="section-link">View All →</a>
+                            </div>
+                            <div class="contact-grid">
+                                <div class="contact-card admin">
+                                    <div class="contact-icon">👑</div>
+                                    <div class="contact-label">Admin</div>
+                                    <div class="contact-title">Support</div>
+                                    <a href="#" class="contact-btn">Chat Now</a>
+                                </div>
+                                
+                                <div class="contact-card warehouse">
+                                    <div class="contact-icon">🏭</div>
+                                    <div class="contact-label">Warehouse</div>
+                                    <div class="contact-title">Pick Up</div>
+                                    <a href="#" class="contact-btn">Chat Now</a>
+                                </div>
+                                
+                                <div class="contact-card notify">
+                                    <div class="contact-icon">🔔</div>
+                                    <div class="contact-label">Notifications</div>
+                                    <div class="contact-value">0</div>
+                                    <a href="#" class="contact-btn">View Notifications</a>
+                                </div>
+                                
+                                <div class="contact-card messages">
+                                    <div class="contact-icon">💬</div>
+                                    <div class="contact-label">Unread Messages</div>
+                                    <div class="contact-value">0</div>
+                                    <a href="#" class="contact-btn">View Messages</a>
+                                </div>
+                            </div>
+                            
+                            <!-- Recent Orders -->
+                            <!-- Đơn hàng mới nhất cần xử lý -->
+                            <div class="section-header">
+                                <h2 class="section-title">
+                                    <span class="section-title-icon">📋</span>
+                                    Latest Orders to Process
+                                </h2>
+                                <h:link outcome="shipperdelivery" styleClass="section-link">View All →</h:link>
+                            </div>
+                            <div class="orders-container">
+                                <h:panelGroup rendered="#{empty shipperDashboardMBean.pendingDeliveries}">
+                                    <div class="empty-state">
+                                        <div class="empty-state-icon">📭</div>
+                                        <h3 class="empty-state-title">No new orders</h3>
+                                        <p class="empty-state-desc">New orders will appear here</p>
+                                    </div>
+                                </h:panelGroup>
+                                
+                                <ui:repeat value="#{shipperDashboardMBean.pendingDeliveries}" var="d" varStatus="status">
+                                    <ui:fragment rendered="#{status.index lt 5}">
+                                        <div class="order-item">
+                                            <div class="order-avatar">📦</div>
+                                            <div class="order-info">
+                                                <div class="order-id">Order ##{d.orderID.orderID}</div>
+                                                <div class="order-customer">
+                                                    👤 #{d.orderID.userID.fullName != null ? d.orderID.userID.fullName : d.orderID.userID.userName}
+                                                    <span style="margin-left: 12px;">📍 #{d.orderID.userID.address != null ? d.orderID.userID.address : 'N/A'}</span>
+                                                </div>
+                                            </div>
+                                            <div class="order-meta">
+                                                <span class="order-amount">
+                                                    #{shipperDashboardMBean.formatAmount(d.orderID.totalAmount)}
+                                                </span>
+                                                <span class="order-status pending">
+                                                    #{shipperDashboardMBean.getStatusText(d.status)}
+                                                </span>
+                                            </div>
+                                            <div class="order-actions">
+                                                <h:commandButton value="📦 Pick Up" 
+                                                               actionListener="#{shipperDashboardMBean.pickUpDelivery(d)}"
+                                                               styleClass="btn btn-primary btn-sm">
+                                                    <f:ajax render="dashboardForm :messages" />
+                                                </h:commandButton>
+                                            </div>
+                                        </div>
+                                    </ui:fragment>
+                                </ui:repeat>
+                            </div>
+                            
+                            <!-- Today's Summary -->
+                            <!-- Tổng kết hôm nay -->
+                            <div class="summary-grid">
+                                <div class="summary-card today">
+                                    <div class="summary-label">📅 Delivered Today</div>
+                                    <div class="summary-value">#{shipperDashboardMBean.todayDeliveredCount}</div>
+                                    <div class="summary-unit">orders</div>
+                                </div>
+                                
+                                <div class="summary-card month">
+                                    <div class="summary-label">📆 Delivered This Month</div>
+                                    <div class="summary-value">#{shipperDashboardMBean.monthDeliveredCount}</div>
+                                    <div class="summary-unit">đơn hàng</div>
+                                </div>
+                                
+                                <div class="summary-card failed">
+                                    <div class="summary-label">❌ Đơn thất bại</div>
+                                    <div class="summary-value">#{shipperDashboardMBean.failedCount}</div>
+                                    <div class="summary-unit">đơn hàng</div>
+                                </div>
+                                
+                                <div class="summary-card money">
+                                    <div class="summary-label">💰 COD đang giữ</div>
+                                    <div class="summary-value" style="font-size: 24px;">#{shipperFinanceMBean.formatAmount(shipperFinanceMBean.totalPendingCOD)}</div>
+                                    <div class="summary-unit">cần nộp</div>
+                                </div>
+                            </div>
+                            
+                        </h:form>
+                    </h:panelGroup>
+            </div>
+        </ui:define>
+    </ui:composition>
+</html>
