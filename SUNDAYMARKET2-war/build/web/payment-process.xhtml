@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:h="jakarta.faces.html"
+      xmlns:f="jakarta.faces.core"
+      xmlns:ui="jakarta.faces.facelets"
+      xmlns:pt="http://xmlns.jcp.org/jsf/passthrough">
+
+    <ui:composition template="/template.xhtml">
+        <ui:define name="title">💳 Payment Processing</ui:define>
+
+        <ui:define name="content">
+            <h:messages globalOnly="true" />
+            
+            <div style="padding: 20px; max-width: 600px; margin: 0 auto; text-align: center;">
+                <h1 style="color: #2f5061; margin-bottom: 20px;">💳 Payment Processing</h1>
+                
+                <h:form id="processForm">
+                    <f:metadata>
+                        <f:viewParam name="orderId" value="#{paymentMBean.orderIdParam}" />
+                        <f:viewParam name="amount" value="#{paymentMBean.amountParam}" />
+                        <f:viewParam name="method" value="#{paymentMBean.methodParam}" />
+                        <f:event type="preRenderView" listener="#{paymentMBean.loadOrderFromParam()}" />
+                    </f:metadata>
+                    
+                    <h:panelGroup rendered="#{paymentMBean.processingOrder != null}">
+                        <!-- Order Info -->
+                        <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+                            <h2 style="color: #2f5061; margin-bottom: 15px;">Order Information</h2>
+                            <p><strong>Order ID:</strong> ##{paymentMBean.processingOrder.orderID}</p>
+                            <p><strong>Amount:</strong> <span style="font-size: 24px; color: #3f72af; font-weight: bold;">#{paymentMBean.formatAmount(paymentMBean.processingOrder.totalAmount)}</span></p>
+                            <p><strong>Payment Method:</strong> 
+                                <span style="text-transform: uppercase; color: #28a745; font-weight: bold;">
+                                    #{paymentMBean.methodParam}
+                                </span>
+                            </p>
+                        </div>
+                        
+                        <!-- Payment Simulation -->
+                        <div style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%); padding: 40px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 4px 20px rgba(40, 167, 69, 0.3);">
+                            <div style="font-size: 64px; margin-bottom: 20px; text-align: center;">💳</div>
+                            <h3 style="color: white; margin-bottom: 15px; text-align: center; font-size: 24px;">Virtual Invoice Payment</h3>
+                            <p style="color: rgba(255,255,255,0.9); margin-bottom: 30px; text-align: center; font-size: 16px;">
+                                This is a virtual payment for project demonstration.
+                                <br/>Click the button below to complete the payment.
+                                <br/>Your order will be processed immediately.
+                            </p>
+                            
+                            <div style="text-align: center;">
+                                <h:commandButton value="✅ Pay Now - Complete Payment" 
+                                               action="#{paymentMBean.processPaymentFromQR()}"
+                                               styleClass="btn btn-light"
+                                               style="padding: 18px 40px; font-size: 20px; font-weight: bold; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); min-width: 300px;">
+                                    <f:ajax render="@form :messages" />
+                                </h:commandButton>
+                            </div>
+                        </div>
+                        
+                        <!-- Auto-pay option for demo -->
+                        <div style="background: #fff3cd; padding: 15px; border-radius: 8px; border-left: 4px solid #ffc107; margin-bottom: 20px;">
+                            <p style="margin: 0; color: #856404; font-size: 14px; text-align: center;">
+                                <strong>💡 Demo Mode:</strong> For project demonstration, payment will be processed automatically when you click the button above.
+                            </p>
+                        </div>
+                        
+                        <!-- Cancel -->
+                        <div style="margin-top: 20px;">
+                            <h:commandButton value="✖ Cancel" 
+                                           action="#{paymentMBean.cancelPaymentFromQR()}"
+                                           styleClass="btn btn-secondary">
+                                <f:ajax render="@form :messages" />
+                            </h:commandButton>
+                        </div>
+                    </h:panelGroup>
+                    
+                    <h:panelGroup rendered="#{paymentMBean.processingOrder == null}">
+                        <div style="background: #f8f9fa; padding: 40px; border-radius: 8px;">
+                            <p style="font-size: 18px; color: #64748b; margin-bottom: 20px;">Order not found or invalid payment link</p>
+                            <h:link outcome="index" value="← Back to Home" 
+                                    style="display: inline-block; padding: 12px 24px; background-color: #3f72af; color: white; text-decoration: none; border-radius: 6px; font-weight: 500;" />
+                        </div>
+                    </h:panelGroup>
+                </h:form>
+            </div>
+        </ui:define>
+    </ui:composition>
+</html>
+

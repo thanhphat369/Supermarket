@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE html>
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:ui="jakarta.faces.facelets"
+                xmlns:h="jakarta.faces.html"
+                xmlns:f="jakarta.faces.core"
+                template="/template/template.xhtml">
+
+    <ui:define name="content">
+
+        <div class="form-wrapper">
+            <div class="register-card">
+                <h2>📝 Đăng ký tài khoản mới</h2>
+
+                <h:form id="registerForm">
+                    <h:panelGrid columns="2" cellpadding="8">
+                        <h:outputLabel for="username" value="Tên đăng nhập:" />
+                        <h:inputText id="username" value="#{userBean.username}" required="true"
+                                     requiredMessage="Vui lòng nhập tên đăng nhập"/>
+
+                        <h:outputLabel for="email" value="Email:" />
+                        <h:inputText id="email" value="#{userBean.email}" required="true"
+                                     requiredMessage="Vui lòng nhập email"/>
+
+                        <h:outputLabel for="password" value="Mật khẩu:" />
+                        <h:inputSecret id="password" value="#{userBean.password}" required="true"
+                                       requiredMessage="Vui lòng nhập mật khẩu"/>
+
+                        <h:outputLabel for="confirmPassword" value="Xác nhận mật khẩu:" />
+                        <h:inputSecret id="confirmPassword" value="#{userBean.confirmPassword}" required="true"
+                                       requiredMessage="Vui lòng xác nhận mật khẩu"/>
+
+                        <h:outputLabel for="role" value="Vai trò:" />
+                        <h:selectOneMenu id="role" value="#{userBean.role}" required="true"
+                                         requiredMessage="Vui lòng chọn vai trò">
+                            <f:selectItem itemLabel="-- Chọn vai trò --" itemValue="" />
+                            <f:selectItem itemLabel="Học viên" itemValue="student" />
+                            <f:selectItem itemLabel="Giáo viên" itemValue="teacher" />
+                            <f:selectItem itemLabel="Phụ huynh" itemValue="parent" />
+<!--                            <f:selectItem itemLabel="Quản trị viên" itemValue="admin" />-->
+                        </h:selectOneMenu>
+                    </h:panelGrid>
+
+                    <h:commandButton value="Đăng ký" action="#{userBean.register}" styleClass="btn-register" />
+
+                    <div class="login-link">
+                        <span>Đã có tài khoản? </span>
+                        <h:link outcome="login" value="Đăng nhập ngay" />
+                    </div>
+
+                    <h:panelGroup id="popup" rendered="#{not empty userBean.message}" styleClass="popup">
+                        <h:outputText value="#{userBean.message}" />
+                    </h:panelGroup>
+                </h:form>
+            </div>
+        </div>
+
+    </ui:define>
+</ui:composition>

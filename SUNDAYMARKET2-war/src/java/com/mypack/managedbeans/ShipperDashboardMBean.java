@@ -23,11 +23,13 @@ import mypack.entity.Delivery;
 import mypack.entity.DeliveryLog;
 import mypack.entity.Order1;
 import mypack.entity.OrderDetails;
+import mypack.entity.Payment;
 import mypack.entity.User;
 import mypack.sessionbean.DeliveryFacadeLocal;
 import mypack.sessionbean.DeliveryLogFacadeLocal;
 import mypack.sessionbean.Order1FacadeLocal;
 import mypack.sessionbean.OrderDetailsFacadeLocal;
+import mypack.sessionbean.PaymentFacadeLocal;
 
 /**
  * Managed Bean for Shipper Dashboard
@@ -48,6 +50,9 @@ public class ShipperDashboardMBean implements Serializable {
     
     @EJB
     private OrderDetailsFacadeLocal orderDetailsFacade;
+    
+    @EJB
+    private PaymentFacadeLocal paymentFacade;
     
     // Dashboard statistics
     private int pendingCount = 0;
@@ -87,6 +92,11 @@ public class ShipperDashboardMBean implements Serializable {
         Calendar cal = Calendar.getInstance();
         historyYearFilter = cal.get(Calendar.YEAR);
         historyMonthFilter = cal.get(Calendar.MONTH) + 1;
+    }
+    
+    @jakarta.annotation.PostConstruct
+    public void init() {
+        refreshStatistics();
     }
     
     // Get current logged-in user
@@ -267,9 +277,9 @@ public class ShipperDashboardMBean implements Serializable {
             if (delivery == null) return;
             
             // Create log entry
-            deliveryLogFacade.createLogEntry(delivery, "RECEIVED", "Shipper đã nhận đơn hàng", null);
+            deliveryLogFacade.createLogEntry(delivery, "RECEIVED", "Shipper received the order", null);
             
-            addInfo("✅ Đã nhận đơn hàng #" + delivery.getOrderID().getOrderID());
+            addInfo("✅ Order #" + delivery.getOrderID().getOrderID() + " accepted successfully!");
             refreshStatistics();
         } catch (Exception e) {
             e.printStackTrace();
@@ -288,7 +298,7 @@ public class ShipperDashboardMBean implements Serializable {
             deliveryFacade.edit(delivery);
             
             // Create log entry
-            deliveryLogFacade.createLogEntry(delivery, "PICKED_UP", "Shipper đã lấy hàng từ kho", null);
+            deliveryLogFacade.createLogEntry(delivery, "PICKED_UP", "Shipper picked up from warehouse", null);
             
             addInfo("📦 Đã lấy hàng cho đơn #" + delivery.getOrderID().getOrderID());
             refreshStatistics();
@@ -368,6 +378,35 @@ public class ShipperDashboardMBean implements Serializable {
             if (order != null) {
                 order.setStatus("completed");
                 orderFacade.edit(order);
+                
+                // Update payment status to paid
+                Payment payment = paymentFacade.findByOrder(order);
+                if (payment != null) {
+                    String paymentMethod = payment.getPaymentMethod();
+                    String paymentStatus = payment.getPaymentStatus();
+                    
+                    if ("COD".equalsIgnoreCase(paymentMethod)) {
+                        // COD: Shipper collected cash from customer, mark payment as paid
+                        if (!"paid".equalsIgnoreCase(paymentStatus)) {
+                            payment.setPaymentStatus("paid");
+                            payment.setPaymentDate(new Date());
+                            payment.setUpdatedAt(new Date());
+                            paymentFacade.edit(payment);
+                            System.out.println("✅ COD payment marked as paid - Shipper collected cash from customer");
+                        }
+                    } else if ("ONLINE".equalsIgnoreCase(paymentMethod)) {
+                        // ONLINE: Payment should already be paid, but ensure it's marked as paid
+                        if ("pending".equalsIgnoreCase(paymentStatus)) {
+                            payment.setPaymentStatus("paid");
+                            payment.setPaymentDate(payment.getPaymentDate() != null ? payment.getPaymentDate() : new Date());
+                            payment.setUpdatedAt(new Date());
+                            paymentFacade.edit(payment);
+                            System.out.println("✅ ONLINE payment status updated to paid - Order delivered successfully");
+                        } else {
+                            System.out.println("ℹ️ ONLINE payment - Already marked as " + paymentStatus);
+                        }
+                    }
+                }
             }
             
             // Tạo log giao hàng thành công
@@ -533,7 +572,7 @@ public class ShipperDashboardMBean implements Serializable {
             
             // Refresh logs
             selectedDeliveryLogs = deliveryLogFacade.findByDelivery(selectedDelivery);
-            addInfo("📝 Đã thêm ghi chú");
+            addInfo("📝 Note added successfully");
         } catch (Exception e) {
             e.printStackTrace();
             addError("❌ Lỗi: " + e.getMessage());
@@ -869,6 +908,63 @@ public class ShipperDashboardMBean implements Serializable {
 
     public void setShowLogModal(boolean showLogModal) {
         this.showLogModal = showLogModal;
+    }
+    
+    // Payment helper methods (for dashboard display)
+    /**
+     * Get payment method for an order
+     */
+    public String getPaymentMethod(Order1 order) {
+        if (order == null) {
+            return "N/A";
+        }
+        try {
+            Payment payment = paymentFacade.findByOrder(order);
+            if (payment != null && payment.getPaymentMethod() != null) {
+                return payment.getPaymentMethod().toUpperCase();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return "N/A";
+    }
+    
+    /**
+     * Check if order is COD
+     */
+    public boolean isCOD(Order1 order) {
+        if (order == null) {
+            return false;
+        }
+        try {
+            Payment payment = paymentFacade.findByOrder(order);
+            if (payment != null && payment.getPaymentMethod() != null) {
+                return "COD".equalsIgnoreCase(payment.getPaymentMethod());
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+    
+    /**
+     * Get payment method display name
+     */
+    public String getPaymentMethodDisplay(Order1 order) {
+        String method = getPaymentMethod(order);
+        switch (method.toUpperCase()) {
+            case "COD":
+                return "💰 COD";
+            case "ONLINE":
+                return "💳 ONLINE";
+            case "VNPAY":
+            case "MOMO":
+            case "BANK_TRANSFER":
+                // Legacy support - these should be normalized to ONLINE
+                return "💳 ONLINE";
+            default:
+                return method != null && !"N/A".equals(method) ? method : "N/A";
+        }
     }
 }
 

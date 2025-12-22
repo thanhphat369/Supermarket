@@ -92,7 +92,17 @@ public class FeedbackMBean implements Serializable {
     // Prepare feedback form
     public void prepareFeedback(Product product) {
         if (product != null) {
-            productForFeedback = product;
+            // Refresh product from database to ensure it's managed
+            try {
+                Product refreshed = productFacade.find(product.getProductID());
+                if (refreshed != null) {
+                    productForFeedback = refreshed;
+                } else {
+                    productForFeedback = product;
+                }
+            } catch (Exception e) {
+                productForFeedback = product;
+            }
             selectedProductId = product.getProductID();
             rating = null;
             content = null;
@@ -123,9 +133,22 @@ public class FeedbackMBean implements Serializable {
                 return;
             }
             
-            if (product == null) {
+            // Use productForFeedback if product parameter is null
+            Product productToUse = product != null ? product : productForFeedback;
+            
+            if (productToUse == null) {
                 addErr("⚠️ Product not found!");
                 return;
+            }
+            
+            // Refresh product from database to ensure it's managed
+            try {
+                Product refreshed = productFacade.find(productToUse.getProductID());
+                if (refreshed != null) {
+                    productToUse = refreshed;
+                }
+            } catch (Exception e) {
+                // Use original product if refresh fails
             }
             
             if (rating == null || rating < 1 || rating > 5) {
@@ -140,14 +163,41 @@ public class FeedbackMBean implements Serializable {
             
             User currentUser = loginMBean.getCurrentUser();
             
+            // Refresh user from database to ensure it's managed
+            User userToUse = currentUser;
+            if (currentUser != null && currentUser.getUserID() != null) {
+                try {
+                    User refreshed = userFacade.find(currentUser.getUserID());
+                    if (refreshed != null) {
+                        userToUse = refreshed;
+                    }
+                } catch (Exception e) {
+                    // Use original user if refresh fails
+                    e.printStackTrace();
+                }
+            }
+            
+            if (userToUse == null) {
+                addErr("⚠️ User not found!");
+                return;
+            }
+            
             Feedback feedback = new Feedback();
-            feedback.setProductID(product);
-            feedback.setUserID(currentUser);
+            feedback.setProductID(productToUse);
+            feedback.setUserID(userToUse);
             feedback.setRating(rating);
             feedback.setContent(content.trim());
             feedback.setCreatedAt(new Date());
             
+            System.out.println("FeedbackMBean.submitFeedback() - Creating feedback:");
+            System.out.println("  Product ID: " + (productToUse != null ? productToUse.getProductID() : "null"));
+            System.out.println("  User ID: " + (userToUse != null ? userToUse.getUserID() : "null"));
+            System.out.println("  Rating: " + rating);
+            System.out.println("  Content: " + (content != null ? content.substring(0, Math.min(50, content.length())) : "null"));
+            
             feedbackFacade.create(feedback);
+            
+            System.out.println("FeedbackMBean.submitFeedback() - Feedback created successfully with ID: " + feedback.getFeedbackID());
             
             addInfo("✅ Feedback submitted successfully!");
             
@@ -157,9 +207,17 @@ public class FeedbackMBean implements Serializable {
             selectedProductId = null;
             productForFeedback = null;
             showFeedbackModal = false;
+            
+            // Refresh products list
+            // The list will be refreshed when modal closes
         } catch (Exception e) {
             e.printStackTrace();
-            addErr("❌ Error submitting feedback: " + e.getMessage());
+            System.err.println("FeedbackMBean.submitFeedback() - Exception: " + e.getClass().getName());
+            System.err.println("FeedbackMBean.submitFeedback() - Message: " + e.getMessage());
+            if (e.getCause() != null) {
+                System.err.println("FeedbackMBean.submitFeedback() - Cause: " + e.getCause().getMessage());
+            }
+            addErr("❌ Error submitting feedback: " + (e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName()));
         }
     }
     
@@ -217,6 +275,20 @@ public class FeedbackMBean implements Serializable {
 
     public void setRating(Integer rating) {
         this.rating = rating;
+    }
+    
+    // Action method to set rating from UI (called from actionListener)
+    public void setRatingAction(jakarta.faces.event.ActionEvent event) {
+        // Get rating from f:param
+        jakarta.faces.context.FacesContext facesContext = jakarta.faces.context.FacesContext.getCurrentInstance();
+        String ratingValue = facesContext.getExternalContext().getRequestParameterMap().get("ratingValue");
+        if (ratingValue != null && !ratingValue.isEmpty()) {
+            try {
+                this.rating = Integer.parseInt(ratingValue);
+            } catch (NumberFormatException e) {
+                this.rating = null;
+            }
+        }
     }
 
     public String getContent() {
@@ -293,7 +365,64 @@ public class FeedbackMBean implements Serializable {
     }
     
     /**
-     * Lấy danh sách sản phẩm có feedback - phân trang
+     * Lấy danh sách TẤT CẢ sản phẩm (cho Customer - để có thể đánh giá)
+     * Sắp xếp: sản phẩm có feedback trước, sau đó là sản phẩm chưa có feedback
+     */
+    public List<Product> getAllProductsForCustomer() {
+        try {
+            List<Product> allProducts = productFacade.findAll();
+            List<Feedback> allFeedbacks = feedbackFacade.findAll();
+            
+            // Phân loại: sản phẩm có feedback và chưa có feedback
+            List<Product> productsWithFeedback = new ArrayList<>();
+            List<Product> productsWithoutFeedback = new ArrayList<>();
+            
+            for (Product p : allProducts) {
+                boolean hasFeedback = false;
+                for (Feedback f : allFeedbacks) {
+                    if (f.getProductID() != null && f.getProductID().getProductID().equals(p.getProductID())) {
+                        hasFeedback = true;
+                        break;
+                    }
+                }
+                if (hasFeedback) {
+                    productsWithFeedback.add(p);
+                } else {
+                    productsWithoutFeedback.add(p);
+                }
+            }
+            
+            // Sắp xếp sản phẩm có feedback theo số lượng feedback giảm dần
+            productsWithFeedback.sort((p1, p2) -> {
+                int count1 = getFeedbackCountForProduct(p1);
+                int count2 = getFeedbackCountForProduct(p2);
+                return count2 - count1;
+            });
+            
+            // Gộp lại: có feedback trước, chưa có feedback sau
+            List<Product> result = new ArrayList<>();
+            result.addAll(productsWithFeedback);
+            result.addAll(productsWithoutFeedback);
+            
+            // Apply search filter
+            if (searchKeyword != null && !searchKeyword.trim().isEmpty()) {
+                String keyword = searchKeyword.trim().toLowerCase();
+                result = result.stream()
+                    .filter(p -> p.getName().toLowerCase().contains(keyword) ||
+                                (p.getBrandID() != null && p.getBrandID().getBrandName().toLowerCase().contains(keyword)) ||
+                                (p.getCategoryID() != null && p.getCategoryID().getCategoryName().toLowerCase().contains(keyword)))
+                    .collect(Collectors.toList());
+            }
+            
+            return result;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return new ArrayList<>();
+        }
+    }
+    
+    /**
+     * Lấy danh sách sản phẩm có feedback - phân trang (cho Admin)
      */
     public List<Product> getPagedProductsWithFeedback() {
         List<Product> all = getProductsWithFeedback();
@@ -311,6 +440,43 @@ public class FeedbackMBean implements Serializable {
         }
         
         return all.subList(start, end);
+    }
+    
+    /**
+     * Lấy danh sách TẤT CẢ sản phẩm - phân trang (cho Customer)
+     */
+    public List<Product> getPagedAllProductsForCustomer() {
+        List<Product> all = getAllProductsForCustomer();
+        if (all.isEmpty()) {
+            return all;
+        }
+        
+        int start = (currentPage - 1) * pageSize;
+        int end = Math.min(start + pageSize, all.size());
+        
+        if (start >= all.size()) {
+            currentPage = 1;
+            start = 0;
+            end = Math.min(pageSize, all.size());
+        }
+        
+        return all.subList(start, end);
+    }
+    
+    /**
+     * Tổng số sản phẩm cho Customer (tất cả sản phẩm)
+     */
+    public int getTotalProductsForCustomer() {
+        return getAllProductsForCustomer().size();
+    }
+    
+    /**
+     * Tổng số trang cho Customer
+     */
+    public int getTotalPagesForCustomer() {
+        int total = getTotalProductsForCustomer();
+        if (total == 0) return 1;
+        return (int) Math.ceil((double) total / pageSize);
     }
     
     /**
@@ -401,6 +567,38 @@ public class FeedbackMBean implements Serializable {
      */
     public void clearRatingFilter() {
         ratingFilter = null;
+    }
+    
+    /**
+     * Action method to set rating filter from UI (called from actionListener)
+     * JSF không thể gọi setter trực tiếp với tham số từ EL
+     */
+    public void setRatingFilterAction(jakarta.faces.event.ActionEvent event) {
+        jakarta.faces.context.FacesContext facesContext = jakarta.faces.context.FacesContext.getCurrentInstance();
+        String ratingValue = facesContext.getExternalContext().getRequestParameterMap().get("ratingValue");
+        if (ratingValue != null && !ratingValue.isEmpty()) {
+            try {
+                this.ratingFilter = Integer.parseInt(ratingValue);
+            } catch (NumberFormatException e) {
+                this.ratingFilter = null;
+            }
+        }
+    }
+    
+    /**
+     * Get list of stars (1-5) for UI iteration
+     * Thay thế list literal [1,2,3,4,5] trong EL
+     */
+    public List<Integer> getStars() {
+        return List.of(1, 2, 3, 4, 5);
+    }
+    
+    /**
+     * Get list of stars in descending order (5-1) for UI iteration
+     * Thay thế list literal [5,4,3,2,1] trong EL
+     */
+    public List<Integer> getStarsDesc() {
+        return List.of(5, 4, 3, 2, 1);
     }
     
     // === Statistics methods ===
@@ -505,11 +703,53 @@ public class FeedbackMBean implements Serializable {
     }
     
     public void nextPage() {
-        if (currentPage < getTotalPages()) currentPage++;
+        // Check if admin or customer
+        try {
+            FacesContext facesContext = FacesContext.getCurrentInstance();
+            if (facesContext != null) {
+                jakarta.el.ELContext elContext = facesContext.getELContext();
+                jakarta.el.ExpressionFactory factory = facesContext.getApplication().getExpressionFactory();
+                jakarta.el.ValueExpression ve = factory.createValueExpression(elContext, "#{loginMBean}", LoginMBean.class);
+                LoginMBean loginMBean = (LoginMBean) ve.getValue(elContext);
+                
+                if (loginMBean != null && loginMBean.isAdmin()) {
+                    // Admin: use getTotalPages()
+                    if (currentPage < getTotalPages()) currentPage++;
+                } else {
+                    // Customer: use getTotalPagesForCustomer()
+                    if (currentPage < getTotalPagesForCustomer()) currentPage++;
+                }
+            } else {
+                if (currentPage < getTotalPages()) currentPage++;
+            }
+        } catch (Exception e) {
+            if (currentPage < getTotalPages()) currentPage++;
+        }
     }
     
     public void lastPage() {
-        currentPage = getTotalPages();
+        // Check if admin or customer
+        try {
+            FacesContext facesContext = FacesContext.getCurrentInstance();
+            if (facesContext != null) {
+                jakarta.el.ELContext elContext = facesContext.getELContext();
+                jakarta.el.ExpressionFactory factory = facesContext.getApplication().getExpressionFactory();
+                jakarta.el.ValueExpression ve = factory.createValueExpression(elContext, "#{loginMBean}", LoginMBean.class);
+                LoginMBean loginMBean = (LoginMBean) ve.getValue(elContext);
+                
+                if (loginMBean != null && loginMBean.isAdmin()) {
+                    // Admin: use getTotalPages()
+                    currentPage = getTotalPages();
+                } else {
+                    // Customer: use getTotalPagesForCustomer()
+                    currentPage = getTotalPagesForCustomer();
+                }
+            } else {
+                currentPage = getTotalPages();
+            }
+        } catch (Exception e) {
+            currentPage = getTotalPages();
+        }
     }
     
     public int getTotalPages() {
@@ -552,9 +792,21 @@ public class FeedbackMBean implements Serializable {
     }
     
     /**
-     * Get rating color based on rating value
+     * Get rating color based on rating value (Integer version - for fb.rating)
      */
-    public String getRatingColor(double rating) {
+    public String getRatingColor(Integer rating) {
+        if (rating == null) return "#6c757d";
+        if (rating >= 5) return "#28a745"; // Green - Excellent
+        if (rating >= 4) return "#20c997"; // Teal - Very Good
+        if (rating >= 3) return "#ffc107"; // Yellow - Good
+        if (rating >= 2) return "#fd7e14"; // Orange - Average
+        return "#dc3545"; // Red - Poor
+    }
+    
+    /**
+     * Get rating color based on rating value (double version - for average rating)
+     */
+    public String getRatingColorDouble(double rating) {
         if (rating >= 4.5) return "#28a745"; // Green - Excellent
         if (rating >= 4.0) return "#20c997"; // Teal - Very Good
         if (rating >= 3.0) return "#ffc107"; // Yellow - Good

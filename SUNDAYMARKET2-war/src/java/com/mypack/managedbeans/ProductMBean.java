@@ -305,20 +305,38 @@ public class ProductMBean implements Serializable {
                 // Parse JSON array from servlet upload
                 List<String> fileNames = parseJsonArray(uploadedImageFilesJson);
                 if (!fileNames.isEmpty()) {
-                    // Validate: 2-5 images
-                    if (fileNames.size() < 2) {
+                    // Check existing images count if editing
+                    int existingImageCount = 0;
+                    if (!isNew && selected.getImageURL() != null && !selected.getImageURL().trim().isEmpty()) {
+                        List<String> existingImages = parseJsonArray(selected.getImageURL());
+                        existingImageCount = existingImages != null ? existingImages.size() : 0;
+                    }
+                    
+                    // Validate: For new products, require at least 2 images
+                    // For editing, if adding new images, total should be 2-5 (existing + new)
+                    int totalImages = existingImageCount + fileNames.size();
+                    if (isNew && fileNames.size() < 2) {
                         addErr("⚠️ Please select at least 2 images!");
                         uploadedImageFilesJson = null;
                         return;
                     }
-                    if (fileNames.size() > 5) {
-                        addErr("⚠️ Maximum 5 images allowed!");
+                    if (totalImages > 5) {
+                        addErr("⚠️ Maximum 5 images allowed! (Current: " + existingImageCount + " + New: " + fileNames.size() + " = " + totalImages + ")");
                         uploadedImageFilesJson = null;
                         return;
                     }
                     // Files already uploaded by servlet, just save JSON to DB
-                    selected.setImageURL(uploadedImageFilesJson);
-                    System.out.println("ProductMBean.save() - ✅ Using uploaded files from servlet: " + uploadedImageFilesJson);
+                    // If editing and has existing images, merge them
+                    if (!isNew && existingImageCount > 0) {
+                        List<String> existingImages = parseJsonArray(selected.getImageURL());
+                        List<String> mergedImages = new java.util.ArrayList<>(existingImages);
+                        mergedImages.addAll(fileNames);
+                        selected.setImageURL(convertToJsonArray(mergedImages));
+                        System.out.println("ProductMBean.save() - ✅ Merged " + existingImageCount + " existing + " + fileNames.size() + " new images");
+                    } else {
+                        selected.setImageURL(uploadedImageFilesJson);
+                        System.out.println("ProductMBean.save() - ✅ Using uploaded files from servlet: " + uploadedImageFilesJson);
+                    }
                 }
             } 
             // Fallback: Try to get from request (for backward compatibility)
@@ -496,9 +514,30 @@ public class ProductMBean implements Serializable {
             return;
         }
         
-        // Validate minimum 2 images
-        if (parts.size() < 2) {
+        // Validate minimum 2 images only for new products
+        // For editing, check if product already has images
+        boolean isNew = selected.getProductID() == null;
+        int existingImageCount = 0;
+        if (!isNew && selected.getImageURL() != null && !selected.getImageURL().trim().isEmpty()) {
+            List<String> existingImages = parseJsonArray(selected.getImageURL());
+            existingImageCount = existingImages != null ? existingImages.size() : 0;
+        }
+        
+        // For new products, require at least 2 images
+        // For editing, if no existing images, require at least 2
+        if (isNew && parts.size() < 2) {
             addErr("⚠️ Please select at least 2 images!");
+            return;
+        }
+        if (!isNew && existingImageCount == 0 && parts.size() < 2) {
+            addErr("⚠️ Please select at least 2 images!");
+            return;
+        }
+        
+        // Check total images count (existing + new) doesn't exceed 5
+        int totalImages = existingImageCount + parts.size();
+        if (totalImages > 5) {
+            addErr("⚠️ Maximum 5 images allowed! (Current: " + existingImageCount + " + New: " + parts.size() + " = " + totalImages + ")");
             return;
         }
         
@@ -593,6 +632,25 @@ public class ProductMBean implements Serializable {
     // 2. Comma-separated: file1.jpg,file2.jpg
     // 3. Path-separated: /path/file1.jpg,/path/file2.jpg
     // 4. Single file: file1.jpg
+    // Convert list to JSON array string
+    private String convertToJsonArray(List<String> list) {
+        if (list == null || list.isEmpty()) {
+            return "[]";
+        }
+        try {
+            StringBuilder sb = new StringBuilder("[");
+            for (int i = 0; i < list.size(); i++) {
+                if (i > 0) sb.append(",");
+                sb.append("\"").append(list.get(i).replace("\"", "\\\"")).append("\"");
+            }
+            sb.append("]");
+            return sb.toString();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return "[]";
+        }
+    }
+    
     private List<String> parseJsonArray(String jsonString) {
         List<String> fileNames = new java.util.ArrayList<>();
         if (jsonString == null || jsonString.trim().isEmpty() || jsonString.trim().equals("[]")) {
@@ -867,6 +925,17 @@ public class ProductMBean implements Serializable {
     // Format currency cho int (primitive)
     public String formatCurrency(int amount) {
         return String.format("%,d", amount) + " VNĐ";
+    }
+    
+    // Format amount - tương thích với các bean khác (hỗ trợ cả int và Integer)
+    public String formatAmount(Integer amount) {
+        if (amount == null) return "-";
+        return String.format("%,d", amount) + " VND";
+    }
+    
+    // Format amount cho int (primitive)
+    public String formatAmount(int amount) {
+        return String.format("%,d", amount) + " VND";
     }
     
     // Helper methods

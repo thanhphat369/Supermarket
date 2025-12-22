@@ -167,6 +167,10 @@ public class StockTransactionsMBean implements Serializable {
         return (int) Math.ceil((double) total / stockPageSize);
     }
     
+    public int getStockTotalItems() {
+        return getTotalProducts();
+    }
+    
     public void stockFirstPage() { stockCurrentPage = 1; }
     public void stockPreviousPage() { if (stockCurrentPage > 1) stockCurrentPage--; }
     public void stockNextPage() { if (stockCurrentPage < getStockTotalPages()) stockCurrentPage++; }
@@ -257,6 +261,10 @@ public class StockTransactionsMBean implements Serializable {
         return (int) Math.ceil((double) total / historyPageSize);
     }
 
+    public int getHistoryTotalItems() {
+        return getTotalTransactions();
+    }
+    
     public void historyFirstPage() { historyCurrentPage = 1; }
     public void historyPreviousPage() { if (historyCurrentPage > 1) historyCurrentPage--; }
     public void historyNextPage() { if (historyCurrentPage < getHistoryTotalPages()) historyCurrentPage++; }
@@ -497,6 +505,19 @@ public class StockTransactionsMBean implements Serializable {
         }
     }
 
+    // Format ID - loại bỏ "10" ở đầu nếu ID >= 1000
+    public String formatID(Integer id) {
+        if (id == null) return "-";
+        // Nếu ID >= 1000 và bắt đầu bằng "10", loại bỏ "10" ở đầu
+        if (id >= 1000 && id.toString().startsWith("10")) {
+            String idStr = id.toString();
+            if (idStr.length() > 2) {
+                return idStr.substring(2); // Bỏ 2 ký tự đầu "10"
+            }
+        }
+        return id.toString();
+    }
+    
     // Format helpers
     public String formatDate(Date date) {
         if (date == null) return "-";

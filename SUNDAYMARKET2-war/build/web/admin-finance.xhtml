@@ -1,0 +1,582 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:h="jakarta.faces.html"
+      xmlns:f="jakarta.faces.core"
+      xmlns:ui="jakarta.faces.facelets">
+
+    <ui:composition template="/template.xhtml">
+        <ui:define name="title">💰 Finance &amp; COD Management</ui:define>
+
+        <ui:define name="content">
+            <h:outputStylesheet library="css" name="shipper-style.css" />
+            <h:messages globalOnly="true" id="messages" />
+            
+            <div class="shipper-page">
+                <h:panelGroup rendered="#{loginMBean.currentUser == null or !loginMBean.isAdmin()}">
+                    <div class="empty-state">
+                        <div class="empty-state-icon">🔐</div>
+                        <h2 class="empty-state-title">Access Denied</h2>
+                        <p class="empty-state-desc">Please login with admin account</p>
+                        <h:link outcome="login" styleClass="btn btn-primary" style="margin-top: 20px;">
+                            🔓 Login
+                        </h:link>
+                    </div>
+                </h:panelGroup>
+                
+                <h:panelGroup rendered="#{loginMBean.currentUser != null and loginMBean.isAdmin()}">
+                    <h:form id="financeForm">
+                        
+                        <!-- Page Header -->
+                        <div class="shipper-header">
+                            <div>
+                                <h1 class="shipper-title">
+                                    <span class="shipper-title-icon">💰</span>
+                                    Finance &amp; COD Management
+                                </h1>
+                                <p class="shipper-subtitle">View COD submission history from all shippers</p>
+                            </div>
+                            <h:link outcome="admin-dashboard" styleClass="btn btn-secondary">
+                                ← Back to Dashboard
+                            </h:link>
+                        </div>
+                        
+                        <!-- Admin Financial Summary -->
+                        <div class="finance-overview" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; margin-bottom: 30px;">
+                            <!-- Total Revenue -->
+                            <div class="finance-card" style="background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); border-left: 4px solid #3b82f6; border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
+                                <div class="finance-card-header" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+                                    <div class="finance-card-icon" style="width: 48px; height: 48px; background: rgba(59, 130, 246, 0.1); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 24px;">💵</div>
+                                </div>
+                                <div class="finance-card-label" style="font-size: 13px; color: #64748b; font-weight: 500; margin-bottom: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Total Revenue</div>
+                                <div class="finance-card-value" style="color: #2563eb; font-size: 24px; font-weight: 700; margin-bottom: 8px; line-height: 1.2;">
+                                    #{adminFinanceMBean.formatAmount(adminFinanceMBean.totalRevenue)}
+                                </div>
+                                <div class="finance-card-change" style="background: rgba(59, 130, 246, 0.1); color: #2563eb; font-size: 11px; padding: 4px 8px; border-radius: 6px; display: inline-block; white-space: nowrap;">
+                                    All orders
+                                </div>
+                            </div>
+                            
+                            <!-- COD Collected -->
+                            <div class="finance-card" style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border-left: 4px solid #f59e0b; border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
+                                <div class="finance-card-header" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+                                    <div class="finance-card-icon" style="width: 48px; height: 48px; background: rgba(245, 158, 11, 0.1); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 24px;">💳</div>
+                                </div>
+                                <div class="finance-card-label" style="font-size: 13px; color: #64748b; font-weight: 500; margin-bottom: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">COD Collected</div>
+                                <div class="finance-card-value" style="color: #d97706; font-size: 24px; font-weight: 700; margin-bottom: 8px; line-height: 1.2;">
+                                    #{adminFinanceMBean.formatAmount(adminFinanceMBean.totalCODCollected)}
+                                </div>
+                                <div class="finance-card-change" style="background: rgba(245, 158, 11, 0.1); color: #d97706; font-size: 11px; padding: 4px 8px; border-radius: 6px; display: inline-block; white-space: nowrap;">
+                                    ✅ Submitted
+                                </div>
+                            </div>
+                            
+                            <!-- Online Payment -->
+                            <div class="finance-card" style="background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%); border-left: 4px solid #0ea5e9; border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
+                                <div class="finance-card-header" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+                                    <div class="finance-card-icon" style="width: 48px; height: 48px; background: rgba(14, 165, 233, 0.1); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 24px;">💳</div>
+                                </div>
+                                <div class="finance-card-label" style="font-size: 13px; color: #64748b; font-weight: 500; margin-bottom: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Online Payment</div>
+                                <div class="finance-card-value" style="color: #0284c7; font-size: 24px; font-weight: 700; margin-bottom: 8px; line-height: 1.2;">
+                                    #{adminFinanceMBean.formatAmount(adminFinanceMBean.totalOnlinePayment)}
+                                </div>
+                                <div class="finance-card-change" style="background: rgba(14, 165, 233, 0.1); color: #0284c7; font-size: 11px; padding: 4px 8px; border-radius: 6px; display: inline-block; white-space: nowrap;">
+                                    ✅ Paid
+                                </div>
+                            </div>
+                            
+                            <!-- Shipping Fee Cost -->
+                            <div class="finance-card" style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border-left: 4px solid #f59e0b; border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
+                                <div class="finance-card-header" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+                                    <div class="finance-card-icon" style="width: 48px; height: 48px; background: rgba(245, 158, 11, 0.1); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 24px;">🚚</div>
+                                </div>
+                                <div class="finance-card-label" style="font-size: 13px; color: #64748b; font-weight: 500; margin-bottom: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Shipping Fee (Cost)</div>
+                                <div class="finance-card-value" style="color: #d97706; font-size: 24px; font-weight: 700; margin-bottom: 8px; line-height: 1.2;">
+                                    #{adminFinanceMBean.formatAmount(adminFinanceMBean.totalShipperShippingFeeIncome)}
+                                </div>
+                                <div class="finance-card-change" style="background: rgba(245, 158, 11, 0.1); color: #d97706; font-size: 11px; padding: 4px 8px; border-radius: 6px; display: inline-block; white-space: nowrap;">
+                                    After admin %
+                                </div>
+                            </div>
+                            
+                            <!-- Final Net Profit -->
+                            <div class="finance-card" style="background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%); border-left: 4px solid #10b981; border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
+                                <div class="finance-card-header" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+                                    <div class="finance-card-icon" style="width: 48px; height: 48px; background: rgba(16, 185, 129, 0.1); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 24px;">💎</div>
+                                </div>
+                                <div class="finance-card-label" style="font-size: 13px; color: #64748b; font-weight: 500; margin-bottom: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Net Profit</div>
+                                <div class="finance-card-value" style="color: #059669; font-size: 24px; font-weight: 700; margin-bottom: 8px; line-height: 1.2;">
+                                    #{adminFinanceMBean.formatAmount(adminFinanceMBean.adminNetProfit)}
+                                </div>
+                                <div class="finance-card-change" style="background: rgba(16, 185, 129, 0.2); color: #047857; font-size: 11px; padding: 4px 8px; border-radius: 6px; display: inline-block; white-space: nowrap; font-weight: 600;">
+                                    Revenue - Cost
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Shipping Fee Configuration -->
+                        <div style="background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%); padding: 30px; border-radius: 16px; margin-bottom: 30px; box-shadow: 0 4px 16px rgba(0,0,0,0.08); border: 1px solid #e9ecef;">
+                            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 24px;">
+                                <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); width: 50px; height: 50px; border-radius: 12px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);">
+                                    <span style="font-size: 28px;">🚚</span>
+                                </div>
+                                <div>
+                                    <h2 style="color: #2f5061; margin: 0; font-size: 24px; font-weight: 700;">
+                                        Shipping Fee Configuration
+                                    </h2>
+                                    <p style="color: #64748b; margin: 4px 0 0 0; font-size: 14px;">
+                                        Set default shipping fee for all new orders
+                                    </p>
+                                </div>
+                            </div>
+                            
+                            <div style="background: linear-gradient(135deg, #e0f2fe 0%, #dbeafe 100%); padding: 20px; border-radius: 12px; border-left: 5px solid #0ea5e9; margin-bottom: 25px; box-shadow: 0 2px 8px rgba(14, 165, 233, 0.1);">
+                                <div style="display: flex; align-items: flex-start; gap: 12px;">
+                                    <span style="font-size: 24px; color: #0ea5e9;">ℹ️</span>
+                                    <div>
+                                        <p style="margin: 0 0 8px 0; color: #0c4a6e; font-size: 14px; font-weight: 600; line-height: 1.5;">
+                                            Information
+                                        </p>
+                                        <p style="margin: 0; color: #075985; font-size: 14px; line-height: 1.6;">
+                                            This default shipping fee will be applied to all new orders. 
+                                            Current value: <strong style="color: #0369a1; font-size: 16px;">#{adminFinanceMBean.formatAmount(adminFinanceMBean.getDefaultShippingFee())}</strong>
+                                            Admin Percentage: <strong style="color: #0369a1; font-size: 16px;">#{adminFinanceMBean.getAdminPercentage()}%</strong>
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div style="background: white; padding: 25px; border-radius: 12px; border: 2px solid #e9ecef;">
+                                <label style="display: block; font-weight: 700; color: #2f5061; margin-bottom: 12px; font-size: 15px; letter-spacing: 0.3px;">
+                                    Default Shipping Fee (VND)
+                                </label>
+                                <div style="margin-bottom: 20px;">
+                                    <h:inputText 
+                                        id="shippingFeeInput"
+                                        value="#{adminFinanceMBean.shippingFeeInput}" 
+                                        styleClass="form-control" 
+                                        style="font-size: 18px; padding: 14px 18px; border: 2px solid #cbd5e1; border-radius: 10px; width: 100%; max-width: 400px; transition: all 0.3s; background: #ffffff;"
+                                        onfocus="this.style.borderColor='#667eea'; this.style.boxShadow='0 0 0 3px rgba(102, 126, 234, 0.1)';"
+                                        onblur="this.style.borderColor='#cbd5e1'; this.style.boxShadow='none';"
+                                        required="true"
+                                        requiredMessage="Please enter shipping fee">
+                                        <f:passThroughAttribute name="type" value="number" />
+                                        <f:passThroughAttribute name="min" value="0" />
+                                        <f:passThroughAttribute name="step" value="1000" />
+                                        <f:passThroughAttribute name="placeholder" value="Enter amount in VND" />
+                                    </h:inputText>
+                                    <h:message for="shippingFeeInput" style="color: #dc2626; font-size: 13px; margin-top: 8px; display: block; font-weight: 500;" />
+                                </div>
+                                
+                                <label style="display: block; font-weight: 700; color: #2f5061; margin-bottom: 12px; margin-top: 30px; font-size: 15px; letter-spacing: 0.3px;">
+                                    Admin Percentage (%)
+                                </label>
+                                <div style="margin-bottom: 20px;">
+                                    <h:inputText 
+                                        id="adminPercentageInput"
+                                        value="#{adminFinanceMBean.adminPercentageInput}" 
+                                        styleClass="form-control" 
+                                        style="font-size: 18px; padding: 14px 18px; border: 2px solid #cbd5e1; border-radius: 10px; width: 100%; max-width: 400px; transition: all 0.3s; background: #ffffff;"
+                                        onfocus="this.style.borderColor='#667eea'; this.style.boxShadow='0 0 0 3px rgba(102, 126, 234, 0.1)';"
+                                        onblur="this.style.borderColor='#cbd5e1'; this.style.boxShadow='none';"
+                                        required="true"
+                                        requiredMessage="Please enter admin percentage">
+                                        <f:passThroughAttribute name="type" value="number" />
+                                        <f:passThroughAttribute name="min" value="0" />
+                                        <f:passThroughAttribute name="max" value="100" />
+                                        <f:passThroughAttribute name="step" value="1" />
+                                        <f:passThroughAttribute name="placeholder" value="Enter percentage (0-100)" />
+                                    </h:inputText>
+                                    <h:message for="adminPercentageInput" style="color: #dc2626; font-size: 13px; margin-top: 8px; display: block; font-weight: 500;" />
+                                    <p style="color: #64748b; font-size: 13px; margin-top: 8px;">
+                                        💡 Admin will receive #{adminFinanceMBean.getAdminPercentage()}% of shipping fee. Shipper will receive #{100 - adminFinanceMBean.getAdminPercentage()}%.
+                                    </p>
+                                </div>
+                                
+                                <div style="margin-top: 24px;">
+                                    <h:commandButton 
+                                        value="💾 Save Configuration" 
+                                        actionListener="#{adminFinanceMBean.saveShippingFeeConfiguration()}"
+                                        styleClass="btn btn-primary"
+                                        style="padding: 14px 32px; font-size: 16px; font-weight: 700; border-radius: 10px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none; box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4); transition: all 0.3s; cursor: pointer;"
+                                        onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 20px rgba(102, 126, 234, 0.5)';"
+                                        onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(102, 126, 234, 0.4)';">
+                                        <f:ajax execute="shippingFeeInput adminPercentageInput" render="financeForm messages" />
+                                    </h:commandButton>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Filter Section -->
+                        <div class="filter-section">
+                            <div class="filter-row">
+                                <div class="filter-group">
+                                    <span class="filter-label">Shipper</span>
+                                    <h:selectOneMenu value="#{adminFinanceMBean.selectedShipperId}" 
+                                                   styleClass="form-control form-select" 
+                                                   style="min-width: 200px;">
+                                        <f:selectItem itemValue="0" itemLabel="👥 All Shippers" />
+                                        <f:selectItems value="#{adminFinanceMBean.allShippers}" 
+                                                       var="shipper"
+                                                       itemValue="#{shipper.userID}" 
+                                                       itemLabel="#{shipper.fullName != null ? shipper.fullName : shipper.userName}" />
+                                    </h:selectOneMenu>
+                                </div>
+                                
+                                <div class="filter-group">
+                                    <span class="filter-label">Status</span>
+                                    <h:selectOneMenu value="#{adminFinanceMBean.statusFilter}" 
+                                                   styleClass="form-control form-select" 
+                                                   style="min-width: 150px;">
+                                        <f:selectItem itemValue="all" itemLabel="📋 All" />
+                                        <f:selectItem itemValue="submitted" itemLabel="✅ Submitted" />
+                                        <f:selectItem itemValue="pending" itemLabel="⏳ Pending" />
+                                    </h:selectOneMenu>
+                                </div>
+                                
+                                <div class="filter-group">
+                                    <span class="filter-label">Month</span>
+                                    <h:selectOneMenu value="#{adminFinanceMBean.monthFilter}" 
+                                                   styleClass="form-control form-select" 
+                                                   style="min-width: 130px;">
+                                        <f:selectItem itemValue="0" itemLabel="📅 All Months" />
+                                        <f:selectItem itemValue="1" itemLabel="January" />
+                                        <f:selectItem itemValue="2" itemLabel="February" />
+                                        <f:selectItem itemValue="3" itemLabel="March" />
+                                        <f:selectItem itemValue="4" itemLabel="April" />
+                                        <f:selectItem itemValue="5" itemLabel="May" />
+                                        <f:selectItem itemValue="6" itemLabel="June" />
+                                        <f:selectItem itemValue="7" itemLabel="July" />
+                                        <f:selectItem itemValue="8" itemLabel="August" />
+                                        <f:selectItem itemValue="9" itemLabel="September" />
+                                        <f:selectItem itemValue="10" itemLabel="October" />
+                                        <f:selectItem itemValue="11" itemLabel="November" />
+                                        <f:selectItem itemValue="12" itemLabel="December" />
+                                    </h:selectOneMenu>
+                                </div>
+                                
+                                <div class="filter-group">
+                                    <span class="filter-label">Year</span>
+                                    <h:selectOneMenu value="#{adminFinanceMBean.yearFilter}" 
+                                                   styleClass="form-control form-select" 
+                                                   style="min-width: 100px;">
+                                        <f:selectItem itemValue="0" itemLabel="📅 All Years" />
+                                        <f:selectItem itemValue="2024" itemLabel="2024" />
+                                        <f:selectItem itemValue="2025" itemLabel="2025" />
+                                        <f:selectItem itemValue="2026" itemLabel="2026" />
+                                    </h:selectOneMenu>
+                                </div>
+                                
+                                <div class="filter-group" style="margin-top: 24px;">
+                                    <h:commandButton value="🔍 Filter" 
+                                                   actionListener="#{adminFinanceMBean.applyFilter()}"
+                                                   styleClass="btn btn-primary">
+                                        <f:ajax render="submissionTable paginationSection" />
+                                    </h:commandButton>
+                                </div>
+                                
+                                <div class="filter-group" style="margin-top: 24px;">
+                                    <h:commandButton value="✖ Clear Filter" 
+                                                   actionListener="#{adminFinanceMBean.clearFilter()}"
+                                                   styleClass="btn btn-secondary">
+                                        <f:ajax render="financeForm" />
+                                    </h:commandButton>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- COD Submission History -->
+                        <div class="orders-container" id="submissionTable">
+                            <div class="orders-header">
+                                <h3 style="margin: 0; font-weight: 700; color: var(--shipper-dark);">
+                                    📜 Order History (COD &amp; Online)
+                                </h3>
+                                <span style="font-size: 14px; color: var(--shipper-gray-600);">
+                                    Total: #{adminFinanceMBean.totalItems} records
+                                </span>
+                            </div>
+                            
+                            <h:panelGroup rendered="#{empty adminFinanceMBean.pagedSubmissions}">
+                                <div class="empty-state">
+                                    <div class="empty-state-icon">📭</div>
+                                    <h3 class="empty-state-title">No records found</h3>
+                                    <p class="empty-state-desc">No COD submissions match the current filters</p>
+                                </div>
+                            </h:panelGroup>
+                            
+                            <h:dataTable value="#{adminFinanceMBean.pagedSubmissions}" var="record"
+                                       rendered="#{not empty adminFinanceMBean.pagedSubmissions}"
+                                       styleClass="shipper-table">
+                                <h:column>
+                                    <f:facet name="header">Order ID</f:facet>
+                                    <strong style="font-family: 'JetBrains Mono', monospace;">##{record.orderID}</strong>
+                                </h:column>
+                                
+                                <h:column>
+                                    <f:facet name="header">💰 Amount</f:facet>
+                                    <strong style="color: var(--shipper-success); font-size: 15px;">
+                                        #{adminFinanceMBean.formatAmount(record.orderAmount)}
+                                    </strong>
+                                </h:column>
+                                
+                                <h:column>
+                                    <f:facet name="header">💳 Payment Method</f:facet>
+                                    <ui:fragment rendered="#{record.paymentMethod == 'COD'}">
+                                        <span class="badge" style="background: #fff3cd; color: #856404; font-weight: 600; padding: 4px 8px;">
+                                            💰 COD
+                                        </span>
+                                    </ui:fragment>
+                                    <ui:fragment rendered="#{record.paymentMethod == 'ONLINE'}">
+                                        <span class="badge" style="background: #d1ecf1; color: #0c5460; font-weight: 600; padding: 4px 8px;">
+                                            💳 ONLINE
+                                        </span>
+                                    </ui:fragment>
+                                </h:column>
+                                
+                                <h:column>
+                                    <f:facet name="header">🚚 Shipper</f:facet>
+                                    <span>#{record.shipper != null ? (record.shipper.fullName != null ? record.shipper.fullName : record.shipper.userName) : 'N/A (Online Order)'}</span>
+                                </h:column>
+                                
+                                <h:column>
+                                    <f:facet name="header">👤 Customer</f:facet>
+                                    <span>#{record.customer != null ? (record.customer.fullName != null ? record.customer.fullName : record.customer.userName) : 'N/A'}</span>
+                                </h:column>
+                                
+                                <h:column>
+                                    <f:facet name="header">📅 Delivered</f:facet>
+                                    <span style="font-size: 13px; color: var(--shipper-gray-500);">
+                                        #{adminFinanceMBean.formatDate(record.deliveredDate)}
+                                    </span>
+                                </h:column>
+                                
+                                <h:column>
+                                    <f:facet name="header">📊 Status</f:facet>
+                                    <ui:fragment rendered="#{record.submitted}">
+                                        <span class="badge" style="background: #d1fae5; color: #065f46; font-weight: 600;">
+                                            ✅ Submitted
+                                        </span>
+                                    </ui:fragment>
+                                    <ui:fragment rendered="#{!record.submitted}">
+                                        <span class="badge" style="background: #fee2e2; color: #991b1b; font-weight: 600;">
+                                            ⚠️ Pending
+                                        </span>
+                                    </ui:fragment>
+                                </h:column>
+                                
+                                <h:column>
+                                    <f:facet name="header">📅 Submitted</f:facet>
+                                    <ui:fragment rendered="#{record.submitted}">
+                                        <span style="font-size: 13px; color: var(--shipper-gray-500);">
+                                            #{adminFinanceMBean.formatDate(record.submittedDate)}
+                                        </span>
+                                    </ui:fragment>
+                                    <ui:fragment rendered="#{!record.submitted}">
+                                        <span style="color: var(--shipper-gray-400);">-</span>
+                                    </ui:fragment>
+                                </h:column>
+                                
+                                <h:column>
+                                    <f:facet name="header">🔖 Reference</f:facet>
+                                    <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--shipper-gray-600);">
+                                        #{record.referenceCode != null ? record.referenceCode : '-'}
+                                    </span>
+                                </h:column>
+                                
+                                <h:column>
+                                    <f:facet name="header">🔍 Actions</f:facet>
+                                    <h:commandButton value="👁️ View Detail" 
+                                                   actionListener="#{adminFinanceMBean.viewCODDetail(record)}"
+                                                   styleClass="btn btn-sm btn-primary"
+                                                   style="padding: 6px 12px; font-size: 12px; border-radius: 6px;">
+                                        <f:ajax execute="@this" render="@form" />
+                                    </h:commandButton>
+                                </h:column>
+                            </h:dataTable>
+                        </div>
+                        
+                        <!-- Pagination -->
+                        <div class="pagination" id="paginationSection">
+                            <span class="pagination-info">
+                                Page #{adminFinanceMBean.currentPage} / #{adminFinanceMBean.totalPages} 
+                                (#{adminFinanceMBean.totalItems} records)
+                            </span>
+                            <div class="pagination-buttons">
+                                <h:commandButton value="⏮" actionListener="#{adminFinanceMBean.firstPage()}"
+                                               styleClass="pagination-btn" disabled="#{adminFinanceMBean.currentPage == 1}">
+                                    <f:ajax render="submissionTable paginationSection" />
+                                </h:commandButton>
+                                <h:commandButton value="◀" actionListener="#{adminFinanceMBean.previousPage()}"
+                                               styleClass="pagination-btn" disabled="#{adminFinanceMBean.currentPage == 1}">
+                                    <f:ajax render="submissionTable paginationSection" />
+                                </h:commandButton>
+                                <h:commandButton value="▶" actionListener="#{adminFinanceMBean.nextPage()}"
+                                               styleClass="pagination-btn" disabled="#{adminFinanceMBean.currentPage == adminFinanceMBean.totalPages}">
+                                    <f:ajax render="submissionTable paginationSection" />
+                                </h:commandButton>
+                                <h:commandButton value="⏭" actionListener="#{adminFinanceMBean.lastPage()}"
+                                               styleClass="pagination-btn" disabled="#{adminFinanceMBean.currentPage == adminFinanceMBean.totalPages}">
+                                    <f:ajax render="submissionTable paginationSection" />
+                                </h:commandButton>
+                            </div>
+                        </div>
+                        
+                        <!-- Order Detail Section -->
+                        <h:panelGroup id="codDetailModal">
+                            <ui:fragment rendered="#{adminFinanceMBean.showCODDetail and adminFinanceMBean.selectedCODOrder != null}">
+                                <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; overflow-y: auto; display: flex; align-items: flex-start; justify-content: center; padding: 20px 10px;">
+                                <div style="background: white; border-radius: 12px; box-shadow: 0 8px 32px rgba(0,0,0,0.3); max-width: 700px; width: 100%; margin: auto; position: relative; max-height: 90vh; display: flex; flex-direction: column;">
+                                    <!-- Header -->
+                                    <div style="background: linear-gradient(135deg, #3f72af 0%, #2b517f 100%); color: white; padding: 16px 20px; border-radius: 12px 12px 0 0; display: flex; justify-content: space-between; align-items: center; position: relative; flex-shrink: 0;">
+                                        <h2 style="margin: 0; font-size: 20px; font-weight: 700; flex: 1;">
+                                            📋 Order Detail - Order ##{adminFinanceMBean.selectedCODRecord.orderID}
+                                            <ui:fragment rendered="#{adminFinanceMBean.selectedCODRecord.paymentMethod == 'COD'}">
+                                                <span class="badge" style="background: #fff3cd; color: #856404; font-weight: 600; padding: 4px 8px; margin-left: 10px; font-size: 14px;">
+                                                    💰 COD
+                                                </span>
+                                            </ui:fragment>
+                                            <ui:fragment rendered="#{adminFinanceMBean.selectedCODRecord.paymentMethod == 'ONLINE'}">
+                                                <span class="badge" style="background: #d1ecf1; color: #0c5460; font-weight: 600; padding: 4px 8px; margin-left: 10px; font-size: 14px;">
+                                                    💳 ONLINE
+                                                </span>
+                                            </ui:fragment>
+                                        </h2>
+                                        <h:commandButton value="✖" 
+                                                       actionListener="#{adminFinanceMBean.closeCODDetail()}"
+                                                       styleClass="btn"
+                                                       style="background: rgba(255,255,255,0.2); border: none; color: white; width: 32px; height: 32px; border-radius: 50%; font-size: 16px; cursor: pointer; font-weight: bold; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-left: 12px; padding: 0; line-height: 1;">
+                                            <f:ajax execute="@this" render="@form" />
+                                        </h:commandButton>
+                                    </div>
+                                    
+                                    <!-- Content -->
+                                    <div style="padding: 20px; overflow-y: auto; flex: 1;">
+                                        <!-- Info Cards -->
+                                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 20px;">
+                                            <!-- Delivery Status -->
+                                            <div style="background: #f8f9fa; padding: 12px; border-radius: 8px; border-left: 4px solid #10b981;">
+                                                <h4 style="margin: 0 0 8px 0; color: #64748b; font-size: 11px; text-transform: uppercase;">Delivery Status</h4>
+                                                <span class="badge" style="background: #d1fae5; color: #065f46; font-weight: 600; padding: 8px 16px; font-size: 14px;">
+                                                    ✅ Delivered
+                                                </span>
+                                                <p style="margin: 8px 0 0 0; font-size: 12px; color: #64748b;">
+                                                    Updated: #{adminFinanceMBean.formatDate(adminFinanceMBean.selectedCODRecord.deliveredDate)}
+                                                </p>
+                                            </div>
+                                            
+                                            <!-- Payment -->
+                                            <div style="background: #f8f9fa; padding: 12px; border-radius: 8px; border-left: 4px solid #f59e0b;">
+                                                <h4 style="margin: 0 0 8px 0; color: #64748b; font-size: 11px; text-transform: uppercase;">Payment</h4>
+                                                <span class="badge" style="background: #fef3c7; color: #92400e; font-weight: 600; padding: 8px 16px; font-size: 14px;">
+                                                    💳 COD
+                                                </span>
+                                                <ui:fragment rendered="#{adminFinanceMBean.selectedCODRecord.submitted}">
+                                                    <p style="margin: 8px 0 0 0; font-size: 12px; color: #10b981; font-weight: 600;">
+                                                        ✅ Money submitted to company
+                                                    </p>
+                                                </ui:fragment>
+                                            </div>
+                                            
+                                            <!-- Customer -->
+                                            <div style="background: #f8f9fa; padding: 12px; border-radius: 8px; border-left: 4px solid #3b82f6;">
+                                                <h4 style="margin: 0 0 8px 0; color: #64748b; font-size: 11px; text-transform: uppercase;">Customer</h4>
+                                                <p style="margin: 0 0 4px 0; font-weight: 600; font-size: 15px;">
+                                                    #{adminFinanceMBean.selectedCODRecord.customer != null ? (adminFinanceMBean.selectedCODRecord.customer.fullName != null ? adminFinanceMBean.selectedCODRecord.customer.fullName : adminFinanceMBean.selectedCODRecord.customer.userName) : 'N/A'}
+                                                </p>
+                                                <p style="margin: 4px 0 0 0; font-size: 12px; color: #64748b;">
+                                                    📞 #{adminFinanceMBean.selectedCODRecord.customer != null and adminFinanceMBean.selectedCODRecord.customer.phone != null ? adminFinanceMBean.selectedCODRecord.customer.phone : 'N/A'}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Order Summary -->
+                                        <div style="background: #f8f9fa; padding: 16px; border-radius: 8px; margin-bottom: 16px;">
+                                            <h4 style="margin: 0 0 12px 0; color: #2f5061; font-size: 14px; font-weight: 700;">🛒 Order Summary</h4>
+                                            <p style="margin: 0 0 12px 0; font-size: 13px; color: #64748b;">
+                                                Order date: #{adminFinanceMBean.formatDate(adminFinanceMBean.selectedCODOrder.orderDate)}
+                                            </p>
+                                            <p style="margin: 0 0 20px 0; font-size: 13px;">
+                                                Order Status: 
+                                                <span class="badge" style="background: #d1fae5; color: #065f46; padding: 6px 12px; font-weight: 600;">
+                                                    ✅ #{adminFinanceMBean.selectedCODOrder.status}
+                                                </span>
+                                            </p>
+                                            
+                                            <div style="background: white; padding: 12px; border-radius: 6px;">
+                                                <div style="display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 8px;">
+                                                    <span>Subtotal:</span>
+                                                    <span style="font-weight: 600;">#{adminFinanceMBean.formatAmount(adminFinanceMBean.getCODOrderSubtotal())}</span>
+                                                </div>
+                                                <h:panelGroup rendered="#{adminFinanceMBean.getOriginalShippingFee() > 0}">
+                                                    <!-- Original Shipping Fee -->
+                                                    <div style="display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 6px; padding-top: 12px; border-top: 1px solid #e9ecef;">
+                                                        <span>🚚 Shipping Fee:</span>
+                                                        <span style="font-weight: 600;">#{adminFinanceMBean.formatAmount(adminFinanceMBean.getOriginalShippingFee())}</span>
+                                                    </div>
+                                                    <!-- Admin Share -->
+                                                    <div style="display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 6px; color: #64748b; padding-left: 20px;">
+                                                        <span>  └ Admin (#{adminFinanceMBean.getAdminPercentage()}%):</span>
+                                                        <span style="color: #dc2626; font-weight: 600;">-#{adminFinanceMBean.formatAmount(adminFinanceMBean.getAdminShippingFeeShare())}</span>
+                                                    </div>
+                                                    <!-- Shipper Income -->
+                                                    <div style="display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 12px; color: #059669; font-weight: 600; padding-left: 20px;">
+                                                        <span>  └ Shipper Income:</span>
+                                                        <span style="color: #059669; font-weight: 600;">+#{adminFinanceMBean.formatAmount(adminFinanceMBean.getShipperShippingFeeIncome())}</span>
+                                                    </div>
+                                                </h:panelGroup>
+                                                <div style="display: flex; justify-content: space-between; font-size: 16px; font-weight: 700; color: #3f72af; margin-top: 8px; padding-top: 8px; border-top: 2px solid #3f72af;">
+                                                    <span>Total:</span>
+                                                    <span>#{adminFinanceMBean.formatAmount(adminFinanceMBean.selectedCODOrder.totalAmount)}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Products -->
+                                        <div>
+                                            <h4 style="margin: 0 0 12px 0; font-weight: 700; color: #2f5061; font-size: 14px;">📦 Products in Order</h4>
+                                            <h:dataTable value="#{adminFinanceMBean.getCODOrderDetails()}" var="detail" 
+                                                       styleClass="shipper-table"
+                                                       rendered="#{not empty adminFinanceMBean.getCODOrderDetails()}">
+                                                <h:column>
+                                                    <f:facet name="header">Image</f:facet>
+                                                    <div style="width: 60px; height: 60px; background: #f5f5f5; border-radius: 8px; display: flex; align-items: center; justify-content: center; border: 2px solid #ddd; overflow: hidden;">
+                                                        <ui:fragment rendered="#{not empty adminFinanceMBean.getProductImageUrl(detail.productID)}">
+                                                            <img src="#{adminFinanceMBean.getProductImageUrl(detail.productID)}"
+                                                                 alt="#{detail.productID.name}"
+                                                                 style="width: 100%; height: 100%; object-fit: cover;"
+                                                                 onerror="this.style.display='none'; this.parentElement.innerHTML='📦';" />
+                                                        </ui:fragment>
+                                                        <ui:fragment rendered="#{empty adminFinanceMBean.getProductImageUrl(detail.productID)}">
+                                                            <span style="font-size: 24px;">📦</span>
+                                                        </ui:fragment>
+                                                    </div>
+                                                </h:column>
+                                                <h:column>
+                                                    <f:facet name="header">Product</f:facet>
+                                                    <strong>#{detail.productID.name}</strong>
+                                                </h:column>
+                                                <h:column>
+                                                    <f:facet name="header">Qty</f:facet>
+                                                    <span class="badge" style="background: #f8f9fa; color: #495057; padding: 6px 12px;">#{detail.quantity}</span>
+                                                </h:column>
+                                                <h:column>
+                                                    <f:facet name="header">Unit Price</f:facet>
+                                                    #{adminFinanceMBean.formatAmount(detail.unitPrice)}
+                                                </h:column>
+                                                <h:column>
+                                                    <f:facet name="header">Subtotal</f:facet>
+                                                    <strong style="color: #3f72af;">#{adminFinanceMBean.formatAmount(detail.unitPrice * detail.quantity)}</strong>
+                                                </h:column>
+                                            </h:dataTable>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            </ui:fragment>
+                        </h:panelGroup>
+                    </h:form>
+                </h:panelGroup>
+            </div>
+        </ui:define>
+    </ui:composition>
+</html>

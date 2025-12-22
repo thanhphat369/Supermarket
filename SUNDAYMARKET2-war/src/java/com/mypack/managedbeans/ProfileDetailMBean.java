@@ -44,7 +44,7 @@ public class ProfileDetailMBean implements Serializable {
         try {
             User user = loginMBean.getCurrentUser();
             if (user == null) {
-                addErr("❌ Không tìm thấy thông tin người dùng đang đăng nhập!");
+                addErr("❌ User information not found!");
                 return;
             }
 
@@ -54,7 +54,7 @@ public class ProfileDetailMBean implements Serializable {
             }
 
             if (!oldPassword.equals(user.getPassword())) {
-                addErr("❌ Mật khẩu cũ không đúng!");
+                addErr("❌ Old password is incorrect!");
                 return;
             }
 
@@ -76,7 +76,7 @@ public class ProfileDetailMBean implements Serializable {
             confirmPassword = null;
             changePasswordMode = false;
 
-            addInfo("✅ Đã đổi mật khẩu thành công!");
+            addInfo("✅ Password changed successfully!");
         } catch (Exception e) {
             addErr("❌ Lỗi khi đổi mật khẩu: " + e.getMessage());
         }
@@ -173,13 +173,13 @@ public class ProfileDetailMBean implements Serializable {
             // Verify file was written
             if (!file.exists()) {
                 System.err.println("ProfileDetailMBean.uploadAvatarFile() - ERROR: File was not created!");
-                addErr("❌ File không được tạo thành công!");
+                addErr("❌ File could not be created!");
                 return;
             }
             
             if (file.length() == 0) {
                 System.err.println("ProfileDetailMBean.uploadAvatarFile() - ERROR: File is empty!");
-                addErr("❌ File rỗng!");
+                addErr("❌ File is empty!");
                 return;
             }
 
@@ -188,25 +188,25 @@ public class ProfileDetailMBean implements Serializable {
 
             System.out.println("ProfileDetailMBean.uploadAvatarFile() - ✅ File saved successfully to: " + file.getAbsolutePath());
             System.out.println("ProfileDetailMBean.uploadAvatarFile() - File size on disk: " + file.length() + " bytes");
-            addInfo("📸 Ảnh đại diện đã được cập nhật tại: " + file.getAbsolutePath());
+            addInfo("📸 Profile image updated at: " + file.getAbsolutePath());
         } catch (Exception e) {
             System.err.println("ProfileDetailMBean.uploadAvatarFile() - EXCEPTION: " + e.getMessage());
             e.printStackTrace();
-            addErr("❌ Lỗi khi tải ảnh: " + e.getMessage());
+            addErr("❌ Error uploading image: " + e.getMessage());
         }
     }
 public void saveProfile() {
     try {
         User user = loginMBean.getCurrentUser();
         if (user == null) {
-            addErr("❌ Không tìm thấy người dùng!");
+            addErr("❌ User not found!");
             return;
         }
 
         // Xử lý đổi mật khẩu nếu có
         if (oldPassword != null && !oldPassword.trim().isEmpty()) {
             if (!oldPassword.equals(user.getPassword())) {
-                addErr("❌ Mật khẩu cũ không đúng!");
+                addErr("❌ Old password is incorrect!");
                 return;
             }
             
@@ -245,7 +245,7 @@ public void saveProfile() {
         }
 
         this.editMode = false;
-        addInfo("💾 Đã lưu thông tin thành công!");
+            addInfo("💾 Information saved successfully!");
 
     } catch (Exception e) {
         e.printStackTrace();
@@ -270,14 +270,31 @@ public void saveProfile() {
     //             GETTERS / SETTERS CHUNG
     // ============================================
     public void enableEdit() {
-    this.editMode = true;
-}
+        this.editMode = true;
+        // Tự động lấy mật khẩu hiện tại để điền vào trường "Mật khẩu cũ"
+        User user = loginMBean.getCurrentUser();
+        if (user != null && user.getUserID() != null) {
+            // Refresh user từ database để đảm bảo có mật khẩu mới nhất
+            User refreshedUser = userFacade.find(user.getUserID());
+            if (refreshedUser != null && refreshedUser.getPassword() != null) {
+                this.oldPassword = refreshedUser.getPassword();
+            }
+        }
+        // Reset các trường mật khẩu mới
+        this.newPassword = null;
+        this.confirmPassword = null;
+    }
 
 public void disableEdit() {
     this.editMode = false;
 }
 public void cancelEdit() {
     this.editMode = false;
+    // Reset các trường mật khẩu khi hủy
+    this.oldPassword = null;
+    this.newPassword = null;
+    this.confirmPassword = null;
+    this.uploadedFile = null;
 }
 
     public UserFacadeLocal getUserFacade() { return userFacade; }

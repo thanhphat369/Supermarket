@@ -59,9 +59,8 @@ public class Notifications implements Serializable {
     @Size(min = 1, max = 2147483647)
     @Column(name = "Content")
     private String content;
-    @Basic(optional = false)
-    @NotNull
-    @Size(min = 1, max = 20)
+    @Basic(optional = true)
+    @Size(max = 225)
     @Column(name = "Type")
     private String type;
     @Column(name = "CreatedAt")

@@ -210,10 +210,10 @@ public class BrandMBean implements Serializable {
             boolean isNew = selected.getBrandID() == null;
             if (isNew) {
                 brandFacade.create(selected);
-                addInfo("✅ Thêm thương hiệu mới thành công!");
+                addInfo("✅ New brand added successfully!");
             } else {
                 brandFacade.edit(selected);
-                addInfo("✅ Cập nhật thông tin thương hiệu thành công!");
+                addInfo("✅ Brand updated successfully!");
             }
             
             // Close form after successful save

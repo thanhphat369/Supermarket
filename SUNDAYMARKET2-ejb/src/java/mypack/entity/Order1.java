@@ -56,6 +56,8 @@ public class Order1 implements Serializable {
     @NotNull
     @Column(name = "TotalAmount")
     private int totalAmount;
+    @Column(name = "ShippingFee")
+    private Integer shippingFee;
     @Basic(optional = false)
     @NotNull
     @Size(min = 1, max = 50)
@@ -70,6 +72,8 @@ public class Order1 implements Serializable {
     private OrderPromotion orderPromotion;
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "orderID")
     private Collection<Delivery> deliveryCollection;
+    @OneToOne(mappedBy = "orderID")
+    private Payment payment;
 
     public Order1() {
     }
@@ -106,6 +110,14 @@ public class Order1 implements Serializable {
 
     public void setTotalAmount(int totalAmount) {
         this.totalAmount = totalAmount;
+    }
+
+    public Integer getShippingFee() {
+        return shippingFee;
+    }
+
+    public void setShippingFee(Integer shippingFee) {
+        this.shippingFee = shippingFee;
     }
 
     public String getStatus() {
@@ -148,6 +160,14 @@ public class Order1 implements Serializable {
 
     public void setDeliveryCollection(Collection<Delivery> deliveryCollection) {
         this.deliveryCollection = deliveryCollection;
+    }
+
+    public Payment getPayment() {
+        return payment;
+    }
+
+    public void setPayment(Payment payment) {
+        this.payment = payment;
     }
 
     @Override

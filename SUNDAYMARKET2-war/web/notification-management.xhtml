@@ -1,0 +1,502 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:h="jakarta.faces.html"
+      xmlns:f="jakarta.faces.core"
+      xmlns:pt="http://xmlns.jcp.org/jsf/passthrough"
+      xmlns:ui="jakarta.faces.facelets">
+
+    <ui:composition template="/template.xhtml">
+
+        <ui:define name="title">Notification Management</ui:define>
+
+        <ui:define name="content">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
+                <h1 style="margin: 0;">📢 Notification Management</h1>
+                <h:form>
+                    <h:commandButton value="➕ Add New Notification" actionListener="#{notificationManagementMBean.prepareCreate}" 
+                                    styleClass="btn btn-success-modern"
+                                    style="padding: 12px 30px; font-size: 15px; font-weight: 600; border-radius: 8px; border: none; background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white; box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3); transition: all 0.3s; cursor: pointer;"
+                                    onclick="showModal('notificationFormModal');">
+                        <f:ajax render="notificationFormModal notificationTable" 
+                                onevent="function(data){if(data.status=='success'){showModal('notificationFormModal');}}" />
+                    </h:commandButton>
+                </h:form>
+            </div>
+
+            <!-- Messages -->
+            <h:messages globalOnly="true" 
+                       infoClass="alert alert-success alert-dismissible fade show" 
+                       errorClass="alert alert-danger alert-dismissible fade show" 
+                       warnClass="alert alert-warning alert-dismissible fade show"
+                       styleClass="messages-container"
+                       style="margin-bottom: 20px;" />
+            
+            <style>
+                .messages-container {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 12px;
+                }
+                
+                .messages-container .alert {
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    padding: 16px 20px;
+                    border-radius: 12px;
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+                    font-size: 15px;
+                    font-weight: 500;
+                    animation: slideDown 0.3s ease-out;
+                    border: none;
+                }
+                
+                .messages-container .alert-success {
+                    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+                    color: white;
+                }
+                
+                .messages-container .alert-danger {
+                    background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+                    color: white;
+                }
+                
+                @keyframes slideDown {
+                    from {
+                        opacity: 0;
+                        transform: translateY(-10px);
+                    }
+                    to {
+                        opacity: 1;
+                        transform: translateY(0);
+                    }
+                }
+            </style>
+            
+            <!-- Search Bar -->
+            <h:form id="searchForm" style="margin-bottom: 20px;">
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <h:inputText id="searchKeyword" 
+                                 value="#{notificationManagementMBean.searchKeyword}" 
+                                 pt:placeholder="Search by title, content, or type..."
+                                 style="flex: 1; padding: 12px 16px; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 15px;"
+                                 onkeypress="if(event.key === 'Enter') { document.getElementById('searchForm:searchBtn').click(); return false; }" />
+                    <h:commandButton id="searchBtn" 
+                                     value="🔍 Search" 
+                                     actionListener="#{notificationManagementMBean.performSearch()}"
+                                     styleClass="btn btn-primary"
+                                     style="padding: 12px 24px; border-radius: 8px; border: none; background: linear-gradient(135deg, #3f72af 0%, #2d5a8f 100%); color: white; font-weight: 600; cursor: pointer;">
+                        <f:ajax render="notificationTable paginationInfo" />
+                    </h:commandButton>
+                    <h:commandButton value="🔄 Clear" 
+                                     actionListener="#{notificationManagementMBean.clearSearch()}"
+                                     styleClass="btn btn-secondary"
+                                     style="padding: 12px 24px; border-radius: 8px; border: 1px solid #6c757d; background: white; color: #6c757d; font-weight: 600; cursor: pointer;">
+                        <f:ajax render="notificationTable paginationInfo searchKeyword" />
+                    </h:commandButton>
+                </div>
+            </h:form>
+            
+            <!-- Notification Table -->
+            <h:form id="notificationTableForm">
+                <h:dataTable id="notificationTable" 
+                             value="#{notificationManagementMBean.pagedItems}" 
+                             var="n"
+                             styleClass="modern-table"
+                             style="width: 100%; border-collapse: collapse; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                    <h:column>
+                        <f:facet name="header">
+                            <div style="font-weight: 600; color: #2f5061;">Type</div>
+                        </f:facet>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span style="font-size: 20px;">#{notificationManagementMBean.getTypeIcon(n.type)}</span>
+                            <span style="font-size: 12px; color: #64748b;">#{n.type != null ? n.type : 'N/A'}</span>
+                        </div>
+                    </h:column>
+                    <h:column>
+                        <f:facet name="header">
+                            <div style="font-weight: 600; color: #2f5061;">Title</div>
+                        </f:facet>
+                        <div style="font-weight: 600; color: #2f5061; max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="#{n.title}">
+                            #{n.title}
+                        </div>
+                    </h:column>
+                    <h:column>
+                        <f:facet name="header">
+                            <div style="font-weight: 600; color: #2f5061;">Content Preview</div>
+                        </f:facet>
+                        <div style="color: #64748b; max-width: 400px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="#{notificationManagementMBean.getContentPreview(n)}">
+                            <h:outputText value="#{notificationManagementMBean.getContentPreview(n)}" 
+                                         rendered="#{notificationManagementMBean.getContentPreview(n) == null or notificationManagementMBean.getContentPreview(n).length() le 50}" />
+                            <h:outputText value="#{notificationManagementMBean.getContentPreview(n).substring(0, 50)}..." 
+                                         rendered="#{notificationManagementMBean.getContentPreview(n) != null and notificationManagementMBean.getContentPreview(n).length() > 50}" />
+                        </div>
+                    </h:column>
+                    <h:column>
+                        <f:facet name="header">
+                            <div style="font-weight: 600; color: #2f5061;">Recipients</div>
+                        </f:facet>
+                        <span style="background: #3f72af; color: white; padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: 600;">
+                            #{notificationManagementMBean.getRecipientCount(n)} user(s)
+                        </span>
+                    </h:column>
+                    <h:column>
+                        <f:facet name="header">
+                            <div style="font-weight: 600; color: #2f5061;">Created By</div>
+                        </f:facet>
+                        #{n.createdBy != null ? n.createdBy.fullName : 'N/A'}
+                    </h:column>
+                    <h:column>
+                        <f:facet name="header">
+                            <div style="font-weight: 600; color: #2f5061;">Created At</div>
+                        </f:facet>
+                        #{notificationManagementMBean.formatDate(n.createdAt)}
+                    </h:column>
+                    <h:column>
+                        <f:facet name="header">
+                            <div style="font-weight: 600; color: #2f5061;">Action</div>
+                        </f:facet>
+                        <h:commandButton value="✏️ Edit" actionListener="#{notificationManagementMBean.prepareEdit(n)}" 
+                                        styleClass="btn btn-soft-primary"
+                                        style="margin-right: 5px; padding: 6px 12px; font-size: 13px;"
+                                        onclick="showModal('notificationFormModal');">
+                            <f:ajax execute="@this" render="notificationFormModal product productPreview" 
+                                    onevent="function(data){if(data.status=='success'){showModal('notificationFormModal');}}" />
+                        </h:commandButton>
+                        <h:commandButton value="🗑️ Delete" actionListener="#{notificationManagementMBean.delete(n)}"
+                                         styleClass="btn btn-soft-danger"
+                                         style="padding: 6px 12px; font-size: 13px;"
+                                         onclick="return confirm('Delete this notification? This will also delete all recipient records.');">
+                            <f:ajax render="notificationTable paginationInfo" />
+                        </h:commandButton>
+                    </h:column>
+                </h:dataTable>
+                
+                <!-- Pagination -->
+                <div class="pagination-container" id="paginationInfo" style="margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px; display: block; width: 100%;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 15px;">
+                        <h:outputText value="Page #{notificationManagementMBean.currentPage} / #{notificationManagementMBean.totalPages} (Total: #{notificationManagementMBean.totalItems} notifications)" 
+                                     styleClass="pagination-info" 
+                                     style="font-weight: 500; color: #333; font-size: 14px;" />
+                        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                            <h:commandButton value="⏮️ First" actionListener="#{notificationManagementMBean.firstPage()}" 
+                                           styleClass="btn btn-secondary" 
+                                           disabled="#{notificationManagementMBean.currentPage == 1 or notificationManagementMBean.totalPages le 1}"
+                                           style="min-width: 100px; padding: 8px 16px;">
+                                <f:ajax render="notificationTable paginationInfo" />
+                            </h:commandButton>
+                            <h:commandButton value="◀️ Prev" actionListener="#{notificationManagementMBean.previousPage()}" 
+                                           styleClass="btn btn-secondary" 
+                                           disabled="#{notificationManagementMBean.currentPage == 1 or notificationManagementMBean.totalPages le 1}"
+                                           style="min-width: 80px; padding: 8px 16px;">
+                                <f:ajax render="notificationTable paginationInfo" />
+                            </h:commandButton>
+                            <h:commandButton value="Next ▶️" actionListener="#{notificationManagementMBean.nextPage()}" 
+                                           styleClass="btn btn-secondary" 
+                                           disabled="#{notificationManagementMBean.currentPage == notificationManagementMBean.totalPages or notificationManagementMBean.totalPages le 1}"
+                                           style="min-width: 80px; padding: 8px 16px;">
+                                <f:ajax render="notificationTable paginationInfo" />
+                            </h:commandButton>
+                            <h:commandButton value="Last ⏭️" actionListener="#{notificationManagementMBean.lastPage()}" 
+                                           styleClass="btn btn-secondary" 
+                                           disabled="#{notificationManagementMBean.currentPage == notificationManagementMBean.totalPages or notificationManagementMBean.totalPages le 1}"
+                                           style="min-width: 100px; padding: 8px 16px;">
+                                <f:ajax render="notificationTable paginationInfo" />
+                            </h:commandButton>
+                        </div>
+                    </div>
+                </div>
+            </h:form>
+
+            <!-- Modal Form -->
+            <h:panelGroup id="notificationFormModal">
+                <div id="notificationModalOverlay" 
+                     style="display: #{notificationManagementMBean.showForm ? 'block' : 'none'}; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; overflow-y: auto; animation: fadeIn 0.3s ease-out;"
+                     onclick="if(event.target === this) { closeModal('notificationFormModal'); }">
+                    <div class="form-section" style="background: #ffffff; border-radius: 16px; box-shadow: 0 8px 32px rgba(0,0,0,0.2); padding: 0; margin: 40px auto; max-width: 800px; width: 95%; max-height: 90vh; overflow-y: auto; position: relative; animation: slideUp 0.3s ease-out;">
+                        <div style="position: sticky; top: 0; background: linear-gradient(135deg, #3f72af 0%, #2b517f 100%); color: white; padding: 20px 30px; border-radius: 16px 16px 0 0; display: flex; justify-content: space-between; align-items: center; z-index: 10; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+                            <h2 style="margin: 0; font-size: 24px; font-weight: 600;">
+                                <h:outputText value="#{notificationManagementMBean.editMode ? '✏️ Update Notification' : '➕ Add New Notification'}" />
+                            </h2>
+                            <h:form>
+                                <h:commandButton id="closeNotificationFormBtn" value="✕" actionListener="#{notificationManagementMBean.cancelForm}" 
+                                                styleClass="btn-close-modal"
+                                                style="background: rgba(255,255,255,0.2); border: none; color: white; width: 40px; height: 40px; border-radius: 50%; font-size: 20px; cursor: pointer; transition: all 0.3s; display: flex; align-items: center; justify-content: center;"
+                                                title="Close"
+                                                onclick="closeModal('notificationFormModal');">
+                                    <f:ajax render="notificationFormModal notificationTable" 
+                                            onevent="function(data){if(data.status=='success'){closeModal('notificationFormModal');}}" />
+                                </h:commandButton>
+                            </h:form>
+                        </div>
+                        <div style="padding: 30px;">
+                            <h:form id="notificationForm" styleClass="notification-form">
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+                                    <!-- Title -->
+                                    <div>
+                                        <label style="display: block; font-size: 13px; font-weight: 600; color: #64748b; margin-bottom: 8px;">
+                                            Title <span style="color: #ef4444;">*</span>
+                                        </label>
+                                        <h:inputText id="title" value="#{notificationManagementMBean.selected.title}" 
+                                                     required="true" 
+                                                     styleClass="form-control"
+                                                     style="width: 100%; padding: 12px 16px; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 15px; box-sizing: border-box;"
+                                                     pt:placeholder="Enter notification title">
+                                            <f:validateLength minimum="1" maximum="200" />
+                                        </h:inputText>
+                                        <h:message for="title" styleClass="error-message" style="color: #ef4444; font-size: 12px; margin-top: 4px; display: block;" />
+                                    </div>
+                                    
+                                    <!-- Type -->
+                                    <div>
+                                        <label style="display: block; font-size: 13px; font-weight: 600; color: #64748b; margin-bottom: 8px;">
+                                            Type
+                                        </label>
+                                        <h:selectOneMenu id="type" value="#{notificationManagementMBean.selected.type}" 
+                                                         styleClass="form-select"
+                                                         style="width: 100%; padding: 12px 16px; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 15px; background: white; box-sizing: border-box;">
+                                            <f:selectItem itemLabel="-- Select Type --" itemValue="" noSelectionOption="true" />
+                                            <f:selectItems value="#{notificationManagementMBean.notificationTypes}" var="t" itemLabel="#{t}" itemValue="#{t}" />
+                                        </h:selectOneMenu>
+                                    </div>
+                                </div>
+                                
+                                <!-- Content - Full Width -->
+                                <div style="margin-bottom: 20px;">
+                                    <label style="display: block; font-size: 13px; font-weight: 600; color: #64748b; margin-bottom: 8px;">
+                                        Content <span style="color: #ef4444;">*</span>
+                                    </label>
+                                    <h:inputTextarea id="content" value="#{notificationManagementMBean.selected.content}" 
+                                                     required="true" 
+                                                     rows="4"
+                                                     styleClass="form-control"
+                                                     style="width: 100%; padding: 12px 16px; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 15px; box-sizing: border-box; resize: vertical; font-family: inherit; min-height: 100px;"
+                                                     pt:placeholder="Enter notification content...">
+                                        <f:validateLength minimum="1" />
+                                    </h:inputTextarea>
+                                    <h:message for="content" styleClass="error-message" style="color: #ef4444; font-size: 12px; margin-top: 4px; display: block;" />
+                                </div>
+                                
+                                <!-- Created By and Created At - Side by Side -->
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+                                    <div>
+                                        <label style="display: block; font-size: 13px; font-weight: 600; color: #64748b; margin-bottom: 8px;">
+                                            Created By
+                                        </label>
+                                        <div style="color: #64748b; padding: 12px 16px; background: #f8f9fa; border-radius: 8px; border: 1px solid #e9ecef; font-size: 15px;">
+                                            #{notificationManagementMBean.selected.createdBy != null ? notificationManagementMBean.selected.createdBy.fullName : loginMBean.currentUser.fullName}
+                                        </div>
+                                    </div>
+                                    
+                                    <div>
+                                        <label style="display: block; font-size: 13px; font-weight: 600; color: #64748b; margin-bottom: 8px;">
+                                            Created At
+                                        </label>
+                                        <div style="color: #64748b; padding: 12px 16px; background: #f8f9fa; border-radius: 8px; border: 1px solid #e9ecef; font-size: 15px;">
+                                            #{notificationManagementMBean.selected.createdAt != null ? notificationManagementMBean.formatDate(notificationManagementMBean.selected.createdAt) : 'Will be set automatically'}
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Product Selection -->
+                                <div style="margin-top: 30px; padding: 20px; background: #f8f9fa; border-radius: 8px; border: 1px dashed #cbd5e1;">
+                                    <h3 style="font-size: 18px; color: #2f5061; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+                                        <span>📦</span>
+                                        <span>Select Product (Optional)</span>
+                                    </h3>
+                                    <p style="font-size: 13px; color: #64748b; margin-bottom: 16px;">
+                                        Select a product to include product information and image in the notification content
+                                    </p>
+                                    
+                                    <div>
+                                        <label style="display: block; font-size: 13px; font-weight: 600; color: #64748b; margin-bottom: 8px;">
+                                            Product
+                                        </label>
+                                        <h:selectOneMenu id="product" 
+                                                         value="#{notificationManagementMBean.selectedProductId}" 
+                                                         styleClass="form-control"
+                                                         style="width: 100%; padding: 12px 16px; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 15px; box-sizing: border-box; background: white;">
+                                            <f:selectItem itemLabel="-- No Product Selected --" itemValue="" />
+                                            <f:selectItems value="#{notificationManagementMBean.products}" var="p" itemLabel="#{p.name} - #{p.unitPrice} VND" itemValue="#{p.productID}" />
+                                            <f:ajax event="valueChange" render="productPreview" listener="#{notificationManagementMBean.onProductChange()}" execute="@this" />
+                                        </h:selectOneMenu>
+                                    </div>
+                                    
+                                    <!-- Product Preview -->
+                                    <h:panelGroup id="productPreview" style="margin-top: 16px;">
+                                        <h:panelGroup rendered="#{notificationManagementMBean.selectedProduct != null}">
+                                            <div style="display: flex; gap: 16px; padding: 16px; background: white; border-radius: 8px; border: 1px solid #e9ecef;">
+                                                <div style="flex-shrink: 0; position: relative;">
+                                                    <img id="productImage_#{notificationManagementMBean.selectedProduct.productID}" 
+                                                         src="#{notificationManagementMBean.getProductImageUrl(notificationManagementMBean.selectedProduct)}" 
+                                                         alt="#{notificationManagementMBean.selectedProduct.name}"
+                                                         style="width: 120px; height: 120px; object-fit: cover; border-radius: 8px; border: 1px solid #e9ecef; display: block;"
+                                                         onerror="var img = this; var fallback = img.nextElementSibling; if(fallback) { img.style.display='none'; fallback.style.display='flex'; }" />
+                                                    <div class="product-image-fallback" 
+                                                         style="width: 120px; height: 120px; background: #f1f5f9; border-radius: 8px; display: none; align-items: center; justify-content: center; color: #94a3b8; font-size: 32px; position: absolute; top: 0; left: 0;">
+                                                        📦
+                                                    </div>
+                                                </div>
+                                                <div style="flex: 1;">
+                                                    <h4 style="font-size: 16px; color: #2f5061; margin-bottom: 8px; font-weight: 600;">
+                                                        #{notificationManagementMBean.selectedProduct.name}
+                                                    </h4>
+                                                    <p style="font-size: 14px; color: #64748b; margin-bottom: 12px; line-height: 1.5;">
+                                                        <h:outputText value="#{notificationManagementMBean.selectedProduct.description}" 
+                                                                     rendered="#{notificationManagementMBean.selectedProduct.description != null and notificationManagementMBean.selectedProduct.description.length() le 150}" />
+                                                        <h:outputText value="#{notificationManagementMBean.selectedProduct.description.substring(0, 150)}..." 
+                                                                     rendered="#{notificationManagementMBean.selectedProduct.description != null and notificationManagementMBean.selectedProduct.description.length() > 150}" />
+                                                    </p>
+                                                    <div style="display: flex; align-items: center; gap: 12px;">
+                                                        <span style="font-size: 18px; font-weight: 700; color: #3f72af;">
+                                                            #{notificationManagementMBean.selectedProduct.unitPrice} VND
+                                                        </span>
+                                                        <span style="font-size: 13px; color: #64748b;">
+                                                            Stock: #{notificationManagementMBean.selectedProduct.quantity != null ? notificationManagementMBean.selectedProduct.quantity : 0}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </h:panelGroup>
+                                    </h:panelGroup>
+                                </div>
+                                
+                                <!-- Target Users -->
+                                <div style="margin-top: 30px; margin-bottom: 30px;">
+                                    <h3 style="font-size: 18px; color: #2f5061; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 2px solid #e9ecef;">
+                                        👥 Recipients <span style="color: #ef4444;">*</span>
+                                    </h3>
+                                    
+                                    <!-- Target Mode Selection -->
+                                    <div style="margin-bottom: 20px;">
+                                        <label style="display: block; font-size: 13px; font-weight: 600; color: #64748b; margin-bottom: 8px;">
+                                            Send To
+                                        </label>
+                                        <h:selectOneRadio id="targetMode" 
+                                                          value="#{notificationManagementMBean.targetMode}"
+                                                          layout="pageDirection"
+                                                          style="display: flex; gap: 20px;">
+                                            <f:selectItem itemLabel="By Role (All Customers/Shippers)" itemValue="ROLE" />
+                                            <f:selectItem itemLabel="Specific Users" itemValue="USER" />
+                                            <f:ajax event="valueChange" render="targetSelection" />
+                                        </h:selectOneRadio>
+                                    </div>
+                                    
+                                    <h:panelGroup id="targetSelection">
+                                        <!-- By Role -->
+                                        <h:panelGroup rendered="#{notificationManagementMBean.targetMode == 'ROLE'}">
+                                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
+                                                <h:panelGroup id="customerCard" layout="block" style="padding: 16px; background: #{notificationManagementMBean.sendToCustomers ? '#f0f9ff' : '#f8f9fa'}; border-radius: 8px; border: 2px solid #{notificationManagementMBean.sendToCustomers ? '#3f72af' : '#e9ecef'}; cursor: pointer; transition: all 0.3s; position: relative;">
+                                                    <h:commandLink id="toggleCustomers" 
+                                                                   action="#{notificationManagementMBean.toggleCustomers()}"
+                                                                   style="display: none;">
+                                                        <f:ajax render="customerCard shipperCard" execute="@this" />
+                                                    </h:commandLink>
+                                                    <div style="display: flex; align-items: center; gap: 12px;"
+                                                         onclick="document.getElementById('notificationForm:toggleCustomers').click();">
+                                                        <div style="width: 24px; height: 24px; border: 2px solid #{notificationManagementMBean.sendToCustomers ? '#3f72af' : '#cbd5e1'}; border-radius: 4px; display: flex; align-items: center; justify-content: center; background: #{notificationManagementMBean.sendToCustomers ? '#3f72af' : 'white'}; flex-shrink: 0;">
+                                                            <span style="color: white; font-size: 14px; font-weight: bold;">
+                                                                #{notificationManagementMBean.sendToCustomers ? '✓' : ''}
+                                                            </span>
+                                                        </div>
+                                                        <div>
+                                                            <div style="font-size: 16px; font-weight: 600; color: #2f5061; margin-bottom: 4px;">
+                                                                🛒 Customers
+                                                            </div>
+                                                            <div style="font-size: 12px; color: #64748b;">
+                                                                Send to all customers
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </h:panelGroup>
+                                                
+                                                <h:panelGroup id="shipperCard" layout="block" style="padding: 16px; background: #{notificationManagementMBean.sendToShippers ? '#f0f9ff' : '#f8f9fa'}; border-radius: 8px; border: 2px solid #{notificationManagementMBean.sendToShippers ? '#3f72af' : '#e9ecef'}; cursor: pointer; transition: all 0.3s; position: relative;">
+                                                    <h:commandLink id="toggleShippers" 
+                                                                   action="#{notificationManagementMBean.toggleShippers()}"
+                                                                   style="display: none;">
+                                                        <f:ajax render="customerCard shipperCard" execute="@this" />
+                                                    </h:commandLink>
+                                                    <div style="display: flex; align-items: center; gap: 12px;"
+                                                         onclick="document.getElementById('notificationForm:toggleShippers').click();">
+                                                        <div style="width: 24px; height: 24px; border: 2px solid #{notificationManagementMBean.sendToShippers ? '#3f72af' : '#cbd5e1'}; border-radius: 4px; display: flex; align-items: center; justify-content: center; background: #{notificationManagementMBean.sendToShippers ? '#3f72af' : 'white'}; flex-shrink: 0;">
+                                                            <span style="color: white; font-size: 14px; font-weight: bold;">
+                                                                #{notificationManagementMBean.sendToShippers ? '✓' : ''}
+                                                            </span>
+                                                        </div>
+                                                        <div>
+                                                            <div style="font-size: 16px; font-weight: 600; color: #2f5061; margin-bottom: 4px;">
+                                                                🚚 Shippers
+                                                            </div>
+                                                            <div style="font-size: 12px; color: #64748b;">
+                                                                Send to all shippers
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </h:panelGroup>
+                                            </div>
+                                        </h:panelGroup>
+                                        
+                                        <!-- By Specific Users -->
+                                        <h:panelGroup rendered="#{notificationManagementMBean.targetMode == 'USER'}">
+                                            <div>
+                                                <label style="display: block; font-size: 13px; font-weight: 600; color: #64748b; margin-bottom: 8px;">
+                                                    Select Users
+                                                </label>
+                                                <h:selectManyListbox id="selectedUsers" 
+                                                                     value="#{notificationManagementMBean.selectedUserIds}" 
+                                                                     styleClass="form-control"
+                                                                     style="width: 100%; min-height: 200px; padding: 12px; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 14px; background: white;">
+                                                    <f:selectItems value="#{notificationManagementMBean.allUsers}" var="u" itemLabel="#{u.fullName != null ? u.fullName : u.userName} (#{u.roleID != null ? u.roleID.roleName : 'N/A'})" itemValue="#{u.userID}" />
+                                                </h:selectManyListbox>
+                                                <small style="color: #64748b; font-size: 12px; margin-top: 4px; display: block;">
+                                                    Hold Ctrl (Windows) or Cmd (Mac) to select multiple users
+                                                </small>
+                                            </div>
+                                        </h:panelGroup>
+                                    </h:panelGroup>
+                                </div>
+                                
+                                <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 30px; padding-top: 25px; border-top: 2px solid #e9ecef;">
+                                    <h:commandButton value="❌ Cancel" actionListener="#{notificationManagementMBean.cancelForm}" 
+                                                    styleClass="btn btn-secondary-modern"
+                                                    style="padding: 12px 30px; font-size: 15px; font-weight: 600; border-radius: 8px; border: 2px solid #6c757d; background: white; color: #6c757d; transition: all 0.3s; cursor: pointer;"
+                                                    onclick="closeModal('notificationFormModal');">
+                                        <f:ajax render="notificationFormModal notificationTable" 
+                                                onevent="function(data){if(data.status=='success'){closeModal('notificationFormModal');}}" />
+                                    </h:commandButton>
+                                    <h:commandButton value="#{notificationManagementMBean.editMode ? '💾 Update' : '➕ Create'}" 
+                                                     actionListener="#{notificationManagementMBean.save()}"
+                                                     styleClass="btn btn-success-modern"
+                                                     style="padding: 12px 30px; font-size: 15px; font-weight: 600; border-radius: 8px; border: none; background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white; box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3); transition: all 0.3s; cursor: pointer;">
+                                        <f:ajax execute="@form" render="notificationFormModal notificationTable paginationInfo messages" />
+                                    </h:commandButton>
+                                </div>
+                            </h:form>
+                        </div>
+                    </div>
+                </div>
+            </h:panelGroup>
+
+            <h:outputScript>
+                <![CDATA[
+                    function showModal(modalId) {
+                        var modal = document.getElementById(modalId.replace('FormModal', 'ModalOverlay'));
+                        if (modal) {
+                            modal.style.display = 'block';
+                            document.body.style.overflow = 'hidden';
+                        }
+                    }
+                    
+                    function closeModal(modalId) {
+                        var modal = document.getElementById(modalId.replace('FormModal', 'ModalOverlay'));
+                        if (modal) {
+                            modal.style.display = 'none';
+                            document.body.style.overflow = '';
+                        }
+                    }
+                ]]>
+            </h:outputScript>
+        </ui:define>
+    </ui:composition>
+</html>

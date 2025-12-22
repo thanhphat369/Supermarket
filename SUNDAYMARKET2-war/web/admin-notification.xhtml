@@ -1,0 +1,300 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:h="jakarta.faces.html"
+      xmlns:f="jakarta.faces.core"
+      xmlns:ui="jakarta.faces.facelets"
+      xmlns:pt="http://xmlns.jcp.org/jsf/passthrough">
+
+    <ui:composition template="/template.xhtml">
+        <ui:define name="title">📢 Send Notification</ui:define>
+
+        <ui:define name="content">
+            <h:outputStylesheet library="css" name="style.css" />
+            <h:messages globalOnly="true" id="messages" styleClass="messages" />
+            
+            <div style="max-width: 1200px; margin: 0 auto; padding: 20px;">
+                
+                <!-- Check login and admin role -->
+                <h:panelGroup rendered="#{loginMBean.currentUser == null or !loginMBean.isAdmin()}">
+                    <div style="text-align: center; padding: 80px 20px; background: #fff; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                        <div style="font-size: 64px; margin-bottom: 20px;">🔐</div>
+                        <h2 style="color: #2f5061; margin-bottom: 12px;">Access Denied</h2>
+                        <p style="color: #64748b; margin-bottom: 24px;">Please login with Admin account to access</p>
+                        <h:link outcome="login" styleClass="btn" style="display: inline-block; padding: 12px 24px; background: #3f72af; color: white; text-decoration: none; border-radius: 8px; font-weight: 600;">
+                            🔓 Login
+                        </h:link>
+                    </div>
+                </h:panelGroup>
+                
+                <!-- Notification Form -->
+                <h:panelGroup rendered="#{loginMBean.currentUser != null and loginMBean.isAdmin()}">
+                    <h:form id="notificationForm" styleClass="notification-form">
+                        
+                        <!-- Page Header -->
+                        <div style="margin-bottom: 30px;">
+                            <h1 style="font-size: 32px; color: #2f5061; margin-bottom: 8px; display: flex; align-items: center; gap: 12px;">
+                                <span>📢</span>
+                                <span>Send Notification</span>
+                            </h1>
+                            <p style="color: #64748b; font-size: 15px;">
+                                Send notifications to customers and shippers, with optional product information
+                            </p>
+                        </div>
+                        
+                        <!-- Form Card -->
+                        <div style="background: white; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); padding: 30px; margin-bottom: 20px;">
+                            
+                            <!-- Basic Information -->
+                            <div style="margin-bottom: 30px;">
+                                <h3 style="font-size: 18px; color: #2f5061; margin-bottom: 20px; padding-bottom: 12px; border-bottom: 2px solid #e9ecef;">
+                                    📝 Notification Information
+                                </h3>
+                                
+                                <div style="display: grid; gap: 20px;">
+                                    <!-- Title -->
+                                    <div>
+                                        <label style="display: block; font-size: 13px; font-weight: 600; color: #64748b; margin-bottom: 8px;">
+                                            Title <span style="color: #ef4444;">*</span>
+                                        </label>
+                                        <h:inputText id="title" 
+                                                     value="#{notificationMBean.title}" 
+                                                     styleClass="form-control"
+                                                     style="width: 100%; padding: 12px 16px; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 15px; box-sizing: border-box;"
+                                                     pt:placeholder="Enter notification title"
+                                                     required="true"
+                                                     requiredMessage="⚠️ Please enter notification title!">
+                                            <f:validateLength minimum="1" />
+                                        </h:inputText>
+                                        <h:message for="title" styleClass="error-message" style="color: #ef4444; font-size: 12px; margin-top: 4px; display: block;" />
+                                    </div>
+                                    
+                                    <!-- Type -->
+                                    <div>
+                                        <label style="display: block; font-size: 13px; font-weight: 600; color: #64748b; margin-bottom: 8px;">
+                                            Notification Type
+                                        </label>
+                                        <h:selectOneMenu id="type" 
+                                                         value="#{notificationMBean.type}" 
+                                                         styleClass="form-control"
+                                                         style="width: 100%; padding: 12px 16px; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 15px; box-sizing: border-box; background: white;">
+                                            <f:selectItems value="#{notificationMBean.notificationTypes}" var="t" itemLabel="#{t}" itemValue="#{t}" />
+                                        </h:selectOneMenu>
+                                    </div>
+                                    
+                                    <!-- Content -->
+                                    <div>
+                                        <label style="display: block; font-size: 13px; font-weight: 600; color: #64748b; margin-bottom: 8px;">
+                                            Content <span style="color: #ef4444;">*</span>
+                                        </label>
+                                        <h:inputTextarea id="content" 
+                                                         value="#{notificationMBean.content}" 
+                                                         rows="6"
+                                                         styleClass="form-control"
+                                                         style="width: 100%; padding: 12px 16px; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 15px; box-sizing: border-box; resize: vertical; font-family: inherit;"
+                                                         pt:placeholder="Enter notification content..."
+                                                         required="true"
+                                                         requiredMessage="⚠️ Please enter notification content!">
+                                            <f:validateLength minimum="1" />
+                                        </h:inputTextarea>
+                                        <h:message for="content" styleClass="error-message" style="color: #ef4444; font-size: 12px; margin-top: 4px; display: block;" />
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Product Selection -->
+                            <div style="margin-bottom: 30px; padding: 20px; background: #f8f9fa; border-radius: 8px; border: 1px dashed #cbd5e1;">
+                                <h3 style="font-size: 18px; color: #2f5061; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+                                    <span>📦</span>
+                                    <span>Select Product (Optional)</span>
+                                </h3>
+                                <p style="font-size: 13px; color: #64748b; margin-bottom: 16px;">
+                                    Select a product to include product information and image in the notification
+                                </p>
+                                
+                                <div>
+                                    <label style="display: block; font-size: 13px; font-weight: 600; color: #64748b; margin-bottom: 8px;">
+                                        Product
+                                    </label>
+                                    <h:selectOneMenu id="product" 
+                                                     value="#{notificationMBean.selectedProductId}" 
+                                                     styleClass="form-control"
+                                                     style="width: 100%; padding: 12px 16px; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 15px; box-sizing: border-box; background: white;">
+                                        <f:selectItem itemLabel="-- No Product Selected --" itemValue="" />
+                                        <f:selectItems value="#{notificationMBean.products}" var="p" itemLabel="#{p.name} - #{p.unitPrice} VND" itemValue="#{p.productID}" />
+                                        <f:ajax event="valueChange" render="productPreview" listener="#{notificationMBean.onProductChange()}" execute="@this" />
+                                    </h:selectOneMenu>
+                                </div>
+                                
+                                <!-- Product Preview -->
+                                <h:panelGroup id="productPreview" style="margin-top: 16px;">
+                                    <h:panelGroup rendered="#{notificationMBean.selectedProduct != null}">
+                                        <div style="display: flex; gap: 16px; padding: 16px; background: white; border-radius: 8px; border: 1px solid #e9ecef;">
+                                            <div style="flex-shrink: 0; position: relative;">
+                                                <img id="productImage_#{notificationMBean.selectedProduct.productID}" 
+                                                     src="#{notificationMBean.getProductImageUrl(notificationMBean.selectedProduct)}" 
+                                                     alt="#{notificationMBean.selectedProduct.name}"
+                                                     style="width: 120px; height: 120px; object-fit: cover; border-radius: 8px; border: 1px solid #e9ecef; display: block;"
+                                                     onerror="var img = this; var fallback = img.nextElementSibling; if(fallback) { img.style.display='none'; fallback.style.display='flex'; }" />
+                                                <div class="product-image-fallback" 
+                                                     style="width: 120px; height: 120px; background: #f1f5f9; border-radius: 8px; display: none; align-items: center; justify-content: center; color: #94a3b8; font-size: 32px; position: absolute; top: 0; left: 0;">
+                                                    📦
+                                                </div>
+                                            </div>
+                                            <div style="flex: 1;">
+                                                <h4 style="font-size: 16px; color: #2f5061; margin-bottom: 8px; font-weight: 600;">
+                                                    #{notificationMBean.selectedProduct.name}
+                                                </h4>
+                                                <p style="font-size: 14px; color: #64748b; margin-bottom: 12px; line-height: 1.5;">
+                                                    #{notificationMBean.selectedProduct.description != null and notificationMBean.selectedProduct.description.length() > 150 ? 
+                                                      notificationMBean.selectedProduct.description.substring(0, 150) + '...' : 
+                                                      notificationMBean.selectedProduct.description}
+                                                </p>
+                                                <div style="display: flex; align-items: center; gap: 12px;">
+                                                    <span style="font-size: 18px; font-weight: 700; color: #3f72af;">
+                                                        #{notificationMBean.selectedProduct.unitPrice} VND
+                                                    </span>
+                                                    <span style="font-size: 13px; color: #64748b;">
+                                                        Stock: #{notificationMBean.selectedProduct.quantity != null ? notificationMBean.selectedProduct.quantity : 0}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </h:panelGroup>
+                                </h:panelGroup>
+                            </div>
+                            
+                            <!-- Target Users -->
+                            <div style="margin-bottom: 30px;">
+                                <h3 style="font-size: 18px; color: #2f5061; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 2px solid #e9ecef;">
+                                    👥 Recipients <span style="color: #ef4444;">*</span>
+                                </h3>
+                                
+                                <!-- Target Mode Selection -->
+                                <div style="margin-bottom: 20px;">
+                                    <label style="display: block; font-size: 13px; font-weight: 600; color: #64748b; margin-bottom: 8px;">
+                                        Send To
+                                    </label>
+                                    <h:selectOneRadio id="targetMode" 
+                                                      value="#{notificationMBean.targetMode}"
+                                                      layout="pageDirection"
+                                                      style="display: flex; gap: 20px;">
+                                        <f:selectItem itemLabel="By Role (All Customers/Shippers)" itemValue="ROLE" />
+                                        <f:selectItem itemLabel="Specific Users" itemValue="USER" />
+                                        <f:ajax event="valueChange" render="targetSelection" />
+                                    </h:selectOneRadio>
+                                </div>
+                                
+                                <h:panelGroup id="targetSelection">
+                                <!-- By Role -->
+                                <h:panelGroup rendered="#{notificationMBean.targetMode == 'ROLE'}">
+                                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
+                                    <h:panelGroup id="customerCard" layout="block" style="padding: 16px; background: #{notificationMBean.sendToCustomers ? '#f0f9ff' : '#f8f9fa'}; border-radius: 8px; border: 2px solid #{notificationMBean.sendToCustomers ? '#3f72af' : '#e9ecef'}; cursor: pointer; transition: all 0.3s; position: relative;">
+                                        <h:commandLink id="toggleCustomers" 
+                                                       action="#{notificationMBean.toggleCustomers()}"
+                                                       style="display: none;">
+                                            <f:ajax render="customerCard shipperCard" execute="@this" />
+                                        </h:commandLink>
+                                        <div style="display: flex; align-items: center; gap: 12px;"
+                                             onclick="document.getElementById('notificationForm:toggleCustomers').click();">
+                                            <div style="width: 24px; height: 24px; border: 2px solid #{notificationMBean.sendToCustomers ? '#3f72af' : '#cbd5e1'}; border-radius: 4px; display: flex; align-items: center; justify-content: center; background: #{notificationMBean.sendToCustomers ? '#3f72af' : 'white'}; flex-shrink: 0;">
+                                                <span style="color: white; font-size: 14px; font-weight: bold;">
+                                                    #{notificationMBean.sendToCustomers ? '✓' : ''}
+                                                </span>
+                                            </div>
+                                            <div>
+                                                <div style="font-size: 16px; font-weight: 600; color: #2f5061; margin-bottom: 4px;">
+                                                    🛒 Customers
+                                                </div>
+                                                <div style="font-size: 12px; color: #64748b;">
+                                                    Send to all customers
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </h:panelGroup>
+                                    
+                                    <h:panelGroup id="shipperCard" layout="block" style="padding: 16px; background: #{notificationMBean.sendToShippers ? '#f0f9ff' : '#f8f9fa'}; border-radius: 8px; border: 2px solid #{notificationMBean.sendToShippers ? '#3f72af' : '#e9ecef'}; cursor: pointer; transition: all 0.3s; position: relative;">
+                                        <h:commandLink id="toggleShippers" 
+                                                       action="#{notificationMBean.toggleShippers()}"
+                                                       style="display: none;">
+                                            <f:ajax render="customerCard shipperCard" execute="@this" />
+                                        </h:commandLink>
+                                        <div style="display: flex; align-items: center; gap: 12px;"
+                                             onclick="document.getElementById('notificationForm:toggleShippers').click();">
+                                            <div style="width: 24px; height: 24px; border: 2px solid #{notificationMBean.sendToShippers ? '#3f72af' : '#cbd5e1'}; border-radius: 4px; display: flex; align-items: center; justify-content: center; background: #{notificationMBean.sendToShippers ? '#3f72af' : 'white'}; flex-shrink: 0;">
+                                                <span style="color: white; font-size: 14px; font-weight: bold;">
+                                                    #{notificationMBean.sendToShippers ? '✓' : ''}
+                                                </span>
+                                            </div>
+                                            <div>
+                                                <div style="font-size: 16px; font-weight: 600; color: #2f5061; margin-bottom: 4px;">
+                                                    🚚 Shippers
+                                                </div>
+                                                <div style="font-size: 12px; color: #64748b;">
+                                                    Send to all shippers
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </h:panelGroup>
+                                </div>
+                                </h:panelGroup>
+                                
+                                <!-- By Specific Users -->
+                                <h:panelGroup rendered="#{notificationMBean.targetMode == 'USER'}">
+                                    <div>
+                                        <label style="display: block; font-size: 13px; font-weight: 600; color: #64748b; margin-bottom: 8px;">
+                                            Select Users <span style="color: #ef4444;">*</span>
+                                        </label>
+                                        <h:selectManyListbox id="selectedUsers" 
+                                                             value="#{notificationMBean.selectedUserIds}"
+                                                             size="8"
+                                                             styleClass="form-control"
+                                                             style="width: 100%; padding: 8px; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 14px; box-sizing: border-box; background: white;">
+                                            <f:selectItems value="#{notificationMBean.allUsers}" var="u" itemLabel="#{u.fullName != null ? u.fullName : u.userName} (#{u.roleID.roleName})" itemValue="#{u.userID}" />
+                                        </h:selectManyListbox>
+                                        <small style="display: block; margin-top: 6px; color: #64748b; font-size: 12px;">
+                                            Hold Ctrl (Windows) or Cmd (Mac) to select multiple users
+                                        </small>
+                                    </div>
+                                </h:panelGroup>
+                                </h:panelGroup>
+                            </div>
+                            
+                            <!-- Action Buttons -->
+                            <div style="display: flex; gap: 12px; justify-content: flex-end; padding-top: 20px; border-top: 1px solid #e9ecef;">
+                                <h:commandButton value="🔄 Reset" 
+                                                 action="#{notificationMBean.resetForm()}"
+                                                 styleClass="btn"
+                                                 style="padding: 12px 24px; background: #64748b; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 14px;">
+                                    <f:ajax render="notificationForm" />
+                                </h:commandButton>
+                                
+                                <h:commandButton value="📢 Send Notification" 
+                                                 action="#{notificationMBean.sendNotification()}"
+                                                 styleClass="btn"
+                                                 style="padding: 12px 24px; background: linear-gradient(135deg, #3f72af 0%, #2d5a8f 100%); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 14px; box-shadow: 0 4px 12px rgba(63, 114, 175, 0.3);">
+                                    <f:ajax execute="@form" render="@form messages" />
+                                </h:commandButton>
+                            </div>
+                        </div>
+                    </h:form>
+                </h:panelGroup>
+            </div>
+            
+            <style>
+                .notification-form input[type="text"],
+                .notification-form textarea,
+                .notification-form select {
+                    transition: all 0.3s;
+                }
+                .notification-form input[type="text"]:focus,
+                .notification-form textarea:focus,
+                .notification-form select:focus {
+                    outline: none;
+                    border-color: #3f72af !important;
+                    box-shadow: 0 0 0 3px rgba(63, 114, 175, 0.1) !important;
+                }
+            </style>
+        </ui:define>
+    </ui:composition>
+</html>

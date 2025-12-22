@@ -87,7 +87,13 @@ public class ProductImageUploadServlet extends HttpServlet {
                 return;
             }
             
-            if (fileParts.size() < 2) {
+            // Check if editing existing product (has productId parameter)
+            String productIdParam = request.getParameter("productId");
+            boolean isEditing = productIdParam != null && !productIdParam.trim().isEmpty();
+            
+            // For new products, require at least 2 images
+            // For editing, allow 1+ images (will be merged with existing)
+            if (!isEditing && fileParts.size() < 2) {
                 response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
                 out.print("[\"ERROR: Please select at least 2 images\"]");
                 return;

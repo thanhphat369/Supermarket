@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:ui="jakarta.faces.facelets"
+      xmlns:h="jakarta.faces.html">
+
+<h:head>
+    <title>Sunday Market</title>
+    <h:outputStylesheet library="css" name="style.css" />
+</h:head>
+
+<h:body>
+    <div class="layout">
+        <header><ui:include src="header.xhtml" /></header>
+        <aside><ui:include src="sidebar.xhtml" /></aside>
+        <main><ui:insert name="content" /></main>
+        <footer><ui:include src="footer.xhtml" /></footer>
+    </div>
+</h:body>
+</html>

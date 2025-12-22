@@ -213,7 +213,7 @@ public class CategoryMBean implements Serializable {
             
             // Check if category is being used by products
             if (categoryToDelete.getProductCollection() != null && !categoryToDelete.getProductCollection().isEmpty()) {
-                addErr("⚠️ Không thể xóa danh mục này vì có sản phẩm liên quan!");
+                addErr("⚠️ Cannot delete this category because it has related products!");
                 return;
             }
             
@@ -224,7 +224,7 @@ public class CategoryMBean implements Serializable {
             }
             
             categoryFacade.remove(categoryToDelete);
-            addInfo("✅ Xóa danh mục thành công!");
+            addInfo("✅ Category deleted successfully!");
             
             if (selected != null && selected.getCategoryID() != null && selected.getCategoryID().equals(c.getCategoryID())) {
                 prepareCreate();
@@ -265,7 +265,7 @@ public class CategoryMBean implements Serializable {
                 addInfo("✅ Thêm danh mục mới thành công!");
             } else {
                 categoryFacade.edit(selected);
-                addInfo("✅ Cập nhật thông tin danh mục thành công!");
+                addInfo("✅ Category updated successfully!");
             }
             
             // Close form after successful save
@@ -345,6 +345,19 @@ public class CategoryMBean implements Serializable {
     
     public void lastPage() {
         currentPage = getTotalPages();
+    }
+    
+    // Format ID - loại bỏ "10" ở đầu nếu ID >= 1000
+    public String formatID(Integer id) {
+        if (id == null) return "-";
+        // Nếu ID >= 1000 và bắt đầu bằng "10", loại bỏ "10" ở đầu
+        if (id >= 1000 && id.toString().startsWith("10")) {
+            String idStr = id.toString();
+            if (idStr.length() > 2) {
+                return idStr.substring(2); // Bỏ 2 ký tự đầu "10"
+            }
+        }
+        return id.toString();
     }
     
     // Helper methods

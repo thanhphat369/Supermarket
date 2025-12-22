@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:h="jakarta.faces.html"
+      xmlns:f="jakarta.faces.core"
+      xmlns:ui="jakarta.faces.facelets">
+
+    <ui:composition template="/template.xhtml">
+        <ui:define name="title">🛒 Shopping Cart</ui:define>
+
+        <ui:define name="content">
+            <h:messages globalOnly="true" />
+            
+            <div style="padding: 20px;">
+                <h1 style="color: #2f5061; margin-bottom: 20px;">🛒 Shopping Cart</h1>
+                
+                <h:panelGroup rendered="#{loginMBean.currentUser == null}">
+                    <div style="text-align: center; padding: 40px; background: #f8f9fa; border-radius: 8px;">
+                        <p style="font-size: 18px; color: #64748b; margin-bottom: 20px;">Please login to view your cart</p>
+                        <h:link outcome="login" value="🔓 Login" 
+                                style="display: inline-block; padding: 12px 24px; background-color: #3f72af; color: white; text-decoration: none; border-radius: 6px; font-weight: 500;" />
+                    </div>
+                </h:panelGroup>
+                
+                <h:panelGroup rendered="#{loginMBean.currentUser != null}">
+                    <h:form id="cartForm">
+                        <h:outputText value="Your cart is empty" 
+                                     rendered="#{empty shoppingCartMBean.cartItems}" 
+                                     style="display: block; text-align: center; padding: 40px; color: #999; font-style: italic; background: #f5f5f5; border-radius: 8px; margin: 20px 0;" />
+                        
+                        <h:panelGroup rendered="#{not empty shoppingCartMBean.cartItems}">
+                            <!-- Cart Items -->
+                            <div style="margin-bottom: 20px;">
+                                <h:dataTable value="#{shoppingCartMBean.cartItems}" var="cart" 
+                                             styleClass="table table-striped"
+                                             style="width: 100%;">
+                                    <h:column>
+                                        <f:facet name="header">Image</f:facet>
+                                        <div style="text-align: center;">
+                                            <img src="#{shoppingCartMBean.getProductImageUrl(cart.productID)}"
+                                                 alt="#{cart.productID.name}"
+                                                 style="width: 80px; height: 80px; object-fit: contain; border: 1px solid #ddd; border-radius: 4px; background: #f8f9fa;"
+                                                 onerror="this.style.display='none'; this.nextElementSibling.style.display='block';" />
+                                            <div style="display: none; color: #999; font-size: 12px;">No Image</div>
+                                        </div>
+                                    </h:column>
+                                    
+                                    <h:column>
+                                        <f:facet name="header">Product</f:facet>
+                                        <div>
+                                            <strong>#{cart.productID.name}</strong><br/>
+                                            <small style="color: #64748b;">#{cart.productID.description}</small>
+                                        </div>
+                                    </h:column>
+                                    
+                                    <h:column>
+                                        <f:facet name="header">Unit Price</f:facet>
+                                        #{shoppingCartMBean.formatAmount(cart.productID.unitPrice)}
+                                    </h:column>
+                                    
+                                    <h:column>
+                                        <f:facet name="header">Quantity</f:facet>
+                                        <div style="display: flex; align-items: center; gap: 10px;">
+                                            <h:commandButton value="-" 
+                                                           actionListener="#{shoppingCartMBean.updateQuantity(cart, cart.quantity - 1)}"
+                                                           styleClass="btn btn-sm btn-secondary"
+                                                           style="width: 30px; height: 30px; padding: 0;">
+                                                <f:ajax render="cartForm" />
+                                            </h:commandButton>
+                                            <span style="min-width: 40px; text-align: center; font-weight: bold;">#{cart.quantity}</span>
+                                            <h:commandButton value="+" 
+                                                           actionListener="#{shoppingCartMBean.updateQuantity(cart, cart.quantity + 1)}"
+                                                           styleClass="btn btn-sm btn-secondary"
+                                                           style="width: 30px; height: 30px; padding: 0;">
+                                                <f:ajax render="cartForm" />
+                                            </h:commandButton>
+                                        </div>
+                                    </h:column>
+                                    
+                                    <h:column>
+                                        <f:facet name="header">Subtotal</f:facet>
+                                        <strong>#{shoppingCartMBean.formatAmount(cart.productID.unitPrice * cart.quantity)}</strong>
+                                    </h:column>
+                                    
+                                    <h:column>
+                                        <f:facet name="header">Action</f:facet>
+                                        <h:commandButton value="🗑️ Remove" 
+                                                       actionListener="#{shoppingCartMBean.removeFromCart(cart)}"
+                                                       styleClass="btn btn-sm btn-danger">
+                                            <f:ajax render="cartForm" />
+                                        </h:commandButton>
+                                    </h:column>
+                                </h:dataTable>
+                            </div>
+                            
+                            <!-- Checkout Section -->
+                            <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-top: 20px;">
+                                <h3 style="color: #2f5061; margin-bottom: 15px;">Checkout</h3>
+                                
+                                <div style="margin-bottom: 15px;">
+                                    <h:outputLabel value="Shipping Address:" for="shipAddress" style="font-weight: bold; display: block; margin-bottom: 5px;" />
+                                    <h:inputTextarea id="shipAddress" 
+                                                   value="#{shoppingCartMBean.shipAddress}" 
+                                                   required="true"
+                                                   requiredMessage="Please enter shipping address"
+                                                   styleClass="form-control"
+                                                   rows="3"
+                                                   style="width: 100%;">
+                                        <f:passThroughAttribute name="placeholder" value="Enter your shipping address" />
+                                    </h:inputTextarea>
+                                    <h:message for="shipAddress" styleClass="field-error" />
+                                </div>
+                                
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 20px; padding-top: 20px; border-top: 2px solid #ddd;">
+                                    <div>
+                                        <h2 style="color: #2f5061; margin: 0;">Total: <span style="color: #3f72af;">#{shoppingCartMBean.formatAmount(shoppingCartMBean.totalAmount)}</span></h2>
+                                    </div>
+                                    <div style="display: flex; gap: 10px;">
+                                        <h:link outcome="index" value="← Continue Shopping" 
+                                               style="display: inline-block; padding: 12px 24px; background-color: #6c757d; color: white; text-decoration: none; border-radius: 6px; font-weight: 500;" />
+                                        <h:commandButton value="💳 Checkout" 
+                                                       action="#{shoppingCartMBean.proceedToPayment}"
+                                                       styleClass="btn btn-primary"
+                                                       style="padding: 12px 24px; font-size: 16px; font-weight: 500;">
+                                            <f:ajax execute="@form" render="@form" />
+                                        </h:commandButton>
+                                    </div>
+                                </div>
+                            </div>
+                        </h:panelGroup>
+                    </h:form>
+                </h:panelGroup>
+            </div>
+        </ui:define>
+    </ui:composition>
+</html>
+

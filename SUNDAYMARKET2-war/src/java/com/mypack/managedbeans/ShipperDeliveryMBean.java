@@ -12,10 +12,13 @@ import java.util.List;
 import mypack.entity.Delivery;
 import mypack.entity.Order1;
 import mypack.entity.OrderDetails;
+import mypack.entity.Payment;
 import mypack.entity.User;
 import mypack.sessionbean.DeliveryFacadeLocal;
 import mypack.sessionbean.Order1FacadeLocal;
 import mypack.sessionbean.OrderDetailsFacadeLocal;
+import mypack.sessionbean.PaymentFacadeLocal;
+import com.mypack.managedbeans.LoginMBean;
 
 /**
  * Managed Bean for Shipper Delivery Management
@@ -33,6 +36,9 @@ public class ShipperDeliveryMBean implements Serializable {
     
     @EJB
     private OrderDetailsFacadeLocal orderDetailsFacade;
+    
+    @EJB
+    private PaymentFacadeLocal paymentFacade;
     
     private Delivery selectedDelivery;
     private Order1 selectedOrder;
@@ -191,7 +197,7 @@ public class ShipperDeliveryMBean implements Serializable {
             List<Delivery> existingDeliveries = deliveryFacade.findByOrder(freshOrder);
             if (existingDeliveries != null && !existingDeliveries.isEmpty()) {
                 System.out.println("WARNING: Order already has " + existingDeliveries.size() + " delivery records");
-                addError("❌ Đơn hàng này đã được gán cho shipper khác!");
+                addError("❌ This order has been assigned to another shipper!");
                 return;
             }
             
@@ -238,7 +244,7 @@ public class ShipperDeliveryMBean implements Serializable {
         } catch (Exception e) {
             System.err.println("EXCEPTION in acceptOrder(): " + e.getMessage());
             e.printStackTrace();
-            addError("❌ Lỗi khi nhận đơn: " + e.getMessage());
+            addError("❌ Error accepting order: " + e.getMessage());
         }
     }
     
@@ -346,9 +352,27 @@ public class ShipperDeliveryMBean implements Serializable {
     
     // View order details (for available orders)
     public void viewOrderDetails(Order1 order) {
-        selectedOrder = order;
-        selectedDelivery = null; // No delivery yet
-        showDetails = true;
+        try {
+            if (order == null || order.getOrderID() == null) {
+                addError("❌ Invalid order!");
+                return;
+            }
+            
+            // Load lại order từ database để có đầy đủ dữ liệu
+            selectedOrder = orderFacade.find(order.getOrderID());
+            selectedDelivery = null; // No delivery yet
+            showDetails = true;
+            
+            // Force load orderDetailsCollection
+            if (selectedOrder != null && selectedOrder.getOrderDetailsCollection() != null) {
+                selectedOrder.getOrderDetailsCollection().size();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            addError("❌ Error loading order details: " + e.getMessage());
+            selectedOrder = null;
+            showDetails = false;
+        }
     }
     
     // Close details
@@ -368,16 +392,49 @@ public class ShipperDeliveryMBean implements Serializable {
             
             delivery.setStatus(newStatus);
             delivery.setUpdatedAt(new Date());
+            
+            // Set deliveredAt timestamp when marking as delivered
+            if ("delivered".equalsIgnoreCase(newStatus)) {
+                delivery.setDeliveredAt(new Date());
+            }
+            
             deliveryFacade.edit(delivery);
             
-            // Update order status based on delivery status
+            // Update order status and payment status based on delivery status
             if (delivery.getOrderID() != null) {
                 Order1 order = delivery.getOrderID();
                 
-                // If delivery is completed, update order to 'shipping'
+                // If delivery is completed, update order to 'completed'
                 if ("delivered".equalsIgnoreCase(newStatus)) {
                     order.setStatus("completed");
                     orderFacade.edit(order);
+                    
+                    // Update payment status
+                    Payment payment = paymentFacade.findByOrder(order);
+                    if (payment != null) {
+                        String paymentMethod = payment.getPaymentMethod();
+                        String paymentStatus = payment.getPaymentStatus();
+                        
+                        if ("COD".equalsIgnoreCase(paymentMethod)) {
+                            // COD: Shipper collected cash from customer, mark payment as paid
+                            if (!"paid".equalsIgnoreCase(paymentStatus)) {
+                                payment.setPaymentStatus("paid");
+                                payment.setPaymentDate(new Date());
+                                payment.setUpdatedAt(new Date());
+                                paymentFacade.edit(payment);
+                                System.out.println("✅ COD payment marked as paid - Shipper collected cash from customer");
+                            }
+                        } else if ("ONLINE".equalsIgnoreCase(paymentMethod)) {
+                            // ONLINE: Payment should already be paid, but ensure it's marked as paid
+                            if ("pending".equalsIgnoreCase(paymentStatus)) {
+                                payment.setPaymentStatus("paid");
+                                payment.setPaymentDate(payment.getPaymentDate() != null ? payment.getPaymentDate() : new Date());
+                                payment.setUpdatedAt(new Date());
+                                paymentFacade.edit(payment);
+                                System.out.println("✅ ONLINE payment status updated to paid - Order delivered successfully");
+                            }
+                        }
+                    }
                 } else if ("shipping".equalsIgnoreCase(newStatus)) {
                     order.setStatus("shipping");
                     orderFacade.edit(order);
@@ -403,21 +460,56 @@ public class ShipperDeliveryMBean implements Serializable {
                 return;
             }
             delivery.setUpdatedAt(new Date());
+            
+            // Set deliveredAt timestamp when marking as delivered
+            if ("delivered".equalsIgnoreCase(delivery.getStatus())) {
+                delivery.setDeliveredAt(new Date());
+            }
+            
             deliveryFacade.edit(delivery);
             
-            // Update order status
+            // Update order status and payment status
             if (delivery.getOrderID() != null) {
                 Order1 order = orderFacade.find(delivery.getOrderID().getOrderID());
                 if (order != null) {
                     String deliveryStatus = delivery.getStatus();
                     if ("delivered".equalsIgnoreCase(deliveryStatus)) {
                         order.setStatus("completed");
+                        orderFacade.edit(order);
+                        
+                        // Update payment status
+                        Payment payment = paymentFacade.findByOrder(order);
+                        if (payment != null) {
+                            String paymentMethod = payment.getPaymentMethod();
+                            String paymentStatus = payment.getPaymentStatus();
+                            
+                            if ("COD".equalsIgnoreCase(paymentMethod)) {
+                                // COD: Shipper collected cash from customer, mark payment as paid
+                                if (!"paid".equalsIgnoreCase(paymentStatus)) {
+                                    payment.setPaymentStatus("paid");
+                                    payment.setPaymentDate(new Date());
+                                    payment.setUpdatedAt(new Date());
+                                    paymentFacade.edit(payment);
+                                    System.out.println("✅ COD payment marked as paid - Shipper collected cash from customer");
+                                }
+                            } else if ("ONLINE".equalsIgnoreCase(paymentMethod)) {
+                                // ONLINE: Payment should already be paid, but ensure it's marked as paid
+                                if ("pending".equalsIgnoreCase(paymentStatus)) {
+                                    payment.setPaymentStatus("paid");
+                                    payment.setPaymentDate(payment.getPaymentDate() != null ? payment.getPaymentDate() : new Date());
+                                    payment.setUpdatedAt(new Date());
+                                    paymentFacade.edit(payment);
+                                    System.out.println("✅ ONLINE payment status updated to paid - Order delivered successfully");
+                                }
+                            }
+                        }
                     } else if ("shipping".equalsIgnoreCase(deliveryStatus)) {
                         order.setStatus("shipping");
+                        orderFacade.edit(order);
                     } else if ("failed".equalsIgnoreCase(deliveryStatus)) {
                         order.setStatus("failed");
+                        orderFacade.edit(order);
                     }
-                    orderFacade.edit(order);
                 }
             }
             
@@ -519,9 +611,172 @@ public class ShipperDeliveryMBean implements Serializable {
         }
     }
     
+    // Get payment method for an order
+    public String getPaymentMethod(Order1 order) {
+        if (order == null) {
+            return "N/A";
+        }
+        try {
+            Payment payment = paymentFacade.findByOrder(order);
+            if (payment != null && payment.getPaymentMethod() != null) {
+                return payment.getPaymentMethod().toUpperCase();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return "N/A";
+    }
+    
+    // Check if order is COD
+    public boolean isCOD(Order1 order) {
+        if (order == null) {
+            return false;
+        }
+        try {
+            Payment payment = paymentFacade.findByOrder(order);
+            if (payment != null && payment.getPaymentMethod() != null) {
+                return "COD".equalsIgnoreCase(payment.getPaymentMethod());
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+    
+    // Get payment method display name
+    public String getPaymentMethodDisplay(Order1 order) {
+        String method = getPaymentMethod(order);
+        switch (method.toUpperCase()) {
+            case "COD":
+                return "💰 COD";
+            case "ONLINE":
+                return "💳 ONLINE";
+            case "VNPAY":
+            case "MOMO":
+            case "BANK_TRANSFER":
+                // Legacy support - these should be normalized to ONLINE
+                return "💳 ONLINE";
+            default:
+                return method != null && !"N/A".equals(method) ? method : "N/A";
+        }
+    }
+    
+    // Get payment status for an order
+    public String getPaymentStatus(Order1 order) {
+        if (order == null) {
+            return "N/A";
+        }
+        try {
+            Payment payment = paymentFacade.findByOrder(order);
+            if (payment != null && payment.getPaymentStatus() != null) {
+                return payment.getPaymentStatus();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return "N/A";
+    }
+    
+    // Get payment status display with badge styling
+    public String getPaymentStatusDisplay(Order1 order) {
+        String status = getPaymentStatus(order);
+        if (status == null || "N/A".equals(status)) {
+            return "Chưa có";
+        }
+        switch (status.toLowerCase()) {
+            case "paid":
+                return "✅ Đã thanh toán";
+            case "pending":
+                return "⏳ Chờ thanh toán";
+            case "failed":
+                return "❌ Thất bại";
+            case "refunded":
+                return "↩️ Đã hoàn tiền";
+            default:
+                return status;
+        }
+    }
+    
+    // Get payment status color for styling
+    public String getPaymentStatusColor(Order1 order) {
+        String status = getPaymentStatus(order);
+        if (status == null || "N/A".equals(status)) {
+            return "#6b7280"; // gray
+        }
+        switch (status.toLowerCase()) {
+            case "paid":
+                return "#10b981"; // green
+            case "pending":
+                return "#f59e0b"; // amber
+            case "failed":
+                return "#ef4444"; // red
+            case "refunded":
+                return "#8b5cf6"; // purple
+            default:
+                return "#6b7280"; // gray
+        }
+    }
+    
+    // Check if payment is submitted (for COD)
+    public boolean isPaymentSubmitted(Order1 order) {
+        if (order == null) {
+            return false;
+        }
+        try {
+            Payment payment = paymentFacade.findByOrder(order);
+            if (payment != null && payment.getTransactionID() != null) {
+                return payment.getTransactionID().startsWith("SUBMIT_");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+    
     // Format methods
     public String formatAmount(int amount) {
         return String.format("%,d", amount) + " VND";
+    }
+    
+    // Get original shipping fee (before admin percentage deduction)
+    public int getOriginalShippingFee(Order1 order) {
+        if (order == null) return 0;
+        return order.getShippingFee() != null ? order.getShippingFee() : 0;
+    }
+    
+    // Get admin percentage from AdminFinanceMBean
+    public int getAdminPercentage() {
+        try {
+            return com.mypack.managedbeans.AdminFinanceMBean.getAdminPercentageStatic();
+        } catch (Exception e) {
+            return 10; // Default 10%
+        }
+    }
+    
+    // Get admin share amount (admin percentage of shipping fee)
+    public int getAdminShippingFeeShare(Order1 order) {
+        int originalFee = getOriginalShippingFee(order);
+        if (originalFee == 0) return 0;
+        int adminPercent = getAdminPercentage();
+        return (int) Math.round(originalFee * adminPercent / 100.0);
+    }
+    
+    // Get shipper shipping fee income (after admin percentage deduction)
+    // This is what shipper actually receives
+    public int getShippingFeeDisplay(Order1 order) {
+        if (order == null) return 0;
+        int originalFee = getOriginalShippingFee(order);
+        if (originalFee == 0) return 0;
+        int adminPercent = getAdminPercentage();
+        // Shipper gets (100 - adminPercentage)% of shipping fee
+        return (int) Math.round(originalFee * (100.0 - adminPercent) / 100.0);
+    }
+    
+    // Calculate subtotal (totalAmount - original shippingFee)
+    public int getSubtotal(Order1 order) {
+        if (order == null) return 0;
+        int shippingFee = getOriginalShippingFee(order); // Use original shipping fee, not shipper income
+        return order.getTotalAmount() - shippingFee;
     }
     
     public String formatDate(Date date) {

@@ -42,8 +42,12 @@ public class NotificationTarget implements Serializable {
     @JoinColumn(name = "User_ID", referencedColumnName = "User_ID")
     @ManyToOne(optional = false)
     private User userID;
+    @Basic(optional = true)
+    @Column(name = "IsRead", nullable = true)
+    private Boolean isRead;
 
     public NotificationTarget() {
+        this.isRead = false; // Default to unread
     }
 
     public NotificationTarget(Integer targetID) {
@@ -72,6 +76,14 @@ public class NotificationTarget implements Serializable {
 
     public void setUserID(User userID) {
         this.userID = userID;
+    }
+
+    public Boolean getIsRead() {
+        return isRead != null ? isRead : false;
+    }
+
+    public void setIsRead(Boolean isRead) {
+        this.isRead = isRead;
     }
 
     @Override

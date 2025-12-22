@@ -38,11 +38,12 @@ public class UserFacade extends AbstractFacade<User> implements UserFacadeLocal 
                 password = password.trim();
             }
             
-            // isActive là boolean, dùng = true thay vì = 1
+            // ✅ Hỗ trợ đăng nhập bằng username HOẶC email
+            // Kiểm tra cả userName và email trong cùng một query
             return em.createQuery(
-                "SELECT u FROM User u WHERE u.userName = :username AND u.password = :password AND u.isActive = true",
+                "SELECT u FROM User u WHERE (u.userName = :usernameOrEmail OR u.email = :usernameOrEmail) AND u.password = :password AND u.isActive = true",
                 User.class)
-            .setParameter("username", username)
+            .setParameter("usernameOrEmail", username)
             .setParameter("password", password)
             .getSingleResult();
         } catch (Exception e) {

@@ -162,14 +162,43 @@ public class ShoppingCartMBean implements Serializable {
         }
     }
     
+    // Clear cart cache - public method for other beans to call
+    public void clearCartCache() {
+        cartItems = null;
+        System.out.println("ShoppingCartMBean.clearCartCache() - Cache cleared");
+    }
+    
     // Remove from cart
     public void removeFromCart(ShoppingCart cart) {
         try {
-            shoppingCartFacade.remove(cart);
+            if (cart == null || cart.getCartID() == null) {
+                addErr("⚠️ Invalid cart item!");
+                return;
+            }
+            
+            // Refresh cart from database to ensure it's managed
+            ShoppingCart managedCart = shoppingCartFacade.find(cart.getCartID());
+            if (managedCart == null) {
+                addErr("⚠️ Cart item not found in database!");
+                // Clear cache anyway
+                cartItems = null;
+                return;
+            }
+            
+            // Remove from database
+            shoppingCartFacade.remove(managedCart);
+            
+            // Clear cache to force refresh
+            cartItems = null;
+            
+            System.out.println("ShoppingCartMBean.removeFromCart() - Removed cart item ID: " + managedCart.getCartID());
             addInfo("✅ Product removed from cart!");
         } catch (Exception e) {
             e.printStackTrace();
+            System.err.println("Error in removeFromCart: " + e.getMessage());
             addErr("❌ Error removing from cart: " + e.getMessage());
+            // Clear cache even on error to force refresh
+            cartItems = null;
         }
     }
     
@@ -180,12 +209,31 @@ public class ShoppingCartMBean implements Serializable {
                 removeFromCart(cart);
                 return;
             }
-            cart.setQuantity(newQuantity);
-            shoppingCartFacade.edit(cart);
+            
+            if (cart == null || cart.getCartID() == null) {
+                addErr("⚠️ Invalid cart item!");
+                return;
+            }
+            
+            // Refresh cart from database to ensure it's managed
+            ShoppingCart managedCart = shoppingCartFacade.find(cart.getCartID());
+            if (managedCart == null) {
+                addErr("⚠️ Cart item not found in database!");
+                cartItems = null;
+                return;
+            }
+            
+            managedCart.setQuantity(newQuantity);
+            shoppingCartFacade.edit(managedCart);
+            
+            // Clear cache to force refresh
+            cartItems = null;
+            
             addInfo("✅ Quantity updated!");
         } catch (Exception e) {
             e.printStackTrace();
             addErr("❌ Error updating quantity: " + e.getMessage());
+            cartItems = null;
         }
     }
     
@@ -287,7 +335,8 @@ public class ShoppingCartMBean implements Serializable {
             Order1 order = new Order1();
             order.setUserID(currentUser);
             order.setOrderDate(new Date());
-            order.setTotalAmount(getTotalAmount());
+            order.setTotalAmount(getTotalAmount()); // Initial total = subtotal (no shipping fee yet)
+            order.setShippingFee(null); // Shipping fee will be set by admin later
             order.setStatus("pending");
             orderFacade.create(order);
             

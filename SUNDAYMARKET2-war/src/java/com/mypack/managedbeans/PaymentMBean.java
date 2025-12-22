@@ -9,6 +9,7 @@ import java.io.Serializable;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
@@ -16,10 +17,12 @@ import java.util.Map;
 import java.util.TreeMap;
 import mypack.entity.Order1;
 import mypack.entity.OrderDetails;
+import mypack.entity.Payment;
 import mypack.entity.ShoppingCart;
 import mypack.entity.User;
 import mypack.sessionbean.Order1FacadeLocal;
 import mypack.sessionbean.OrderDetailsFacadeLocal;
+import mypack.sessionbean.PaymentFacadeLocal;
 import mypack.sessionbean.ShoppingCartFacadeLocal;
 
 @Named(value = "paymentMBean")
@@ -35,10 +38,13 @@ public class PaymentMBean implements Serializable {
     @EJB
     private ShoppingCartFacadeLocal shoppingCartFacade;
     
+    @EJB
+    private PaymentFacadeLocal paymentFacade;
+    
     private Order1 pendingOrder;
     private Order1 processingOrder; // Order being processed from QR code
     private int totalAmount;
-    private String paymentMethod = "vnpay"; // vnpay, momo, zalopay, bank_transfer
+    private String paymentMethod = "cod"; // cod, online (default to COD)
     private String qrCodeUrl;
     private String paymentUrl;
     private boolean paymentSuccess = false;
@@ -110,6 +116,23 @@ public class PaymentMBean implements Serializable {
             processingOrder.setStatus("processing");
             orderFacade.edit(processingOrder);
             System.out.println("Order status updated to: processing");
+            
+            // Update payment status to paid (only for online payments, COD stays pending until delivery)
+            Payment payment = paymentFacade.findByOrder(processingOrder);
+            if (payment != null) {
+                if (methodParam != null && !"cod".equalsIgnoreCase(methodParam)) {
+                    // Online payment: mark as paid immediately
+                    payment.setPaymentStatus("paid");
+                    payment.setPaymentDate(new Date());
+                    payment.setTransactionID("TXN_" + processingOrder.getOrderID() + "_" + System.currentTimeMillis());
+                    System.out.println("Payment status updated to: paid (online payment)");
+                } else {
+                    // COD: keep as pending, will be marked as paid when shipper delivers
+                    System.out.println("Payment status remains pending (COD - will be paid on delivery)");
+                }
+                payment.setUpdatedAt(new Date());
+                paymentFacade.edit(payment);
+            }
             
             // Clear cart for this user
             FacesContext facesContext = FacesContext.getCurrentInstance();
@@ -200,11 +223,16 @@ public class PaymentMBean implements Serializable {
                 return null;
             }
             
+            // Calculate shipping fee from system settings
+            int shippingFee = getDefaultShippingFee();
+            int totalAmountWithShipping = amount + shippingFee;
+            
             // Create Order first
             Order1 order = new Order1();
             order.setUserID(currentUser);
             order.setOrderDate(new Date());
-            order.setTotalAmount(amount);
+            order.setShippingFee(shippingFee); // Set default shipping fee
+            order.setTotalAmount(totalAmountWithShipping); // Total = subtotal + shipping fee
             order.setStatus("pending");
             orderFacade.create(order);
             
@@ -219,8 +247,29 @@ public class PaymentMBean implements Serializable {
                 orderDetailsFacade.create(orderDetail);
             }
             
+            // Create Payment record
+            Payment payment = new Payment();
+            payment.setOrderID(order);
+            // Normalize payment method: only COD or ONLINE
+            // Use current paymentMethod if set, otherwise default to COD
+            String normalizedMethod = paymentMethod != null ? paymentMethod.toUpperCase() : "COD";
+            if ("COD".equals(normalizedMethod)) {
+                payment.setPaymentMethod("COD");
+            } else {
+                // All other methods (online, vnpay, momo, bank_transfer) → ONLINE
+                payment.setPaymentMethod("ONLINE");
+            }
+            payment.setPaymentStatus("pending"); // pending, paid, failed, refunded
+            payment.setAmount(totalAmountWithShipping); // Payment amount includes shipping fee
+            payment.setCreatedAt(new Date());
+            payment.setUpdatedAt(new Date());
+            paymentFacade.create(payment);
+            
+            // Keep paymentMethod as is (don't override with saved value)
+            // User will select payment method on payment page, and updatePaymentInfo() will update the Payment record
+            
             pendingOrder = order;
-            totalAmount = amount;
+            totalAmount = totalAmountWithShipping;
             
             // Generate payment URL and QR code based on method
             updatePaymentInfo();
@@ -236,10 +285,29 @@ public class PaymentMBean implements Serializable {
     // Update payment info based on selected method
     public void updatePaymentInfo() {
         if (pendingOrder == null) {
+            System.out.println("updatePaymentInfo: pendingOrder is null");
             return;
         }
         
         try {
+            System.out.println("updatePaymentInfo: paymentMethod = " + paymentMethod);
+            
+            // Update Payment record in database with selected payment method
+            Payment payment = paymentFacade.findByOrder(pendingOrder);
+            if (payment != null && paymentMethod != null) {
+                // Normalize payment method: only COD or ONLINE
+                String normalizedMethod = paymentMethod.toUpperCase();
+                if ("COD".equals(normalizedMethod)) {
+                    payment.setPaymentMethod("COD");
+                } else {
+                    // All other methods (online, vnpay, momo, bank_transfer) → ONLINE
+                    payment.setPaymentMethod("ONLINE");
+                }
+                payment.setUpdatedAt(new Date());
+                paymentFacade.edit(payment);
+                System.out.println("Payment method updated to: " + payment.getPaymentMethod() + " (from UI selection: " + paymentMethod + ")");
+            }
+            
             FacesContext facesContext = FacesContext.getCurrentInstance();
             String baseUrl = "";
             if (facesContext != null) {
@@ -253,23 +321,34 @@ public class PaymentMBean implements Serializable {
             }
             
             // Generate payment URL based on method
-            if ("vnpay".equals(paymentMethod)) {
-                paymentUrl = generateVNPayUrl(pendingOrder, totalAmount);
-                // QR code chứa URL đến trang VNPay ảo
-                String vnpayPaymentUrl = generateVNPayUrl(pendingOrder, totalAmount);
-                qrCodeUrl = generateQRCode(vnpayPaymentUrl);
-            } else if ("momo".equals(paymentMethod)) {
-                paymentUrl = generateMoMoUrl(pendingOrder, totalAmount);
-                // QR code chứa URL đến trang MoMo ảo
-                String momoPaymentUrl = generateMoMoUrl(pendingOrder, totalAmount);
-                qrCodeUrl = generateQRCode(momoPaymentUrl);
-            } else if ("bank_transfer".equals(paymentMethod)) {
-                // QR code chứa thông tin chuyển khoản + URL xác nhận
-                String paymentPageUrl = baseUrl + "/payment-process.xhtml?orderId=" + pendingOrder.getOrderID() + "&amount=" + totalAmount + "&method=bank";
-                qrCodeUrl = generateBankQRCode(pendingOrder, totalAmount, paymentPageUrl);
+            if ("cod".equalsIgnoreCase(paymentMethod)) {
+                // COD: No QR code or payment URL needed
+                qrCodeUrl = null;
                 paymentUrl = null;
+                System.out.println("updatePaymentInfo: COD selected, cleared QR and URL");
+            } else if ("online".equalsIgnoreCase(paymentMethod)) {
+                // ONLINE: Default to VNPay, but can be changed to MoMo or Bank Transfer
+                // For simplicity, we'll use VNPay as default online payment
+                paymentUrl = generateVNPayUrl(pendingOrder, totalAmount);
+                qrCodeUrl = generateQRCode(paymentUrl);
+                System.out.println("updatePaymentInfo: ONLINE selected, generated QR: " + (qrCodeUrl != null ? "YES" : "NO") + ", URL: " + (paymentUrl != null ? "YES" : "NO"));
+            } else {
+                // Legacy support for old payment methods (vnpay, momo, bank_transfer)
+                // These will be normalized to "ONLINE" when saved
+                if ("vnpay".equals(paymentMethod)) {
+                    paymentUrl = generateVNPayUrl(pendingOrder, totalAmount);
+                    qrCodeUrl = generateQRCode(paymentUrl);
+                } else if ("momo".equals(paymentMethod)) {
+                    paymentUrl = generateMoMoUrl(pendingOrder, totalAmount);
+                    qrCodeUrl = generateQRCode(paymentUrl);
+                } else if ("bank_transfer".equals(paymentMethod)) {
+                    String paymentPageUrl = baseUrl + "/payment-process.xhtml?orderId=" + pendingOrder.getOrderID() + "&amount=" + totalAmount + "&method=bank";
+                    qrCodeUrl = generateBankQRCode(pendingOrder, totalAmount, paymentPageUrl);
+                    paymentUrl = null;
+                }
             }
         } catch (Exception e) {
+            System.err.println("Error in updatePaymentInfo: " + e.getMessage());
             e.printStackTrace();
         }
     }
@@ -485,6 +564,31 @@ public class PaymentMBean implements Serializable {
             orderFacade.edit(pendingOrder);
             System.out.println("Order status updated to: processing");
             
+            // Update payment status to paid (only for online payments, COD stays pending until delivery)
+            Payment payment = paymentFacade.findByOrder(pendingOrder);
+            if (payment != null) {
+                // Update payment method from UI selection (in case it changed)
+                String normalizedMethod = paymentMethod != null ? paymentMethod.toUpperCase() : "COD";
+                if ("COD".equals(normalizedMethod)) {
+                    payment.setPaymentMethod("COD");
+                } else {
+                    payment.setPaymentMethod("ONLINE");
+                }
+                
+                if (!"cod".equalsIgnoreCase(paymentMethod)) {
+                    // Online payment: mark as paid immediately
+                    payment.setPaymentStatus("paid");
+                    payment.setPaymentDate(new Date());
+                    payment.setTransactionID("TXN_" + pendingOrder.getOrderID() + "_" + System.currentTimeMillis());
+                    System.out.println("Payment status updated to: paid (online payment), method: " + payment.getPaymentMethod());
+                } else {
+                    // COD: keep as pending, will be marked as paid when shipper delivers
+                    System.out.println("Payment status remains pending (COD - will be paid on delivery)");
+                }
+                payment.setUpdatedAt(new Date());
+                paymentFacade.edit(payment);
+            }
+            
             // Clear cart
             FacesContext facesContext = FacesContext.getCurrentInstance();
             if (facesContext != null) {
@@ -566,6 +670,16 @@ public class PaymentMBean implements Serializable {
                 pendingOrder.setStatus("processing");
                 orderFacade.edit(pendingOrder);
                 
+                // Update payment status to paid
+                Payment payment = paymentFacade.findByOrder(pendingOrder);
+                if (payment != null) {
+                    payment.setPaymentStatus("paid");
+                    payment.setPaymentDate(new Date());
+                    payment.setUpdatedAt(new Date());
+                    payment.setTransactionID(params.get("vnp_TxnRef"));
+                    paymentFacade.edit(payment);
+                }
+                
                 // Clear cart
                 jakarta.el.ELContext elContext = facesContext.getELContext();
                 jakarta.el.ExpressionFactory factory = facesContext.getApplication().getExpressionFactory();
@@ -589,6 +703,14 @@ public class PaymentMBean implements Serializable {
                 if (pendingOrder != null) {
                     pendingOrder.setStatus("cancelled");
                     orderFacade.edit(pendingOrder);
+                    
+                    // Update payment status to failed
+                    Payment payment = paymentFacade.findByOrder(pendingOrder);
+                    if (payment != null) {
+                        payment.setPaymentStatus("failed");
+                        payment.setUpdatedAt(new Date());
+                        paymentFacade.edit(payment);
+                    }
                 }
                 addErr("❌ Payment failed. Please try again.");
                 return "payment?faces-redirect=true";
@@ -600,9 +722,174 @@ public class PaymentMBean implements Serializable {
         }
     }
     
+    // Get default shipping fee - load directly from database for fresh value
+    private int getDefaultShippingFee() {
+        try {
+            // Try to load from database directly for fresh value
+            // Access AdminFinanceMBean instance to reload from database
+            FacesContext facesContext = FacesContext.getCurrentInstance();
+            if (facesContext != null) {
+                jakarta.el.ELContext elContext = facesContext.getELContext();
+                jakarta.el.ExpressionFactory factory = facesContext.getApplication().getExpressionFactory();
+                jakarta.el.ValueExpression ve = factory.createValueExpression(elContext, "#{adminFinanceMBean}", AdminFinanceMBean.class);
+                AdminFinanceMBean adminFinanceMBean = (AdminFinanceMBean) ve.getValue(elContext);
+                if (adminFinanceMBean != null) {
+                    // Reload config from database to get latest value
+                    adminFinanceMBean.reloadConfigurationFromDatabase();
+                    return adminFinanceMBean.getDefaultShippingFee();
+                }
+            }
+            // Fallback to static method if can't access instance
+            return AdminFinanceMBean.getDefaultShippingFeeStatic();
+        } catch (Exception e) {
+            System.err.println("Error getting default shipping fee: " + e.getMessage());
+            e.printStackTrace();
+            // Fallback to default value if error
+            return 3000; // 3,000 VND (default)
+        }
+    }
+    
     // Format amount
     public String formatAmount(int amount) {
         return String.format("%,d", amount) + " VND";
+    }
+    
+    // Get order details for pending order
+    public List<OrderDetails> getOrderDetails(Order1 order) {
+        if (order == null) {
+            return new ArrayList<>();
+        }
+        try {
+            List<OrderDetails> allDetails = orderDetailsFacade.findAll();
+            List<OrderDetails> result = new ArrayList<>();
+            for (OrderDetails detail : allDetails) {
+                if (detail.getOrderID() != null && detail.getOrderID().getOrderID().equals(order.getOrderID())) {
+                    result.add(detail);
+                }
+            }
+            return result;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return new ArrayList<>();
+        }
+    }
+    
+    // Calculate subtotal (sum of all product prices)
+    public int getSubtotal(Order1 order) {
+        if (order == null) {
+            return 0;
+        }
+        try {
+            List<OrderDetails> details = getOrderDetails(order);
+            int subtotal = 0;
+            for (OrderDetails detail : details) {
+                subtotal += detail.getUnitPrice() * detail.getQuantity();
+            }
+            return subtotal;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return 0;
+        }
+    }
+    
+    // Get shipping fee for order
+    public int getShippingFee(Order1 order) {
+        if (order == null) {
+            return getDefaultShippingFee();
+        }
+        return order.getShippingFee() != null ? order.getShippingFee() : getDefaultShippingFee();
+    }
+    
+    // Calculate total (subtotal + shipping fee)
+    public int calculateTotal(Order1 order) {
+        return getSubtotal(order) + getShippingFee(order);
+    }
+    
+    // Check if order has payment
+    public boolean hasPayment(Order1 order) {
+        if (order == null) {
+            return false;
+        }
+        try {
+            Payment payment = paymentFacade.findByOrder(order);
+            return payment != null;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+    
+    // Get payment for an order
+    public Payment getPayment(Order1 order) {
+        if (order == null) {
+            return null;
+        }
+        try {
+            return paymentFacade.findByOrder(order);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+    
+    // Get payment method for an order
+    public String getPaymentMethodForOrder(Order1 order) {
+        Payment payment = getPayment(order);
+        if (payment != null && payment.getPaymentMethod() != null) {
+            return payment.getPaymentMethod();
+        }
+        return "N/A";
+    }
+    
+    // Get payment status for an order
+    public String getPaymentStatusForOrder(Order1 order) {
+        Payment payment = getPayment(order);
+        if (payment != null && payment.getPaymentStatus() != null) {
+            return payment.getPaymentStatus();
+        }
+        return "N/A";
+    }
+    
+    // Check if order is COD
+    public boolean isCODOrder(Order1 order) {
+        String method = getPaymentMethodForOrder(order);
+        return "COD".equalsIgnoreCase(method) || "cod".equalsIgnoreCase(method);
+    }
+    
+    // Get payment method display name
+    public String getPaymentMethodDisplay(Order1 order) {
+        String method = getPaymentMethodForOrder(order);
+        if (method == null || "N/A".equals(method)) {
+            return "Chưa có";
+        }
+        switch (method.toUpperCase()) {
+            case "COD":
+                return "💰 COD (Thu tiền khi giao)";
+            case "ONLINE":
+                return "💳 Thanh toán Online";
+            default:
+                return method;
+        }
+    }
+    
+    // Get payment status display
+    public String getPaymentStatusDisplay(Order1 order) {
+        String status = getPaymentStatusForOrder(order);
+        if (status == null || "N/A".equals(status)) {
+            return "Chưa có";
+        }
+        switch (status.toUpperCase()) {
+            case "PENDING":
+                return "⏳ Chờ thanh toán";
+            case "PAID":
+                return "✅ Đã thanh toán";
+            case "FAILED":
+                return "❌ Thanh toán thất bại";
+            case "REFUNDED":
+                return "↩️ Đã hoàn tiền";
+            default:
+                return status;
+        }
     }
     
     private void addInfo(String msg) {

@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:h="jakarta.faces.html"
+      xmlns:f="jakarta.faces.core"
+      xmlns:ui="jakarta.faces.facelets">
+
+    <ui:composition template="/template.xhtml">
+        <ui:define name="title">💳 Payment Callback</ui:define>
+
+        <ui:define name="content">
+            <h:messages globalOnly="true" />
+            
+            <div style="padding: 20px; max-width: 600px; margin: 0 auto; text-align: center;">
+                <h1 style="color: #2f5061; margin-bottom: 20px;">💳 Processing Payment...</h1>
+                
+                <h:form id="callbackForm">
+                    <h:commandButton value="Process Payment" 
+                                   action="#{paymentMBean.handlePaymentCallback()}"
+                                   style="display: none;"
+                                   id="processBtn" />
+                    
+                    <h:outputScript>
+                        <![CDATA[
+                        // Auto submit form on page load
+                        window.onload = function() {
+                            document.getElementById('callbackForm:processBtn').click();
+                        };
+                        ]]>
+                    </h:outputScript>
+                </h:form>
+            </div>
+        </ui:define>
+    </ui:composition>
+</html>
+

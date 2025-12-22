@@ -53,15 +53,15 @@ public class LoginMBean implements Serializable {
     public String checkUser() {
         try {
             System.out.println("=== LoginMBean.checkUser ===");
-            System.out.println("Username: " + username);
+            System.out.println("Username or Email: " + username);
             System.out.println("Password: " + (password != null ? "***" : "null"));
             
-            // ✅ Tìm user bằng username và password
+            // ✅ Tìm user bằng username hoặc email và password
             User u = userFacade.checkLoginUser(username, password);
             
             if (u == null) {
                 System.out.println("User not found or password incorrect");
-                message = "❌ Incorrect username or password!";
+                message = "❌ Incorrect username/email or password!";
                 return "login";
             }
             

@@ -141,7 +141,7 @@ public class PromotionMBean implements Serializable {
     public void prepareEdit(Promotions promotion) {
         selected = promotionFacade.find(promotion.getPromotionID());
         if (selected == null) {
-            addError("❌ Không tìm thấy promotion!");
+            addError("❌ Promotion not found!");
             return;
         }
         editMode = true;
@@ -151,7 +151,7 @@ public class PromotionMBean implements Serializable {
     public void save() {
         try {
             if (selected.getCode() == null || selected.getCode().trim().isEmpty()) {
-                addError("❌ Vui lòng nhập mã promotion!");
+                addError("❌ Please enter promotion code!");
                 return;
             }
             
@@ -161,7 +161,7 @@ public class PromotionMBean implements Serializable {
             }
             
             if (selected.getDiscountValue() == null) {
-                addError("❌ Vui lòng nhập giá trị giảm giá!");
+                addError("❌ Please enter discount value!");
                 return;
             }
             
@@ -171,7 +171,7 @@ public class PromotionMBean implements Serializable {
             }
             
             if (selected.getEndDate() == null) {
-                addError("❌ Vui lòng chọn ngày kết thúc!");
+                addError("❌ Please select end date!");
                 return;
             }
             
@@ -183,14 +183,14 @@ public class PromotionMBean implements Serializable {
             // Validate discount value based on type
             if ("percentage".equalsIgnoreCase(selected.getDiscountType())) {
                 if (selected.getDiscountValue().compareTo(new BigDecimal("100")) > 0) {
-                    addError("❌ Phần trăm giảm giá không được vượt quá 100%!");
+                    addError("❌ Discount percentage cannot exceed 100%!");
                     return;
                 }
             }
             
             if (editMode) {
                 promotionFacade.edit(selected);
-                addInfo("✅ Đã cập nhật promotion thành công!");
+                addInfo("✅ Promotion updated successfully!");
             } else {
                 if (selected.getCreatedAt() == null) {
                     selected.setCreatedAt(new Date());
@@ -202,7 +202,7 @@ public class PromotionMBean implements Serializable {
             cancel();
         } catch (Exception e) {
             e.printStackTrace();
-            addError("❌ Lỗi khi lưu promotion: " + e.getMessage());
+            addError("❌ Error saving promotion: " + e.getMessage());
         }
     }
     
@@ -216,7 +216,7 @@ public class PromotionMBean implements Serializable {
             }
         } catch (Exception e) {
             e.printStackTrace();
-            addError("❌ Lỗi khi xóa promotion: " + e.getMessage());
+            addError("❌ Error deleting promotion: " + e.getMessage());
         }
     }
     
@@ -300,7 +300,7 @@ public class PromotionMBean implements Serializable {
         
         if (!isActive) return "❌ Inactive";        // Không hoạt động
         if (isNotStarted) return "⏳ Upcoming";     // Sắp diễn ra
-        if (isExpired) return "🔴 Expired";         // Đã hết hạn
+        if (isExpired) return "🔴 Expired";
         return "✅ Active";                         // Đang hoạt động
     }
     
